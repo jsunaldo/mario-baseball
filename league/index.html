@@ -336,7 +336,7 @@ const io = new IntersectionObserver(entries => {
 document.querySelectorAll('.reveal').forEach(el => io.observe(el));
 
 // Live league data (falls back to the static numbers if the cloud is empty/unreachable)
-fetch('https://mariobaseballtracker.netlify.app/api/sync').then(r => r.json()).then(cloud => {
+fetch('https://msb-sync.jsunaldo.workers.dev').then(r => r.json()).then(cloud => {
   if (!cloud || !cloud.data) return;
   let total = 0;
   Object.values(cloud.data).forEach(season => { total += (season.games || []).length; });
