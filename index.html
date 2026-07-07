@@ -2635,32 +2635,55 @@ function getSchedule(gameNum) {
   }
 
   if (keys.length === 2) {
-    // Original 2-owner logic with dynamic keys
+    // 2-owner: 3-game series per stadium, home alternating within each series.
+    // Which owner opens a series as home flips every full stadium cycle, so
+    // per-stadium home/away counts even out over the season. (The first cycle
+    // matches the original formula — played S1/S2 games line up unchanged.)
     const numStadiums = CONFIG.STADIUMS.length;
     const gamesPerStadium = 3;
     const cycleLen = numStadiums * gamesPerStadium;
     const cycle = (gameNum - 1) % cycleLen;
+    const cycleNum = Math.floor((gameNum - 1) / cycleLen);
     const stadIdx = Math.floor(cycle / gamesPerStadium);
     const posInStad = cycle % gamesPerStadium;
     const stadium = CONFIG.STADIUMS[stadIdx % CONFIG.STADIUMS.length];
-    const firstHome = stadIdx % 2 === 0 ? keys[0] : keys[1];
+    const firstHome = (stadIdx + cycleNum) % 2 === 0 ? keys[0] : keys[1];
     const home = posInStad % 2 === 0 ? firstHome : (firstHome === keys[0] ? keys[1] : keys[0]);
     return { stadium, home, away: home === keys[0] ? keys[1] : keys[0] };
   }
 
-  // N-owner round-robin: generate all possible matchups
-  const matchups = [];
-  for (let i = 0; i < keys.length; i++) {
-    for (let j = i + 1; j < keys.length; j++) {
-      matchups.push([keys[i], keys[j]]);
-      matchups.push([keys[j], keys[i]]); // reverse for home/away
+  // N-owner: double round-robin built with the circle method, so games come
+  // in "rounds" where every owner plays before anyone plays twice (odd counts
+  // get one bye per round-robin). No owner ever waits around while the same
+  // two owners trade rematches.
+  const circle = keys.length % 2 === 0 ? keys.slice() : [...keys, null]; // null = bye
+  const m = circle.length;
+  const homeCount = {};
+  keys.forEach(k => { homeCount[k] = 0; });
+  const leg = []; // one full round-robin, each pair once, homes kept even
+  const rot = circle.slice(1);
+  for (let r = 0; r < m - 1; r++) {
+    const arr = [circle[0], ...rot];
+    for (let i = 0; i < m / 2; i++) {
+      const a = arr[i], b = arr[m - 1 - i];
+      if (a === null || b === null) continue;
+      const home = homeCount[a] <= homeCount[b] ? a : b;
+      const away = home === a ? b : a;
+      homeCount[home]++;
+      leg.push([home, away]);
     }
+    rot.unshift(rot.pop());
   }
-  // Cycle through matchups and stadiums
-  const matchIdx = (gameNum - 1) % matchups.length;
-  const stadIdx = (gameNum - 1) % CONFIG.STADIUMS.length;
-  const stadium = CONFIG.STADIUMS[stadIdx];
-  const [home, away] = matchups[matchIdx];
+  // Second leg flips home/away, so every pair splits hosting duties evenly.
+  const cycleLen = leg.length * 2;
+  const idx = (gameNum - 1) % cycleLen;
+  const cycleNum = Math.floor((gameNum - 1) / cycleLen);
+  let [home, away] = leg[idx % leg.length];
+  if (idx >= leg.length) [home, away] = [away, home];
+  // Stadium rotation shifts by one each cycle, so every matchup eventually
+  // plays at every park (a plain modulo would lock pairs to fixed stadiums
+  // whenever the cycle length divides the stadium count evenly).
+  const stadium = CONFIG.STADIUMS[(idx + cycleNum) % CONFIG.STADIUMS.length];
   return { stadium, home, away };
 }
 
