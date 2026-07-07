@@ -1,4 +1,4 @@
-const CACHE_NAME = 'msb-tracker-v5';
+const CACHE_NAME = 'msb-tracker-v6';
 
 // Install: cache the main app files
 self.addEventListener('install', event => {
@@ -24,15 +24,32 @@ self.addEventListener('activate', event => {
   self.clients.claim();
 });
 
-// Fetch: network-first strategy (try network, fall back to cache).
-// Only handle same-origin GETs — never touch the cross-origin sync backend.
+// Fetch strategy — same-origin GETs only (never touch the cross-origin sync backend):
+//  - /images/ (game art, immutable): cache-first, so the ~400 sprites load
+//    instantly after the first visit instead of re-hitting the network.
+//  - everything else (HTML/JS/manifest): network-first so app updates arrive,
+//    with cache fallback for offline.
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
-  if (new URL(event.request.url).origin !== location.origin) return;
+  const url = new URL(event.request.url);
+  if (url.origin !== location.origin) return;
+
+  if (url.pathname.includes('/images/')) {
+    event.respondWith(
+      caches.match(event.request).then(hit => hit || fetch(event.request).then(response => {
+        if (response.ok) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+        }
+        return response;
+      }))
+    );
+    return;
+  }
+
   event.respondWith(
     fetch(event.request)
       .then(response => {
-        // Cache successful responses
         if (response.ok) {
           const clone = response.clone();
           caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));

@@ -1782,8 +1782,10 @@ const SeasonManager = {
 };
 
 // ========================================================================
-// CLOUD SYNC (Netlify Function + Blobs at /api/sync)
+// CLOUD SYNC (Cloudflare Worker + KV — source in ../mario-baseball-sync/)
 // Last-write-wins snapshots of the whole league (seasons list + all data).
+// NOTE: KV reads are eventually consistent (~60s edge lag) — see the stale-
+// read guard in Sync.init().
 // ========================================================================
 const SYNC_URL = 'https://msb-sync.jsunaldo.workers.dev';
 
@@ -1887,6 +1889,17 @@ const Sync = {
     if (cloud.updatedAt === lastSyncAt) {                                    // cloud unchanged
       if (dirty) await this.push();
       else this.setStatus('synced', this.ago(cloud.updatedAt));
+      return;
+    }
+    // Cloudflare KV is eventually consistent: right after a push, a read can
+    // still return the PREVIOUS snapshot. If the cloud timestamp is OLDER than
+    // what this device last synced, it's a stale read — never pull it (that
+    // would silently roll back whatever was just entered). Keep local state;
+    // push if there are unsynced changes, otherwise the next mutation heals it.
+    // (ISO-8601 UTC timestamps compare correctly as strings.)
+    if (lastSyncAt && cloud.updatedAt < lastSyncAt) {
+      if (dirty) await this.push();
+      else this.setStatus('synced', this.ago(lastSyncAt));
       return;
     }
     // Cloud has data this device hasn't seen
