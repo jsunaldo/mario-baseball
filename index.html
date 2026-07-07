@@ -3203,14 +3203,22 @@ function getNextGameNumber() {
   return Math.max(...State.data.games.map(g => g.gameNumber)) + 1;
 }
 
+// Home/away test that works for BOTH game formats. Legacy games (all of S1,
+// S2 games 1-15) have no `away` field — only `home` — so never test g.away
+// directly: for a game the owner played in, away simply means "not the home team".
+function matchesHomeAway(g, owner, filterHomeAway) {
+  if (filterHomeAway === 'home') return g.home === owner;
+  if (filterHomeAway === 'away') return g.home !== owner;
+  return true;
+}
+
 function getRecord(owner, filterStadium, filterHomeAway) {
   let w = 0, l = 0;
   State.data.games.forEach(g => {
     // Only count games this owner played in
     if (!isInGame(g, owner)) return;
     if (filterStadium && filterStadium !== 'all' && g.stadium !== filterStadium) return;
-    if (filterHomeAway === 'home' && g.home !== owner) return;
-    if (filterHomeAway === 'away' && g.away !== owner) return;
+    if (!matchesHomeAway(g, owner, filterHomeAway)) return;
     if (g.winner === owner) w++;
     else l++;
   });
@@ -3220,8 +3228,7 @@ function getRecord(owner, filterStadium, filterHomeAway) {
 function getStreak(owner, filterStadium, filterHomeAway) {
   let games = [...State.data.games].filter(g => isInGame(g, owner)).sort((a,b) => b.gameNumber - a.gameNumber);
   if (filterStadium && filterStadium !== 'all') games = games.filter(g => g.stadium === filterStadium);
-  if (filterHomeAway === 'home') games = games.filter(g => g.home === owner);
-  if (filterHomeAway === 'away') games = games.filter(g => g.away === owner);
+  games = games.filter(g => matchesHomeAway(g, owner, filterHomeAway));
   let streak = 0;
   let type = null;
   for (const g of games) {
@@ -3237,8 +3244,7 @@ function getLongestStreak(owner, filterStadium, filterHomeAway) {
   let max = 0, current = 0;
   let games = [...State.data.games].filter(g => isInGame(g, owner)).sort((a,b) => a.gameNumber - b.gameNumber);
   if (filterStadium && filterStadium !== 'all') games = games.filter(g => g.stadium === filterStadium);
-  if (filterHomeAway === 'home') games = games.filter(g => g.home === owner);
-  if (filterHomeAway === 'away') games = games.filter(g => g.away === owner);
+  games = games.filter(g => matchesHomeAway(g, owner, filterHomeAway));
   for (const g of games) {
     if (g.winner === owner) { current++; max = Math.max(max, current); }
     else current = 0;
@@ -3251,8 +3257,7 @@ function getTotalRuns(owner, filterStadium, filterHomeAway) {
   State.data.games.forEach(g => {
     if (!isInGame(g, owner)) return;
     if (filterStadium && filterStadium !== 'all' && g.stadium !== filterStadium) return;
-    if (filterHomeAway === 'home' && g.home !== owner) return;
-    if (filterHomeAway === 'away' && g.away !== owner) return;
+    if (!matchesHomeAway(g, owner, filterHomeAway)) return;
     f += getGameScore(g, owner);
     const oppKeys = getOpponentKeys(g, owner);
     oppKeys.forEach(k => { a += getGameScore(g, k); });
@@ -3545,10 +3550,20 @@ function renderSummary() {
     runs[k] = getTotalRuns(k, stadium, homeAway);
   });
 
-  const gp = keys.length > 0 ? records[keys[0]].w + records[keys[0]].l : 0;
-  const totalGp = State.data.games.length;
+  // Each owner's own game count under the current filters — the denominator for
+  // their win% and per-game rates. (Under a home/away filter the owners' counts
+  // differ, so a shared denominator would misstate the second owner's numbers.)
+  const gpOf = k => records[k].w + records[k].l;
+  // A game is one owner's home game and the other's away game, so the home/away
+  // filter never changes how many GAMES exist — only each owner's share of them.
+  const gamesInFilter = State.data.games.filter(g => stadium === 'all' || g.stadium === stadium).length;
+  const regGames = State.data.games.filter(g => g.gameNumber <= CONFIG.TOTAL_GAMES).length;
   const filtered = stadium !== 'all' || homeAway !== 'all';
-  const gpSub = filtered ? `${gp} of ${totalGp} games` : `${(gp/CONFIG.TOTAL_GAMES*100).toFixed(1)}% complete`;
+  const gpSub = filtered
+    ? (homeAway !== 'all'
+        ? `showing ${homeAway} splits`
+        : `${gamesInFilter} of ${State.data.games.length} games`)
+    : `${Math.min(100, regGames / CONFIG.TOTAL_GAMES * 100).toFixed(1)}% complete`;
 
   // Stadium header
   const hdr = document.getElementById('teamStatsHeader');
@@ -3566,9 +3581,10 @@ function renderSummary() {
   keys.forEach(k => {
     const r = records[k];
     const color = getOwnerColor(k);
-    cards.push({ label: CONFIG.OWNERS[k].name + ' Record', value: `${r.w}-${r.l}`, color, sub: gp > 0 ? `${(r.w/gp*100).toFixed(0)}%` : '' });
+    const own = gpOf(k);
+    cards.push({ label: CONFIG.OWNERS[k].name + ' Record', value: `${r.w}-${r.l}`, color, sub: own > 0 ? `${(r.w/own*100).toFixed(0)}%` : '' });
   });
-  cards.push({ label: 'Games Played', value: gp, color: '', sub: gpSub });
+  cards.push({ label: 'Games Played', value: gamesInFilter, color: '', sub: gpSub });
   keys.forEach(k => {
     const color = getOwnerColor(k);
     cards.push({ label: CONFIG.OWNERS[k].name + ' Streak', value: getStreak(k, stadium, homeAway), color, sub: `Best: W${getLongestStreak(k, stadium, homeAway)}` });
@@ -3576,7 +3592,8 @@ function renderSummary() {
   keys.forEach(k => {
     const r = runs[k];
     const color = getOwnerColor(k);
-    cards.push({ label: CONFIG.OWNERS[k].name + ' Runs', value: `${r.f}`, color, sub: `${gp>0?(r.f/gp).toFixed(1):0}/g scored, ${gp>0?(r.a/gp).toFixed(1):0}/g allowed` });
+    const own = gpOf(k);
+    cards.push({ label: CONFIG.OWNERS[k].name + ' Runs', value: `${r.f}`, color, sub: `${own>0?(r.f/own).toFixed(1):0}/g scored, ${own>0?(r.a/own).toFixed(1):0}/g allowed` });
   });
 
   document.getElementById('summaryCards').innerHTML = cards.map(c => `
