@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#1a1a2e">
+<meta name="theme-color" content="#16161a">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="MSB Tracker">
@@ -16,19 +16,20 @@
 html { font-size: 14px; }
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  background: #0f0f1a;
-  color: #e0e0e8;
+  background: #000;
+  color: #f5f5f7;
   min-height: 100vh;
   overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
 }
 input, select, textarea, button { font-family: inherit; font-size: inherit; }
 button { cursor: pointer; }
-a { color: #4ecdc4; text-decoration: none; }
+a { color: #2997ff; text-decoration: none; }
 
 /* ========== HEADER ========== */
 .header {
-  background: linear-gradient(135deg, #1a1a2e 0%, #0f3460 50%, #1a1a2e 100%);
-  border-bottom: 2px solid #e94560;
+  background: #000;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
   padding: 12px 20px;
   display: flex;
   align-items: center;
@@ -45,15 +46,14 @@ a { color: #4ecdc4; text-decoration: none; }
 .header-logo {
   height: 50px;
   object-fit: contain;
-  filter: drop-shadow(0 2px 8px rgba(233,69,96,0.3));
+  filter: drop-shadow(0 2px 10px rgba(0,0,0,0.6));
 }
 .header-season-badge {
-  font-size: 1rem;
-  font-weight: 800;
-  color: #e94560;
-  letter-spacing: 2px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #86868b;
+  letter-spacing: 3px;
   text-transform: uppercase;
-  text-shadow: 0 0 10px rgba(233,69,96,0.4);
 }
 .header-character {
   height: 70px;
@@ -71,19 +71,21 @@ a { color: #4ecdc4; text-decoration: none; }
   justify-content: center;
 }
 .record-badge {
-  padding: 4px 12px;
-  border-radius: 20px;
+  padding: 4px 14px;
+  border-radius: 980px;
   font-weight: 600;
 }
-.record-badge.jason { background: rgba(233,69,96,0.2); color: #e94560; border: 1px solid rgba(233,69,96,0.4); }
-.record-badge.dan { background: rgba(78,205,196,0.2); color: #4ecdc4; border: 1px solid rgba(78,205,196,0.4); }
-.header-meta { font-size: 0.85rem; color: #888; }
+.record-badge.jason { background: rgba(233,69,96,0.16); color: #ff7a8d; }
+.record-badge.dan { background: rgba(78,205,196,0.14); color: #4ecdc4; }
+.header-meta { font-size: 0.85rem; color: #86868b; }
 
 /* ========== TAB BAR ========== */
 .tab-bar {
   display: flex;
-  background: #16213e;
-  border-bottom: 1px solid rgba(255,255,255,0.08);
+  background: rgba(0,0,0,0.72);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 1px solid rgba(255,255,255,0.1);
   overflow-x: auto;
   position: sticky;
   top: 0;
@@ -91,20 +93,21 @@ a { color: #4ecdc4; text-decoration: none; }
 }
 .tab-btn {
   flex: 1;
-  min-width: 120px;
-  padding: 12px 16px;
+  min-width: 104px;
+  padding: 13px 16px;
   background: none;
   border: none;
-  color: #888;
-  font-weight: 600;
-  font-size: 0.9rem;
-  border-bottom: 3px solid transparent;
-  transition: all 0.2s;
+  color: #86868b;
+  font-weight: 500;
+  font-size: 0.88rem;
+  letter-spacing: -0.01em;
+  border-bottom: 2px solid transparent;
+  transition: color 0.2s, border-color 0.2s;
   white-space: nowrap;
 }
-.tab-btn:hover { color: #ccc; background: rgba(255,255,255,0.03); }
-.tab-btn.active { color: #fff; border-bottom-color: #e94560; }
-.tab-btn .tab-icon { margin-right: 6px; }
+.tab-btn:hover { color: #d2d2d7; }
+.tab-btn.active { color: #f5f5f7; border-bottom-color: #2997ff; }
+.tab-btn .tab-icon { display: none; }
 
 /* ========== MAIN CONTENT ========== */
 .main { max-width: 1400px; margin: 0 auto; padding: 20px; }
@@ -113,22 +116,23 @@ a { color: #4ecdc4; text-decoration: none; }
 
 /* ========== CARDS ========== */
 .card {
-  background: #1a1a2e;
+  background: #16161a;
   border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 12px;
-  padding: 20px;
+  border-radius: 18px;
+  padding: 22px;
   margin-bottom: 16px;
 }
 .card-title {
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: #fff;
-  margin-bottom: 12px;
+  font-size: 1.12rem;
+  font-weight: 600;
+  letter-spacing: -0.014em;
+  color: #f5f5f7;
+  margin-bottom: 14px;
   display: flex;
   align-items: center;
   gap: 8px;
 }
-.card-title .icon { font-size: 1.2rem; }
+.card-title .icon { display: none; }
 
 /* ========== SUMMARY CARDS ROW ========== */
 .summary-row {
@@ -138,24 +142,24 @@ a { color: #4ecdc4; text-decoration: none; }
   margin-bottom: 20px;
 }
 .summary-card {
-  background: linear-gradient(135deg, #1a1a2e, #16213e);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 10px;
-  padding: 16px;
+  background: #16161a;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  padding: 18px 16px;
   text-align: center;
 }
-.summary-card .label { font-size: 0.75rem; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
-.summary-card .value { font-size: 1.6rem; font-weight: 700; color: #fff; }
+.summary-card .label { font-size: 0.7rem; color: #86868b; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+.summary-card .value { font-size: 1.8rem; font-weight: 700; letter-spacing: -0.02em; color: #f5f5f7; }
 .summary-card .value.jason-color { color: #e94560; }
 .summary-card .value.dan-color { color: #4ecdc4; }
-.summary-card .sub { font-size: 0.8rem; color: #666; margin-top: 2px; }
+.summary-card .sub { font-size: 0.8rem; color: #6e6e73; margin-top: 2px; }
 
 /* ========== TABLES ========== */
-.table-wrap { overflow-x: auto; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); }
+.table-wrap { overflow-x: auto; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); }
 table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
 thead th {
-  background: #16213e;
-  color: #aaa;
+  background: #1c1c20;
+  color: #86868b;
   font-weight: 600;
   text-transform: uppercase;
   font-size: 0.7rem;
@@ -198,22 +202,23 @@ tbody tr.dan-win { background: rgba(78,205,196,0.05); }
 }
 .form-group label {
   font-size: 0.75rem;
-  color: #888;
+  color: #86868b;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   font-weight: 600;
 }
 .form-group input, .form-group select, .form-group textarea {
-  background: #0f0f1a;
-  border: 1px solid rgba(255,255,255,0.15);
-  border-radius: 6px;
-  color: #e0e0e8;
-  padding: 8px 10px;
-  transition: border-color 0.2s;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  color: #f5f5f7;
+  padding: 8px 12px;
+  transition: border-color 0.2s, background 0.2s;
 }
 .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
   outline: none;
-  border-color: #e94560;
+  border-color: #2997ff;
+  background: rgba(255,255,255,0.08);
 }
 .form-group textarea { resize: vertical; min-height: 60px; }
 input[type="number"] { width: 70px; text-align: center; }
@@ -222,21 +227,22 @@ input[type="number"] { width: 70px; text-align: center; }
 .btn {
   padding: 8px 20px;
   border: none;
-  border-radius: 6px;
-  font-weight: 600;
+  border-radius: 980px;
+  font-weight: 500;
   font-size: 0.85rem;
-  transition: all 0.2s;
+  letter-spacing: -0.01em;
+  transition: background 0.2s, opacity 0.2s;
 }
-.btn-primary { background: #e94560; color: #fff; }
-.btn-primary:hover { background: #d63b54; }
-.btn-secondary { background: rgba(255,255,255,0.1); color: #ccc; }
-.btn-secondary:hover { background: rgba(255,255,255,0.15); }
-.btn-success { background: #4ecdc4; color: #0f0f1a; }
-.btn-success:hover { background: #3dbdb4; }
-.btn-warning { background: #f59e0b; color: #0f0f1a; }
-.btn-warning:hover { background: #e08e0a; }
-.btn-danger { background: #ef4444; color: #fff; }
-.btn-danger:hover { background: #dc2626; }
+.btn-primary { background: #0071e3; color: #fff; }
+.btn-primary:hover { background: #0077ed; }
+.btn-secondary { background: rgba(255,255,255,0.1); color: #f5f5f7; }
+.btn-secondary:hover { background: rgba(255,255,255,0.16); }
+.btn-success { background: #30d158; color: #000; }
+.btn-success:hover { background: #28c14e; }
+.btn-warning { background: #ff9f0a; color: #000; }
+.btn-warning:hover { background: #f29500; }
+.btn-danger { background: #ff453a; color: #fff; }
+.btn-danger:hover { background: #f03e33; }
 .btn-sm { padding: 5px 12px; font-size: 0.78rem; }
 .btn-lg { padding: 12px 28px; font-size: 1rem; }
 .btn-group { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
@@ -245,23 +251,23 @@ input[type="number"] { width: 70px; text-align: center; }
 .sub-tabs { display: flex; gap: 4px; margin-bottom: 16px; }
 .sub-tab {
   padding: 6px 16px;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 20px;
-  color: #888;
-  font-weight: 600;
-  font-size: 0.8rem;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid transparent;
+  border-radius: 980px;
+  color: #86868b;
+  font-weight: 500;
+  font-size: 0.82rem;
   cursor: pointer;
   transition: all 0.2s;
 }
-.sub-tab:hover { color: #ccc; }
-.sub-tab.active { background: #e94560; color: #fff; border-color: #e94560; }
+.sub-tab:hover { color: #d2d2d7; }
+.sub-tab.active { background: #0071e3; color: #fff; border-color: transparent; }
 
 /* ========== INJURY CARDS ========== */
 .injury-card {
-  background: #1a1a2e;
-  border: 1px solid rgba(245,158,11,0.3);
-  border-radius: 10px;
+  background: #16161a;
+  border: 1px solid rgba(255,159,10,0.3);
+  border-radius: 14px;
   padding: 14px 16px;
   margin-bottom: 10px;
   display: flex;
@@ -277,7 +283,7 @@ input[type="number"] { width: 70px; text-align: center; }
 }
 .owner-badge.jason { background: rgba(233,69,96,0.2); color: #e94560; }
 .owner-badge.dan { background: rgba(78,205,196,0.2); color: #4ecdc4; }
-.injury-card .injury-details { font-size: 0.82rem; color: #888; }
+.injury-card .injury-details { font-size: 0.82rem; color: #86868b; }
 .injury-progress {
   flex: 1;
   min-width: 100px;
@@ -291,11 +297,11 @@ input[type="number"] { width: 70px; text-align: center; }
 }
 .progress-bar .fill {
   height: 100%;
-  background: #f59e0b;
+  background: #ff9f0a;
   border-radius: 4px;
   transition: width 0.3s;
 }
-.progress-label { font-size: 0.7rem; color: #888; text-align: center; margin-top: 2px; }
+.progress-label { font-size: 0.7rem; color: #86868b; text-align: center; margin-top: 2px; }
 .injury-card.healed { opacity: 0.5; border-color: rgba(255,255,255,0.1); }
 
 /* ========== ROLLER ========== */
@@ -308,8 +314,8 @@ input[type="number"] { width: 70px; text-align: center; }
   margin: 16px 0;
   display: none;
 }
-.roller-result.no-injury { background: rgba(78,205,196,0.1); border: 1px solid rgba(78,205,196,0.3); color: #4ecdc4; }
-.roller-result.yes-injury { background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.3); color: #f59e0b; }
+.roller-result.no-injury { background: rgba(48,209,88,0.1); border: 1px solid rgba(48,209,88,0.3); color: #30d158; }
+.roller-result.yes-injury { background: rgba(255,159,10,0.1); border: 1px solid rgba(255,159,10,0.3); color: #ff9f0a; }
 .roller-result.show { display: block; animation: slideDown 0.3s ease; }
 @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 
@@ -336,9 +342,9 @@ input[type="number"] { width: 70px; text-align: center; }
   position: relative;
 }
 .player-chip:hover { border-color: rgba(255,255,255,0.3); }
-.player-chip.selected { border-color: #4ecdc4; background: rgba(78,205,196,0.1); color: #fff; }
+.player-chip.selected { border-color: #2997ff; background: rgba(41,151,255,0.12); color: #fff; }
 .player-chip.disabled { opacity: 0.35; cursor: not-allowed; pointer-events: none; }
-.player-chip.random-pick { border-color: #f59e0b; background: rgba(245,158,11,0.1); animation: popIn 0.4s ease; }
+.player-chip.random-pick { border-color: #ff9f0a; background: rgba(255,159,10,0.1); animation: popIn 0.4s ease; }
 .player-chip.sp-selected { border-color: #e94560; background: rgba(233,69,96,0.2); box-shadow: 0 0 8px rgba(233,69,96,0.4); }
 .player-chip .sp-badge { display:none; position:absolute; top:-8px; left:50%; transform:translateX(-50%); font-size:0.6rem; padding:1px 6px; border-radius:8px; font-weight:700; background:#e94560; color:#fff; white-space:nowrap; }
 .player-chip.sp-selected .sp-badge { display:block; }
@@ -352,15 +358,15 @@ input[type="number"] { width: 70px; text-align: center; }
   border-radius: 8px;
   font-weight: 700;
 }
-.badge-injured { background: #ef4444; color: #fff; }
-.badge-no-pitch { background: #f59e0b; color: #0f0f1a; }
+.badge-injured { background: #ff453a; color: #fff; }
+.badge-no-pitch { background: #ff9f0a; color: #0a0a0c; }
 @keyframes popIn { 0% { transform: scale(0.8); opacity: 0; } 50% { transform: scale(1.05); } 100% { transform: scale(1); opacity: 1; } }
 
 /* ========== PLAYER STATS ENTRY ========== */
 .stats-table input[type="number"] { width: 55px; padding: 4px 6px; font-size: 0.8rem; }
 .stats-table select { padding: 4px 6px; font-size: 0.8rem; }
 .stats-table td { padding: 6px 8px; }
-.stats-table tr[draggable]:hover { background: rgba(233,69,96,0.1); }
+.stats-table tr[draggable]:hover { background: rgba(255,255,255,0.06); }
 .stats-table tr[draggable] { transition: opacity 0.2s; }
 .stats-team-header {
   padding: 8px 12px;
@@ -379,10 +385,10 @@ input[type="number"] { width: 70px; text-align: center; }
   flex-wrap: wrap;
   align-items: flex-end;
   margin-bottom: 16px;
-  padding: 12px;
-  background: rgba(255,255,255,0.02);
-  border-radius: 8px;
-  border: 1px solid rgba(255,255,255,0.06);
+  padding: 12px 14px;
+  background: rgba(255,255,255,0.03);
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.08);
 }
 .filter-bar .form-group { min-width: 120px; flex: 0; }
 
@@ -398,16 +404,19 @@ input[type="number"] { width: 70px; text-align: center; }
   display: none;
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.6);
+  background: rgba(0,0,0,0.5);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
   z-index: 200;
   align-items: center;
   justify-content: center;
 }
 .modal-overlay.show { display: flex; }
 .modal {
-  background: #1a1a2e;
-  border: 1px solid rgba(255,255,255,0.15);
-  border-radius: 12px;
+  background: #1c1c1e;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 20px;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.6);
   padding: 24px;
   max-width: 500px;
   width: 90%;
@@ -417,13 +426,13 @@ input[type="number"] { width: 70px; text-align: center; }
 }
 .modal-title { font-size: 1.1rem; font-weight: 700; color: #fff; margin-bottom: 16px; }
 .modal.modal-wide { max-width: 900px; }
-.modal-close { position:absolute; top:12px; right:16px; background:none; border:none; color:#888; font-size:1.4rem; cursor:pointer; }
+.modal-close { position:absolute; top:12px; right:16px; background:none; border:none; color:#86868b; font-size:1.4rem; cursor:pointer; }
 .modal-close:hover { color:#fff; }
 .game-detail-header { text-align:center; margin-bottom:16px; }
 .game-detail-header .score-line { font-size:1.5rem; font-weight:700; margin:8px 0; }
 .game-detail-header .score-line .jason-color { color:#e94560; }
 .game-detail-header .score-line .dan-color { color:#4ecdc4; }
-.game-detail-header .meta-line { font-size:0.85rem; color:#888; }
+.game-detail-header .meta-line { font-size:0.85rem; color:#86868b; }
 .game-detail-lineups { display:flex; gap:20px; flex-wrap:wrap; }
 .game-detail-lineups > div { flex:1; min-width:280px; }
 .lineup-player { display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:6px; margin-bottom:4px; background:rgba(255,255,255,0.03); flex-wrap:wrap; }
@@ -432,20 +441,24 @@ input[type="number"] { width: 70px; text-align: center; }
 .lineup-player .lp-role { font-size:0.7rem; padding:1px 5px; border-radius:3px; font-weight:700; margin-left:4px; }
 .lineup-player .lp-role.sp { background:rgba(233,69,96,0.3); color:#e94560; }
 .lineup-player .lp-role.rp { background:rgba(78,205,196,0.3); color:#4ecdc4; }
-.lineup-player .lp-stats { font-size:0.78rem; color:#999; margin-left:auto; white-space:nowrap; }
+.lineup-player .lp-stats { font-size:0.78rem; color:#86868b; margin-left:auto; white-space:nowrap; }
 .lineup-player .lp-pitch-line { width:100%; font-size:0.75rem; color:#b8860b; padding-left:36px; margin-top:-2px; }
 #gameLogBody tr { cursor: pointer; }
-.game-detail-notes { margin-top:12px; padding:10px; background:rgba(255,255,255,0.04); border-radius:6px; font-size:0.85rem; color:#aaa; font-style:italic; }
+.game-detail-notes { margin-top:12px; padding:10px; background:rgba(255,255,255,0.04); border-radius:6px; font-size:0.85rem; color:#a1a1a6; font-style:italic; }
 
 /* ========== TOAST ========== */
 .toast {
   position: fixed;
   bottom: 20px;
   right: 20px;
-  background: #4ecdc4;
-  color: #0f0f1a;
+  background: rgba(40,40,44,0.92);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: #f5f5f7;
   padding: 12px 20px;
-  border-radius: 8px;
+  border-radius: 980px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.45);
   font-weight: 600;
   font-size: 0.85rem;
   z-index: 300;
@@ -454,7 +467,7 @@ input[type="number"] { width: 70px; text-align: center; }
   transition: all 0.3s;
 }
 .toast.show { transform: translateY(0); opacity: 1; }
-.toast.error { background: #ef4444; color: #fff; }
+.toast.error { background: rgba(255,69,58,0.95); color: #fff; }
 
 /* ========== PLAYER & STADIUM IMAGES ========== */
 .player-img { width: 28px; height: 28px; vertical-align: middle; margin-right: 6px; image-rendering: pixelated; }
@@ -502,10 +515,10 @@ input[type="number"] { width: 70px; text-align: center; }
 .draft-summary-owner { font-size: 1.1rem; font-weight: 700; color: #fff; }
 .draft-summary-jason .draft-summary-owner { color: #e94560; }
 .draft-summary-dan .draft-summary-owner { color: #4ecdc4; }
-.draft-summary-detail { font-size: 0.82rem; color: #999; margin-top: 2px; }
+.draft-summary-detail { font-size: 0.82rem; color: #86868b; margin-top: 2px; }
 
 .draft-table { width: 100%; }
-.draft-table th { text-align: left; padding: 8px 10px; font-size: 0.78rem; color: #888; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #333; }
+.draft-table th { text-align: left; padding: 8px 10px; font-size: 0.78rem; color: #86868b; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid rgba(255,255,255,0.12); }
 .draft-table td { padding: 7px 10px; border-bottom: 1px solid rgba(255,255,255,0.04); vertical-align: middle; }
 .draft-round-break td { border-top: 2px solid rgba(255,255,255,0.1); }
 
@@ -515,7 +528,7 @@ tr.draft-jason:hover { background: rgba(233,69,96,0.1); }
 tr.draft-dan:hover { background: rgba(78,205,196,0.1); }
 
 .draft-pick-num { font-weight: 700; font-size: 1rem; color: #fff; width: 40px; text-align: center; }
-.draft-round { font-size: 0.75rem; color: #666; font-weight: 600; width: 45px; }
+.draft-round { font-size: 0.75rem; color: #6e6e73; font-weight: 600; width: 45px; }
 .draft-owner-badge {
   display: inline-block; padding: 2px 10px; border-radius: 12px;
   font-size: 0.78rem; font-weight: 600; min-width: 56px; text-align: center;
@@ -525,16 +538,16 @@ tr.draft-dan:hover { background: rgba(78,205,196,0.1); }
 
 .draft-mugshot-cell { width: 36px; padding-right: 0 !important; }
 .draft-mugshot { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; vertical-align: middle; }
-.draft-player-name { font-weight: 500; color: #e0e0e8; }
+.draft-player-name { font-weight: 500; color: #f5f5f7; }
 
 /* First overall pick highlight */
-.draft-table tbody tr:first-child { background: rgba(233,69,96,0.12); }
-.draft-table tbody tr:first-child .draft-pick-num { color: #f59e0b; font-size: 1.1rem; }
+.draft-table tbody tr:first-child { background: rgba(247,183,49,0.08); }
+.draft-table tbody tr:first-child .draft-pick-num { color: #ff9f0a; font-size: 1.1rem; }
 
 /* Rules tab */
 .rules-header { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }
 .rules-art { height: 64px; object-fit: contain; filter: drop-shadow(0 2px 8px rgba(0,0,0,0.4)); }
-.rules-section { font-size: 0.92rem; color: #ccc; line-height: 1.7; }
+.rules-section { font-size: 0.92rem; color: #d2d2d7; line-height: 1.7; }
 .rules-section p { margin: 0 0 10px; }
 .rules-section ul { margin: 4px 0 0 0; padding-left: 20px; }
 .rules-section li { margin-bottom: 6px; }
@@ -547,7 +560,7 @@ tr.draft-dan:hover { background: rgba(78,205,196,0.1); }
   font-size: 0.68rem; font-weight: 600; margin-left: 6px; vertical-align: middle;
 }
 .draft-mini-stats {
-  font-size: 0.78rem; color: #999; font-family: monospace; white-space: nowrap;
+  font-size: 0.78rem; color: #86868b; font-family: monospace; white-space: nowrap;
 }
 .draft-stats-cell { width: 80px; text-align: center; }
 
@@ -556,9 +569,9 @@ tr.draft-dan:hover { background: rgba(78,205,196,0.1); }
   display: flex; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; align-items: flex-end;
 }
 .profile-filter-group { display: flex; flex-direction: column; gap: 3px; }
-.profile-filter-group label { font-size: 0.72rem; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
+.profile-filter-group label { font-size: 0.72rem; color: #86868b; text-transform: uppercase; letter-spacing: 0.5px; }
 .profile-filter-group select {
-  padding: 6px 10px; background: #1a1a2e; color: #e0e0e8; border: 1px solid #333; border-radius: 6px;
+  padding: 6px 10px; background: #16161a; color: #f5f5f7; border: 1px solid rgba(255,255,255,0.12); border-radius: 6px;
   font-size: 0.85rem;
 }
 .profile-type-legend {
@@ -574,18 +587,18 @@ tr.draft-dan:hover { background: rgba(78,205,196,0.1); }
   display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px;
 }
 .profile-card {
-  background: #1a1a2e; border: 1px solid rgba(255,255,255,0.06); border-radius: 10px;
+  background: #16161a; border: 1px solid rgba(255,255,255,0.06); border-radius: 14px;
   padding: 14px; transition: border-color 0.2s, transform 0.2s;
 }
 .profile-card:hover { border-color: rgba(255,255,255,0.15); transform: translateY(-1px); }
 .prof-header { display: flex; gap: 12px; align-items: center; margin-bottom: 10px; }
 .prof-mugshot-wrap { position: relative; flex-shrink: 0; }
-.prof-mugshot { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2px solid #333; }
+.prof-mugshot { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.12); }
 .prof-captain {
   position: absolute; bottom: -2px; right: -2px; width: 18px; height: 18px;
-  background: #f59e0b; color: #000; border-radius: 50%; font-size: 0.6rem;
+  background: #ff9f0a; color: #000; border-radius: 50%; font-size: 0.6rem;
   font-weight: 800; display: flex; align-items: center; justify-content: center;
-  border: 2px solid #1a1a2e;
+  border: 2px solid #16161a;
 }
 .prof-info { flex: 1; min-width: 0; }
 .prof-name { font-weight: 600; font-size: 0.95rem; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -600,23 +613,23 @@ tr.draft-dan:hover { background: rgba(78,205,196,0.1); }
   display: inline-block; padding: 1px 8px; border-radius: 10px;
   font-size: 0.7rem; font-weight: 600;
 }
-.prof-pick { font-size: 0.72rem; color: #666; margin-top: 2px; }
+.prof-pick { font-size: 0.72rem; color: #6e6e73; margin-top: 2px; }
 
 /* Stat bars */
 .prof-stats { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
 .prof-stat { display: flex; align-items: center; gap: 6px; }
-.prof-stat-label { font-size: 0.68rem; color: #888; width: 34px; text-align: right; font-weight: 600; letter-spacing: 0.3px; }
+.prof-stat-label { font-size: 0.68rem; color: #86868b; width: 34px; text-align: right; font-weight: 600; letter-spacing: 0.3px; }
 .prof-stat-bar { flex: 1; height: 6px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden; }
 .prof-stat-fill { height: 100%; border-radius: 3px; transition: width 0.4s ease; }
-.prof-stat-val { font-size: 0.75rem; color: #ccc; width: 16px; text-align: right; font-weight: 600; }
+.prof-stat-val { font-size: 0.75rem; color: #d2d2d7; width: 16px; text-align: right; font-weight: 600; }
 
 /* Footer */
 .prof-footer { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; }
-.prof-hands { font-size: 0.72rem; color: #888; display: flex; gap: 10px; }
+.prof-hands { font-size: 0.72rem; color: #86868b; display: flex; gap: 10px; }
 .prof-abilities { display: flex; gap: 4px; flex-wrap: wrap; }
 .prof-ability {
   font-size: 0.65rem; padding: 1px 7px; border-radius: 8px;
-  background: rgba(78,205,196,0.1); color: #4ecdc4; border: 1px solid rgba(78,205,196,0.2);
+  background: rgba(255,255,255,0.06); color: #d2d2d7; border: 1px solid rgba(255,255,255,0.1);
   white-space: nowrap;
 }
 
@@ -626,38 +639,38 @@ tr.draft-dan:hover { background: rgba(78,205,196,0.1); }
 }
 .patch-toggle input { display: none; }
 .patch-toggle-slider {
-  position: relative; width: 36px; height: 20px; background: #333; border-radius: 10px;
+  position: relative; width: 36px; height: 20px; background: rgba(255,255,255,0.12); border-radius: 10px;
   transition: background 0.3s;
 }
 .patch-toggle-slider::after {
   content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px;
-  background: #666; border-radius: 50%; transition: transform 0.3s, background 0.3s;
+  background: #6e6e73; border-radius: 50%; transition: transform 0.3s, background 0.3s;
 }
-.patch-toggle input:checked + .patch-toggle-slider { background: rgba(34,197,94,0.3); }
-.patch-toggle input:checked + .patch-toggle-slider::after { transform: translateX(16px); background: #22c55e; }
-.patch-toggle-label { font-size: 0.78rem; color: #888; font-weight: 600; }
-.patch-toggle input:checked ~ .patch-toggle-label { color: #22c55e; }
+.patch-toggle input:checked + .patch-toggle-slider { background: rgba(48,209,88,0.3); }
+.patch-toggle input:checked + .patch-toggle-slider::after { transform: translateX(16px); background: #30d158; }
+.patch-toggle-label { font-size: 0.78rem; color: #86868b; font-weight: 600; }
+.patch-toggle input:checked ~ .patch-toggle-label { color: #30d158; }
 
 /* Buffed card */
-.profile-card-buffed { border-color: rgba(34,197,94,0.25); position: relative; }
-.profile-card-buffed:hover { border-color: rgba(34,197,94,0.4); }
+.profile-card-buffed { border-color: rgba(48,209,88,0.25); position: relative; }
+.profile-card-buffed:hover { border-color: rgba(48,209,88,0.4); }
 .prof-patch-badge {
   position: absolute; top: 8px; right: 10px;
   font-size: 0.6rem; font-weight: 700; padding: 2px 7px; border-radius: 6px;
-  background: rgba(34,197,94,0.15); color: #22c55e; border: 1px solid rgba(34,197,94,0.3);
+  background: rgba(48,209,88,0.15); color: #30d158; border: 1px solid rgba(48,209,88,0.3);
   letter-spacing: 0.5px;
 }
-.prof-stat-buffed { color: #22c55e !important; font-size: 0.7rem !important; white-space: nowrap; }
-.prof-ability-new { background: rgba(34,197,94,0.15) !important; color: #22c55e !important; border-color: rgba(34,197,94,0.3) !important; }
+.prof-stat-buffed { color: #30d158 !important; font-size: 0.7rem !important; white-space: nowrap; }
+.prof-ability-new { background: rgba(48,209,88,0.15) !important; color: #30d158 !important; border-color: rgba(48,209,88,0.3) !important; }
 .prof-patch-notes {
-  margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(34,197,94,0.15);
+  margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(48,209,88,0.15);
 }
 .prof-patch-note {
-  font-size: 0.72rem; color: #22c55e; padding: 1px 0; opacity: 0.85;
+  font-size: 0.72rem; color: #30d158; padding: 1px 0; opacity: 0.85;
 }
 
 /* Draft patch icon */
-.draft-patch-icon { font-size: 0.7rem; color: #22c55e; vertical-align: middle; }
+.draft-patch-icon { font-size: 0.7rem; color: #30d158; vertical-align: middle; }
 
 @media (max-width: 600px) {
   .profile-grid { grid-template-columns: 1fr; }
@@ -667,15 +680,15 @@ tr.draft-dan:hover { background: rgba(78,205,196,0.1); }
 
 /* ========== SCREENSHOT SCANNER ========== */
 .scan-panel {
-  border: 1px dashed rgba(78,205,196,0.4);
-  border-radius: 10px;
-  padding: 12px 14px;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 14px;
+  padding: 14px 16px;
   margin-bottom: 14px;
-  background: rgba(78,205,196,0.04);
+  background: rgba(255,255,255,0.03);
 }
 .scan-panel-head { display: flex; flex-direction: column; gap: 2px; margin-bottom: 10px; }
-.scan-panel-head strong { color: #4ecdc4; }
-.scan-hint { font-size: 0.78rem; color: #888; }
+.scan-panel-head strong { color: #2997ff; }
+.scan-hint { font-size: 0.78rem; color: #86868b; }
 .scan-controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .scan-status { font-size: 0.8rem; color: #f7b731; }
 .scan-thumbs { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
@@ -683,30 +696,30 @@ tr.draft-dan:hover { background: rgba(78,205,196,0.1); }
 .scan-thumb img { height: 60px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.15); display: block; }
 .scan-thumb button {
   position: absolute; top: -6px; right: -6px; width: 18px; height: 18px; border-radius: 50%;
-  border: none; background: #e94560; color: #fff; font-size: 0.65rem; line-height: 1; cursor: pointer; padding: 0;
+  border: none; background: #ff453a; color: #fff; font-size: 0.65rem; line-height: 1; cursor: pointer; padding: 0;
 }
 /* cells auto-filled by a scan (cleared when the user edits them) */
-.stats-table input.scan-filled { background: rgba(78,205,196,0.16); border-color: rgba(78,205,196,0.5); }
-.stats-table input.scan-warn { background: rgba(233,69,96,0.14); border-color: rgba(233,69,96,0.55); }
+.stats-table input.scan-filled { background: rgba(41,151,255,0.16); border-color: rgba(41,151,255,0.55); }
+.stats-table input.scan-warn { background: rgba(255,69,58,0.16); border-color: rgba(255,69,58,0.55); }
 .scan-warnings {
   margin-top: 10px; padding: 8px 12px; border-radius: 8px; font-size: 0.8rem;
-  background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.3); color: #f0b45f;
+  background: rgba(255,159,10,0.08); border: 1px solid rgba(255,159,10,0.3); color: #f0b45f;
 }
 .scan-warnings div { padding: 1px 0; }
 
 /* ========== SYNC STATUS ========== */
-.sync-status { font-size: 0.72rem; color: #666; cursor: pointer; margin-top: 2px; user-select: none; }
-.sync-status:hover { color: #aaa; }
-.sync-status.synced { color: #4ecdc4; }
+.sync-status { font-size: 0.72rem; color: #6e6e73; cursor: pointer; margin-top: 2px; user-select: none; }
+.sync-status:hover { color: #a1a1a6; }
+.sync-status.synced { color: #30d158; }
 .sync-status.syncing { color: #f7b731; }
-.sync-status.offline { color: #888; }
+.sync-status.offline { color: #86868b; }
 .sync-status.conflict { color: #e94560; }
 
 /* ========== WORLD SERIES PANEL ========== */
 .ws-card {
-  background: linear-gradient(135deg, rgba(247,183,49,0.08), rgba(233,69,96,0.06));
-  border: 1px solid rgba(247,183,49,0.35);
-  border-radius: 12px;
+  background: rgba(247,183,49,0.06);
+  border: 1px solid rgba(247,183,49,0.28);
+  border-radius: 18px;
   padding: 18px 20px;
   margin-bottom: 16px;
 }
@@ -730,13 +743,13 @@ tr.draft-dan:hover { background: rgba(78,205,196,0.1); }
 /* ========== TRENDS ========== */
 .trend-svg-wrap { overflow-x: auto; }
 .trend-legend { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 8px; font-size: 0.78rem; }
-.trend-legend span { display: inline-flex; align-items: center; gap: 5px; color: #ccc; }
+.trend-legend span { display: inline-flex; align-items: center; gap: 5px; color: #d2d2d7; }
 .trend-legend i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
 .stadium-bar-row { display: flex; align-items: center; gap: 8px; margin: 3px 0; }
-.stadium-bar-label { width: 110px; font-size: 0.78rem; color: #ccc; text-align: right; flex-shrink: 0; }
+.stadium-bar-label { width: 110px; font-size: 0.78rem; color: #d2d2d7; text-align: right; flex-shrink: 0; }
 .stadium-bar-track { flex: 1; background: rgba(255,255,255,0.06); border-radius: 4px; height: 16px; position: relative; }
 .stadium-bar-fill { height: 100%; border-radius: 4px; min-width: 2px; }
-.stadium-bar-val { font-size: 0.72rem; color: #aaa; width: 84px; flex-shrink: 0; }
+.stadium-bar-val { font-size: 0.72rem; color: #a1a1a6; width: 84px; flex-shrink: 0; }
 .stadium-group { margin-bottom: 14px; }
 .stadium-group-title { display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 0.88rem; color: #fff; margin-bottom: 4px; }
 
@@ -759,23 +772,23 @@ tr.draft-dan:hover { background: rgba(78,205,196,0.1); }
 }
 .season-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; }
 .season-card {
-  background: linear-gradient(135deg, #16213e 0%, #1a1a2e 100%);
-  border: 2px solid rgba(233,69,96,0.3);
-  border-radius: 16px;
-  padding: 24px;
+  background: #16161a;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 20px;
+  padding: 26px;
   cursor: pointer;
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
 }
-.season-card:hover { border-color: #e94560; transform: translateY(-4px); box-shadow: 0 8px 32px rgba(233,69,96,0.2); }
-.season-card-title { font-size: 1.3rem; font-weight: 700; color: #fff; margin-bottom: 8px; }
-.season-card-owners { font-size: 0.85rem; color: #888; margin-bottom: 12px; }
-.season-card-record { font-size: 0.9rem; color: #4ecdc4; font-weight: 600; }
-.season-card-meta { font-size: 0.75rem; color: #555; margin-top: 8px; }
-.season-card-active { position: absolute; top: 12px; right: 12px; background: #e94560; color: #fff; font-size: 0.65rem; padding: 2px 8px; border-radius: 10px; font-weight: 700; text-transform: uppercase; }
+.season-card:hover { border-color: rgba(255,255,255,0.22); transform: translateY(-3px); box-shadow: 0 14px 40px rgba(0,0,0,0.5); }
+.season-card-title { font-size: 1.35rem; font-weight: 700; letter-spacing: -0.02em; color: #f5f5f7; margin-bottom: 8px; }
+.season-card-owners { font-size: 0.85rem; color: #86868b; margin-bottom: 12px; }
+.season-card-record { font-size: 0.9rem; color: #2997ff; font-weight: 600; }
+.season-card-meta { font-size: 0.75rem; color: #6e6e73; margin-top: 8px; }
+.season-card-active { position: absolute; top: 12px; right: 12px; background: #0071e3; color: #fff; font-size: 0.65rem; padding: 2px 8px; border-radius: 10px; font-weight: 700; text-transform: uppercase; }
 .season-card-new {
-  border: 2px dashed rgba(255,255,255,0.15);
+  border: 1px dashed rgba(255,255,255,0.2);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -783,75 +796,75 @@ tr.draft-dan:hover { background: rgba(78,205,196,0.1); }
   min-height: 160px;
   background: transparent;
 }
-.season-card-new:hover { border-color: #4ecdc4; }
-.season-card-new .plus { font-size: 2.5rem; color: #4ecdc4; margin-bottom: 8px; }
-.season-card-new .label { color: #888; font-size: 0.9rem; }
-.season-card-delete { position: absolute; top: 8px; right: 8px; background: none; border: none; color: #555; cursor: pointer; font-size: 1rem; padding: 4px 8px; border-radius: 4px; }
-.season-card-delete:hover { color: #e94560; background: rgba(233,69,96,0.15); }
-.back-to-seasons { background: none; border: none; color: #888; cursor: pointer; font-size: 0.8rem; padding: 4px 12px; border-radius: 4px; }
-.back-to-seasons:hover { color: #e94560; }
+.season-card-new:hover { border-color: rgba(255,255,255,0.4); }
+.season-card-new .plus { font-size: 2.5rem; color: #2997ff; margin-bottom: 8px; }
+.season-card-new .label { color: #86868b; font-size: 0.9rem; }
+.season-card-delete { position: absolute; top: 8px; right: 8px; background: none; border: none; color: #6e6e73; cursor: pointer; font-size: 1rem; padding: 4px 8px; border-radius: 4px; }
+.season-card-delete:hover { color: #ff453a; background: rgba(255,69,58,0.12); }
+.back-to-seasons { background: none; border: none; color: #86868b; cursor: pointer; font-size: 0.8rem; padding: 4px 12px; border-radius: 4px; }
+.back-to-seasons:hover { color: #f5f5f7; }
 /* New Season Wizard */
-.ns-input { padding: 8px; background: #1a1a2e; border: 1px solid #333; color: #fff; border-radius: 6px; font-size: 0.9rem; }
-.ns-input:focus { border-color: #e94560; outline: none; }
-#nsOwnersArea .ns-owner-block { background: rgba(255,255,255,0.03); border: 1px solid #333; border-radius: 8px; padding: 12px; margin-bottom: 12px; }
-#nsOwnersArea .ns-owner-block label { display: block; font-size: 0.8rem; color: #888; margin-bottom: 4px; }
+.ns-input { padding: 8px; background: #16161a; border: 1px solid rgba(255,255,255,0.12); color: #fff; border-radius: 6px; font-size: 0.9rem; }
+.ns-input:focus { border-color: #2997ff; outline: none; }
+#nsOwnersArea .ns-owner-block { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; padding: 12px; margin-bottom: 12px; }
+#nsOwnersArea .ns-owner-block label { display: block; font-size: 0.8rem; color: #86868b; margin-bottom: 4px; }
 #nsOwnersArea .ns-owner-block input {
-  width: 100%; padding: 6px 8px; background: #1a1a2e; border: 1px solid #333; color: #fff; border-radius: 6px; font-size: 0.85rem;
+  width: 100%; padding: 6px 8px; background: #16161a; border: 1px solid rgba(255,255,255,0.12); color: #fff; border-radius: 6px; font-size: 0.85rem;
 }
 .ns-progress { display: flex; gap: 6px; align-items: center; }
-.ns-progress-dot { width: 10px; height: 10px; border-radius: 50%; background: #333; transition: all 0.3s; }
-.ns-progress-dot.active { background: #e94560; transform: scale(1.3); }
-.ns-progress-dot.done { background: #4ecdc4; }
-.ns-progress-label { font-size: 0.75rem; color: #888; margin-left: 8px; }
+.ns-progress-dot { width: 10px; height: 10px; border-radius: 50%; background: rgba(255,255,255,0.12); transition: all 0.3s; }
+.ns-progress-dot.active { background: #0071e3; transform: scale(1.3); }
+.ns-progress-dot.done { background: #30d158; }
+.ns-progress-label { font-size: 0.75rem; color: #86868b; margin-left: 8px; }
 .draft-status { text-align: center; padding: 12px; margin-bottom: 12px; border-radius: 8px; font-weight: 700; font-size: 1.1rem; }
-.draft-board-header { font-size: 0.85rem; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid #333; }
+.draft-board-header { font-size: 0.85rem; font-weight: 700; color: #86868b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.12); }
 .ns-draft-board { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 6px; max-height: 500px; overflow-y: auto; }
 .ns-draft-card {
-  background: #16213e; border: 1px solid #333; border-radius: 8px; padding: 8px; cursor: pointer;
+  background: #1f1f23; border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; padding: 8px; cursor: pointer;
   transition: all 0.2s; text-align: center; font-size: 0.8rem;
 }
-.ns-draft-card:hover { border-color: #e94560; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(233,69,96,0.2); }
+.ns-draft-card:hover { border-color: rgba(255,255,255,0.3); transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.45); }
 .ns-draft-card.drafted { opacity: 0.25; pointer-events: none; border-color: transparent; }
 .ns-draft-card .player-name { font-weight: 700; color: #fff; margin: 4px 0 2px; font-size: 0.85rem; }
 .ns-draft-card .player-type { font-size: 0.65rem; padding: 1px 6px; border-radius: 8px; display: inline-block; margin-bottom: 4px; }
-.ns-draft-card .player-stats { font-size: 0.7rem; color: #888; }
-.ns-roster-panel { background: rgba(255,255,255,0.03); border: 1px solid #333; border-radius: 8px; padding: 8px; margin-bottom: 8px; }
-.ns-roster-panel.active-drafter { border-color: #e94560; box-shadow: 0 0 12px rgba(233,69,96,0.2); }
+.ns-draft-card .player-stats { font-size: 0.7rem; color: #86868b; }
+.ns-roster-panel { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; padding: 8px; margin-bottom: 8px; }
+.ns-roster-panel.active-drafter { border-color: #2997ff; box-shadow: 0 0 0 1px rgba(41,151,255,0.35); }
 .ns-roster-panel .roster-title { font-weight: 700; font-size: 0.85rem; margin-bottom: 6px; }
-.ns-roster-panel .roster-player { font-size: 0.75rem; color: #ccc; padding: 2px 0; display: flex; align-items: center; gap: 4px; }
-.ns-roster-panel .roster-player .pick-num { color: #666; font-size: 0.65rem; min-width: 20px; }
-.ns-review-section { background: rgba(255,255,255,0.03); border: 1px solid #333; border-radius: 8px; padding: 12px; margin-bottom: 12px; }
-.ns-review-section h4 { color: #e94560; margin: 0 0 8px; font-size: 0.9rem; }
-.ns-review-section .review-row { font-size: 0.85rem; color: #ccc; padding: 3px 0; }
-.ns-review-section .review-label { color: #888; min-width: 140px; display: inline-block; }
+.ns-roster-panel .roster-player { font-size: 0.75rem; color: #d2d2d7; padding: 2px 0; display: flex; align-items: center; gap: 4px; }
+.ns-roster-panel .roster-player .pick-num { color: #6e6e73; font-size: 0.65rem; min-width: 20px; }
+.ns-review-section { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; padding: 12px; margin-bottom: 12px; }
+.ns-review-section h4 { color: #f5f5f7; margin: 0 0 8px; font-size: 0.9rem; }
+.ns-review-section .review-row { font-size: 0.85rem; color: #d2d2d7; padding: 3px 0; }
+.ns-review-section .review-label { color: #86868b; min-width: 140px; display: inline-block; }
 .ns-stadium-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 8px; }
 .ns-stadium-card {
-  background: #16213e; border: 2px solid #333; border-radius: 10px; padding: 10px; text-align: center;
+  background: #1f1f23; border: 2px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 10px; text-align: center;
   cursor: pointer; transition: all 0.2s; user-select: none;
 }
 .ns-stadium-card img { width: 100%; max-width: 110px; border-radius: 6px; margin-bottom: 6px; display: block; margin-left: auto; margin-right: auto; }
-.ns-stadium-card .stadium-label { font-size: 0.8rem; font-weight: 600; color: #ccc; }
-.ns-stadium-card.selected { border-color: #4ecdc4; background: rgba(78,205,196,0.1); }
-.ns-stadium-card.selected .stadium-label { color: #4ecdc4; }
+.ns-stadium-card .stadium-label { font-size: 0.8rem; font-weight: 600; color: #d2d2d7; }
+.ns-stadium-card.selected { border-color: #2997ff; background: rgba(41,151,255,0.1); }
+.ns-stadium-card.selected .stadium-label { color: #2997ff; }
 .ns-stadium-card:not(.selected) { opacity: 0.5; }
-.ns-stadium-card:hover { border-color: #e94560; opacity: 1; }
+.ns-stadium-card:hover { border-color: rgba(255,255,255,0.35); opacity: 1; }
 .ns-draft-order-item {
   display: flex; align-items: center; gap: 12px; padding: 12px 16px;
-  background: #16213e; border: 1px solid #333; border-radius: 8px; margin-bottom: 6px;
+  background: #1f1f23; border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; margin-bottom: 6px;
   cursor: grab; transition: all 0.2s; user-select: none;
 }
-.ns-draft-order-item:hover { border-color: #e94560; }
-.ns-draft-order-num { font-size: 1.4rem; font-weight: 800; color: #e94560; min-width: 30px; text-align: center; }
+.ns-draft-order-item:hover { border-color: rgba(255,255,255,0.3); }
+.ns-draft-order-num { font-size: 1.4rem; font-weight: 800; color: #2997ff; min-width: 30px; text-align: center; }
 .ns-draft-order-name { font-size: 1.1rem; font-weight: 600; color: #fff; flex: 1; }
-.ns-draft-order-label { font-size: 0.75rem; color: #666; }
+.ns-draft-order-label { font-size: 0.75rem; color: #6e6e73; }
 .ns-draft-order-arrows { display: flex; flex-direction: column; gap: 2px; }
 .ns-draft-order-arrows button {
-  background: rgba(255,255,255,0.05); border: 1px solid #333; color: #888; cursor: pointer;
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); color: #86868b; cursor: pointer;
   padding: 0 6px; border-radius: 4px; font-size: 0.7rem; line-height: 1.2;
 }
-.ns-draft-order-arrows button:hover:not(:disabled) { color: #e94560; border-color: #e94560; }
+.ns-draft-order-arrows button:hover:not(:disabled) { color: #f5f5f7; border-color: rgba(255,255,255,0.4); }
 .ns-draft-order-arrows button:disabled { opacity: 0.2; cursor: default; }
-.ns-draft-card .patch-notes { font-size: 0.65rem; color: #22c55e; margin-top: 3px; text-align: left; padding: 3px 4px; background: rgba(34,197,94,0.08); border-radius: 4px; }
+.ns-draft-card .patch-notes { font-size: 0.65rem; color: #30d158; margin-top: 3px; text-align: left; padding: 3px 4px; background: rgba(48,209,88,0.08); border-radius: 4px; }
 .ns-draft-card .patch-note { padding: 1px 0; }
 </style>
 </head>
@@ -865,7 +878,7 @@ tr.draft-dan:hover { background: rgba(78,205,196,0.1); }
       <img src="images/Extra Sprites/200px-Bowser_Superstar_Base_Sprite.png" alt="Bowser" class="landing-art landing-art-right" onerror="this.style.display='none'">
       <img src="images/Game/250px-MSBingamelogo.png" alt="Mario Superstar Baseball" class="landing-logo" onerror="this.style.display='none'">
       <h1 style="font-size:1.6rem;color:#e94560;margin:0;">Season Tracker</h1>
-      <p style="color:#888;font-size:0.9rem;margin-top:4px;">Select a season or create a new one &bull; <a href="league/" style="color:#4ecdc4;">About the league</a></p>
+      <p style="color:#86868b;font-size:0.9rem;margin-top:4px;">Select a season or create a new one &bull; <a href="league/" style="color:#4ecdc4;">About the league</a></p>
       <div class="sync-status" id="syncStatusLanding" onclick="Sync.init()" title="Click to sync now"></div>
     </div>
     <div class="landing-sprite-row">
@@ -902,14 +915,14 @@ tr.draft-dan:hover { background: rgba(78,205,196,0.1); }
 
 <!-- ========== TAB BAR ========== -->
 <nav class="tab-bar">
-  <button class="tab-btn active" data-tab="gamelog"><span class="tab-icon">&#9918;</span> Game Log</button>
-  <button class="tab-btn" data-tab="trends"><span class="tab-icon">&#128200;</span> Trends</button>
-  <button class="tab-btn" data-tab="teamstats"><span class="tab-icon">&#128202;</span> Team Stats</button>
-  <button class="tab-btn" data-tab="stats"><span class="tab-icon">&#128200;</span> Player Stats</button>
-  <button class="tab-btn" data-tab="injuries"><span class="tab-icon">&#129657;</span> Injuries</button>
-  <button class="tab-btn" data-tab="players"><span class="tab-icon">&#127918;</span> Players</button>
-  <button class="tab-btn" data-tab="draft"><span class="tab-icon">&#127915;</span> Draft</button>
-  <button class="tab-btn" data-tab="rules"><span class="tab-icon">&#128214;</span> Rules</button>
+  <button class="tab-btn active" data-tab="gamelog">Game Log</button>
+  <button class="tab-btn" data-tab="trends">Trends</button>
+  <button class="tab-btn" data-tab="teamstats">Team Stats</button>
+  <button class="tab-btn" data-tab="stats">Player Stats</button>
+  <button class="tab-btn" data-tab="injuries">Injuries</button>
+  <button class="tab-btn" data-tab="players">Players</button>
+  <button class="tab-btn" data-tab="draft">Draft</button>
+  <button class="tab-btn" data-tab="rules">Rules</button>
 </nav>
 
 <!-- ========== MAIN ========== -->
@@ -953,7 +966,7 @@ tr.draft-dan:hover { background: rgba(78,205,196,0.1); }
         <div class="btn-group" style="margin-bottom:12px;">
           <button class="btn btn-warning btn-lg" id="btnRandomize">&#127922; Randomize Final 3 Spots</button>
         </div>
-        <div id="spInstruction" style="display:none; font-size:0.85rem; color:#ccc; margin-bottom:12px; text-align:center;">
+        <div id="spInstruction" style="display:none; font-size:0.85rem; color:#d2d2d7; margin-bottom:12px; text-align:center;">
           Click a player to select them as <strong style="color:#e94560">Starting Pitcher</strong>
         </div>
         <div style="display:flex;gap:20px;flex-wrap:wrap;" id="finalLineupsContainer"></div>
@@ -1024,10 +1037,10 @@ tr.draft-dan:hover { background: rgba(78,205,196,0.1); }
 
   <!-- ====== TAB: TRENDS ====== -->
   <div class="tab-content" id="tab-trends">
-    <div id="trendsEmpty" style="display:none;color:#666;padding:24px;text-align:center;">No games played yet — trends appear once the season starts.</div>
+    <div id="trendsEmpty" style="display:none;color:#6e6e73;padding:24px;text-align:center;">No games played yet — trends appear once the season starts.</div>
     <div class="card" id="trendStripCard">
       <div class="card-title"><span class="icon">&#127937;</span> Season Timeline</div>
-      <div style="font-size:0.78rem;color:#888;margin-bottom:8px;">Every game, colored by winner. Click a bar for details. Gold-topped bars are World Series games.</div>
+      <div style="font-size:0.78rem;color:#86868b;margin-bottom:8px;">Every game, colored by winner. Click a bar for details. Gold-topped bars are World Series games.</div>
       <div id="trendStrip"></div>
     </div>
     <div class="card" id="trendRunDiffCard">
@@ -1039,7 +1052,7 @@ tr.draft-dan:hover { background: rgba(78,205,196,0.1); }
       <div id="trendMvp"></div>
     </div>
     <div class="card" id="trendAvgCard">
-      <div class="card-title"><span class="icon">&#9918;</span> Batting Average Race <span style="font-size:0.72rem;color:#888;font-weight:400;">(min 10 AB, top 6 by at-bats)</span></div>
+      <div class="card-title"><span class="icon">&#9918;</span> Batting Average Race <span style="font-size:0.72rem;color:#86868b;font-weight:400;">(min 10 AB, top 6 by at-bats)</span></div>
       <div id="trendAvg"></div>
     </div>
     <div class="card" id="trendStadiumCard">
@@ -1164,7 +1177,7 @@ tr.draft-dan:hover { background: rgba(78,205,196,0.1); }
     <!-- Enter Stats -->
     <div class="subtab-content" id="subtab-enterStats" style="display:none">
       <div class="card">
-        <div class="card-title"><span class="icon">&#9999;&#65039;</span> Enter Player Stats</div>
+        <div class="card-title"><span class="icon">&#86868b9;&#65039;</span> Enter Player Stats</div>
         <div class="form-row">
           <div class="form-group">
             <label>Select Game</label>
@@ -1197,7 +1210,7 @@ tr.draft-dan:hover { background: rgba(78,205,196,0.1); }
     <div class="card">
       <div class="card-title"><span class="icon">&#129657;</span> Active Injuries</div>
       <div id="activeInjuries"></div>
-      <div id="noInjuries" style="color:#666;font-size:0.9rem;padding:8px;">No active injuries</div>
+      <div id="noInjuries" style="color:#6e6e73;font-size:0.9rem;padding:8px;">No active injuries</div>
     </div>
 
     <div class="card">
@@ -1300,10 +1313,10 @@ tr.draft-dan:hover { background: rgba(78,205,196,0.1); }
         </div>
       </div>
       <div class="profile-type-legend">
-        <span class="type-legend-item" style="--tc:#ef4444">Power</span>
-        <span class="type-legend-item" style="--tc:#22c55e">Speed</span>
+        <span class="type-legend-item" style="--tc:#ff453a">Power</span>
+        <span class="type-legend-item" style="--tc:#30d158">Speed</span>
         <span class="type-legend-item" style="--tc:#3b82f6">Technique</span>
-        <span class="type-legend-item" style="--tc:#f59e0b">Balance</span>
+        <span class="type-legend-item" style="--tc:#ff9f0a">Balance</span>
       </div>
       <div class="profile-grid" id="profileGrid"></div>
     </div>
@@ -1313,7 +1326,7 @@ tr.draft-dan:hover { background: rgba(78,205,196,0.1); }
   <div class="tab-content" id="tab-draft">
     <div class="card">
       <div class="card-title"><span class="icon">&#127915;</span> <span id="draftBoardTitle">Draft Board</span></div>
-      <div style="color:#999;font-size:0.85rem;margin-bottom:12px;" id="draftDateLine">Draft Date: November 23, 2024</div>
+      <div style="color:#86868b;font-size:0.85rem;margin-bottom:12px;" id="draftDateLine">Draft Date: November 23, 2024</div>
       <div class="draft-summary" id="draftSummary"></div>
       <div class="table-wrap">
         <table class="draft-table">
@@ -1593,7 +1606,7 @@ tr.draft-dan:hover { background: rgba(78,205,196,0.1); }
           </div>
         </div>
         <div class="form-group" style="margin-top:12px;">
-          <label>Stadiums <span style="color:#666;font-size:0.75rem;">(click to toggle)</span></label>
+          <label>Stadiums <span style="color:#6e6e73;font-size:0.75rem;">(click to toggle)</span></label>
           <div class="ns-stadium-grid" id="nsStadiumGrid"></div>
         </div>
         <div class="btn-group" style="margin-top:16px;">
@@ -1607,13 +1620,13 @@ tr.draft-dan:hover { background: rgba(78,205,196,0.1); }
     <div class="ns-step" id="nsStep4" style="display:none">
       <div class="card">
         <div class="card-title"><span class="icon">&#127918;</span> Step 4: Draft Order</div>
-        <p style="color:#888;font-size:0.85rem;margin-bottom:12px;">Set the snake draft picking order. Drag to reorder, or use the randomize button.</p>
+        <p style="color:#86868b;font-size:0.85rem;margin-bottom:12px;">Set the snake draft picking order. Drag to reorder, or use the randomize button.</p>
         <div class="btn-group" style="margin-bottom:12px;">
           <button class="btn btn-warning btn-sm" onclick="nsRandomizeDraftOrder()">&#127922; Randomize Order</button>
         </div>
         <div id="nsDraftOrderList"></div>
-        <div style="margin-top:12px;padding:10px;background:rgba(255,255,255,0.03);border-radius:8px;font-size:0.8rem;color:#888;">
-          <strong style="color:#ccc;">Snake Draft Pattern:</strong>
+        <div style="margin-top:12px;padding:10px;background:rgba(255,255,255,0.03);border-radius:8px;font-size:0.8rem;color:#86868b;">
+          <strong style="color:#d2d2d7;">Snake Draft Pattern:</strong>
           <span id="nsDraftOrderPreview"></span>
         </div>
         <div class="btn-group" style="margin-top:16px;">
@@ -2200,7 +2213,7 @@ const PLAYER_PROFILES = {
   'Goomba':         { type:'Balance',   bat:4, pitch:3, field:4, run:5, batHand:'R', throwHand:'R', abilities:['Ball Dash'], captain:false }
 };
 
-const TYPE_COLORS = { Power:'#ef4444', Speed:'#22c55e', Technique:'#3b82f6', Balance:'#f59e0b' };
+const TYPE_COLORS = { Power:'#ff453a', Speed:'#30d158', Technique:'#3b82f6', Balance:'#ff9f0a' };
 const TYPE_ICONS = { Power:'\uD83D\uDCAA', Speed:'\u26A1', Technique:'\uD83C\uDFAF', Balance:'\u2696\uFE0F' };
 
 // ========================================================================
@@ -2297,11 +2310,11 @@ function renderPlayerProfiles() {
 
   function statBar(val, label, baseVal, max=10) {
     const pct = (val/max)*100;
-    const color = val >= 7 ? '#22c55e' : val >= 5 ? '#f59e0b' : val >= 3 ? '#f97316' : '#ef4444';
+    const color = val >= 7 ? '#30d158' : val >= 5 ? '#ff9f0a' : val >= 3 ? '#f97316' : '#ff453a';
     const buffed = baseVal !== undefined && val > baseVal;
     return `<div class="prof-stat">
       <span class="prof-stat-label">${label}</span>
-      <div class="prof-stat-bar"><div class="prof-stat-fill" style="width:${pct}%;background:${buffed ? '#22c55e' : color}${buffed ? ';box-shadow:0 0 6px rgba(34,197,94,0.5)' : ''}"></div></div>
+      <div class="prof-stat-bar"><div class="prof-stat-fill" style="width:${pct}%;background:${buffed ? '#30d158' : color}${buffed ? ';box-shadow:0 0 6px rgba(48,209,88,0.5)' : ''}"></div></div>
       <span class="prof-stat-val${buffed ? ' prof-stat-buffed' : ''}">${buffed ? baseVal+'\u2191'+val : val}</span>
     </div>`;
   }
@@ -2321,7 +2334,7 @@ function renderPlayerProfiles() {
       <div class="prof-header">
         <div class="prof-mugshot-wrap">${pImg(p.name, 'prof-mugshot')}${p.captain ? '<span class="prof-captain">C</span>' : ''}</div>
         <div class="prof-info">
-          <div class="prof-name">${p.name}${injured ? ' <span style="color:#ef4444;font-size:0.75rem">&#129657; Injured</span>' : ''}</div>
+          <div class="prof-name">${p.name}${injured ? ' <span style="color:#ff453a;font-size:0.75rem">&#129657; Injured</span>' : ''}</div>
           <div class="prof-meta">
             <span class="prof-owner-badge prof-owner-${ownerClass}">${ownerName}</span>
             <span class="prof-type-badge" style="background:${tc}20;color:${tc};border:1px solid ${tc}40">${ti} ${p.type}</span>
@@ -2349,7 +2362,7 @@ function renderPlayerProfiles() {
     </div>`;
   });
 
-  grid.innerHTML = html || '<div style="color:#666;padding:12px;">No players match the filters.</div>';
+  grid.innerHTML = html || '<div style="color:#6e6e73;padding:12px;">No players match the filters.</div>';
 }
 
 function renderDraft() {
@@ -2362,7 +2375,7 @@ function renderDraft() {
   const dateLine = document.getElementById('draftDateLine');
   if (dateLine) dateLine.style.display = CONFIG.SEASON_ID === 'S2' ? '' : 'none';
   if (!draftOrder.length) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#666;padding:24px;">No draft recorded for this season.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#6e6e73;padding:24px;">No draft recorded for this season.</td></tr>';
     const summaryEl = document.getElementById('draftSummary');
     if (summaryEl) summaryEl.innerHTML = '';
     return;
@@ -2379,11 +2392,11 @@ function renderDraft() {
     const ownerColor = getOwnerColor(d.owner);
     const base = PLAYER_PROFILES[d.player];
     const prof = base ? getPatchedPlayer(d.player, base) : null;
-    const tc = prof ? TYPE_COLORS[prof.type] : '#666';
+    const tc = prof ? TYPE_COLORS[prof.type] : '#6e6e73';
     const typeBadge = prof ? `<span class="draft-type-badge" style="background:${tc}20;color:${tc}">${prof.type}</span>` : '';
     const hasPatch = prof && prof.patched;
     const miniStats = prof ? `<span class="draft-mini-stats">
-      <span title="Bat">${prof.bat}</span>/<span title="Pitch">${prof.pitch}</span>/<span title="Field">${prof.field}</span>/<span title="Run"${hasPatch && prof.run !== base.run ? ' style="color:#22c55e;font-weight:700"' : ''}>${prof.run}</span>
+      <span title="Bat">${prof.bat}</span>/<span title="Pitch">${prof.pitch}</span>/<span title="Field">${prof.field}</span>/<span title="Run"${hasPatch && prof.run !== base.run ? ' style="color:#30d158;font-weight:700"' : ''}>${prof.run}</span>
     </span>` : '';
     const patchIcon = hasPatch ? ' <span class="draft-patch-icon" title="V1.1 Buffed">\u2B06</span>' : '';
     html += `<tr style="border-left:3px solid ${ownerColor}"${isNewRound && i > 0 ? ' class="draft-round-break"' : ''}>
@@ -2502,7 +2515,7 @@ function renderWorldSeries() {
     // Season in progress: offer the early-ending escape hatch once games exist
     const played = State.data.games.filter(g => g.gameNumber <= CONFIG.TOTAL_GAMES).length;
     area.innerHTML = played ? `<div style="text-align:right;margin-bottom:10px;">
-      <button class="btn btn-sm btn-secondary" style="font-size:0.72rem;color:#999;" onclick="endRegularSeason()"
+      <button class="btn btn-sm btn-secondary" style="font-size:0.72rem;color:#86868b;" onclick="endRegularSeason()"
         title="All seeds clinched? Cut the season short and go straight to the World Series">&#127937; End Regular Season Early&hellip;</button>
     </div>` : '';
     return;
@@ -2521,7 +2534,7 @@ function renderWorldSeries() {
       <div class="ws-name" style="color:${getOwnerColor(k)}">${CONFIG.OWNERS[k].name}</div>
       <div class="ws-dots">${Array.from({length: needed}, (_, i) =>
         `<span class="ws-dot${i < wins[k] ? ' won' : ''}"${i < wins[k] ? ` style="background:${getOwnerColor(k)}"` : ''}></span>`).join('')}</div>
-    </div>`).join('<div style="font-size:1.4rem;color:#666;font-weight:800;">vs</div>')}
+    </div>`).join('<div style="font-size:1.4rem;color:#6e6e73;font-weight:800;">vs</div>')}
   </div>`;
 
   const chips = wsGames.length ? `<div class="ws-games">${wsGames.map(g => {
@@ -2550,7 +2563,7 @@ function renderWorldSeries() {
     recs.sort((a, b) => b.w - a.w);
     const hfa = recs[0].k;
     body = `<div class="ws-status-line">Regular season complete — set up the World Series!</div>
-      <div style="text-align:center;font-size:0.85rem;color:#ccc;margin-bottom:6px;">
+      <div style="text-align:center;font-size:0.85rem;color:#d2d2d7;margin-bottom:6px;">
         Best of ${CONFIG.WS_GAMES || 7} &bull; <strong style="color:${getOwnerColor(hfa)}">${CONFIG.OWNERS[hfa].name}</strong> (${recs[0].w}-${recs[0].l}) has home field for Games 1, 2, 6 &amp; 7
       </div>
       <div class="ws-setup">
@@ -2562,13 +2575,13 @@ function renderWorldSeries() {
       </div>`;
   } else {
     body = `<div class="ws-status-line">Regular season complete!</div>
-      <div style="text-align:center;font-size:0.85rem;color:#888;">Playoffs for ${keys.length}-owner leagues aren't supported yet.</div>`;
+      <div style="text-align:center;font-size:0.85rem;color:#86868b;">Playoffs for ${keys.length}-owner leagues aren't supported yet.</div>`;
   }
 
   // Early-ended seasons can be resumed until the first WS game is played
   const meta = SeasonManager.get(CONFIG.SEASON_ID);
   if (!wsGames.length && meta && meta.originalTotalGames) {
-    body += `<div style="text-align:center;margin-top:10px;font-size:0.75rem;color:#888;">
+    body += `<div style="text-align:center;margin-top:10px;font-size:0.75rem;color:#86868b;">
       Regular season ended early after ${CONFIG.TOTAL_GAMES} of ${meta.originalTotalGames} scheduled games.
       <button class="btn btn-sm btn-secondary" style="font-size:0.72rem;margin-left:6px;" onclick="resumeRegularSeason()">&#8617; Resume Regular Season</button>
     </div>`;
@@ -3326,9 +3339,9 @@ function showToast(msg, isError) {
 }
 
 // ======== OWNER HELPERS (N-owner support) ========
-const OWNER_COLORS = ['#e94560','#4ecdc4','#f59e0b','#8b5cf6'];
-const OWNER_BG_COLORS = ['rgba(233,69,96,0.2)','rgba(78,205,196,0.2)','rgba(245,158,11,0.2)','rgba(139,92,246,0.2)'];
-const OWNER_BORDER_COLORS = ['rgba(233,69,96,0.4)','rgba(78,205,196,0.4)','rgba(245,158,11,0.4)','rgba(139,92,246,0.4)'];
+const OWNER_COLORS = ['#e94560','#4ecdc4','#ff9f0a','#8b5cf6'];
+const OWNER_BG_COLORS = ['rgba(233,69,96,0.2)','rgba(78,205,196,0.2)','rgba(255,159,10,0.2)','rgba(139,92,246,0.2)'];
+const OWNER_BORDER_COLORS = ['rgba(233,69,96,0.4)','rgba(78,205,196,0.4)','rgba(255,159,10,0.4)','rgba(139,92,246,0.4)'];
 
 function getOwnerKeys() { return Object.keys(CONFIG.OWNERS); }
 
@@ -3697,7 +3710,7 @@ function renderGameLog() {
       ${keys.map(k => { const inGame = isInGame(g, k); const sp = getGameSP(g, k); return `<td><div class="player-cell">${inGame && sp ? pImg(sp,'player-img-sm') + sp : '-'}</div></td>`; }).join('')}
       <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;" title="${escapeHtml(g.notes||'')}">${escapeHtml(g.notes||'')}</td>
     </tr>`;
-  }).join('') || `<tr><td colspan="${7 + keys.length * 2}" style="text-align:center;color:#888;padding:28px;">No games played yet — click <strong style="color:#e94560">+ Add Game Result</strong> above to record your first game. Click any row to see game details.</td></tr>`;
+  }).join('') || `<tr><td colspan="${7 + keys.length * 2}" style="text-align:center;color:#86868b;padding:28px;">No games played yet — click <strong style="color:#e94560">+ Add Game Result</strong> above to record your first game. Click any row to see game details.</td></tr>`;
 
   // Update sort indicators
   document.querySelectorAll('#gameLogTable thead th').forEach(th => {
@@ -3731,7 +3744,7 @@ function showGameDetail(gameNum) {
   const awayKeys = keys.filter(k => k !== game.home);
   const awayName = awayKeys.map(k => CONFIG.OWNERS[k]?.name || k).join(', ');
 
-  const scoreLine = keys.map(k => `<span style="color:${getOwnerColor(k)}">${CONFIG.OWNERS[k]?.name || k} ${getGameScore(game, k)}</span>`).join('<span style="color:#666;margin:0 10px;">-</span>');
+  const scoreLine = keys.map(k => `<span style="color:${getOwnerColor(k)}">${CONFIG.OWNERS[k]?.name || k} ${getGameScore(game, k)}</span>`).join('<span style="color:#6e6e73;margin:0 10px;">-</span>');
 
   let html = `<div class="game-detail-header">
     <div class="score-line">${scoreLine}</div>
@@ -3808,7 +3821,7 @@ function showGameDetail(gameNum) {
           </div>`;
         }).join('');
       }
-      html += `<div style="font-size:0.8rem;color:#888;text-align:center;margin-bottom:8px;">Planned Lineup (no game stats yet)</div>
+      html += `<div style="font-size:0.8rem;color:#86868b;text-align:center;margin-bottom:8px;">Planned Lineup (no game stats yet)</div>
       <div class="game-detail-lineups">
         ${keys.map(k => {
           const lp = getLineupPlayers(savedLineup, k);
@@ -3820,7 +3833,7 @@ function showGameDetail(gameNum) {
         }).join('')}
       </div>`;
     } else {
-      html += '<div style="text-align:center;color:#666;padding:20px;">No lineup recorded for this game.</div>';
+      html += '<div style="text-align:center;color:#6e6e73;padding:20px;">No lineup recorded for this game.</div>';
     }
   }
 
@@ -3828,7 +3841,7 @@ function showGameDetail(gameNum) {
   const hasLineup = !!game.playerStats || !!State.data.lineups[game.gameNumber];
   const hasStats = !!game.playerStats;
   const actions = [];
-  actions.push(`<button class="btn btn-secondary" style="font-size:0.8rem;" onclick="closeGameDetail();editGameResult(${game.gameNumber})">&#9998; Edit Result</button>`);
+  actions.push(`<button class="btn btn-secondary" style="font-size:0.8rem;" onclick="closeGameDetail();editGameResult(${game.gameNumber})">&#86868b8; Edit Result</button>`);
   if (hasStats) {
     actions.push(`<button class="btn btn-secondary" style="font-size:0.8rem;" onclick="goToStatsEntry(${game.gameNumber})">Edit Player Stats</button>`);
   }
@@ -3857,7 +3870,7 @@ function showGameDetail(gameNum) {
   // Show injury roll status
   const alreadyRolled = !!State.data.injuryRolls[game.gameNumber];
   if (alreadyRolled && !gameInjuries.length) {
-    html += `<div style="margin-top:12px;font-size:0.82rem;color:#666;">&#10003; Injury roll: No injury</div>`;
+    html += `<div style="margin-top:12px;font-size:0.82rem;color:#6e6e73;">&#10003; Injury roll: No injury</div>`;
   }
 
   if (game.notes) {
@@ -4012,7 +4025,7 @@ function renderSchedule() {
     const isNext = s.num === next;
     const status = hasLineup
       ? `<span style="color:#4ecdc4;font-weight:600;cursor:pointer" onclick="showScheduledLineup(${s.num})">&#9989; Lineup Set</span>`
-      : (isNext ? '<span style="color:#f7b731;font-weight:600">Next Up</span>' : '<span style="color:#666">Upcoming</span>');
+      : (isNext ? '<span style="color:#f7b731;font-weight:600">Next Up</span>' : '<span style="color:#6e6e73">Upcoming</span>');
     const action = hasLineup
       ? `<button class="btn btn-sm btn-secondary" style="font-size:0.7rem;padding:2px 8px;" onclick="event.stopPropagation();openSetLineup(${s.num})">Edit Lineup</button>`
       : `<button class="btn btn-sm btn-primary" style="font-size:0.7rem;padding:2px 8px;" onclick="openSetLineup(${s.num})">Set Lineup</button>`;
@@ -4125,7 +4138,7 @@ function populateResultsStep() {
   const isEdit = wizardState.mode === 'editGame';
   const resultsArea = document.getElementById('wizStep5Content');
   resultsArea.innerHTML = `
-    <div style="margin-bottom:12px; font-size:0.85rem; color:#888;">${isEdit ? `Editing Game ${gn} — update the result and save.` : 'Lineup set. Now enter the game result.'}</div>
+    <div style="margin-bottom:12px; font-size:0.85rem; color:#86868b;">${isEdit ? `Editing Game ${gn} — update the result and save.` : 'Lineup set. Now enter the game result.'}</div>
     <div id="wizLineupSummary" style="margin-bottom:16px;"></div>
     <div class="form-row">
       <div class="form-group">
@@ -4291,7 +4304,7 @@ function performInjuryRoll(gameNum) {
       <div style="text-align:center;padding:30px 0;">
         <div style="font-size:3rem;margin-bottom:12px;">&#127922;</div>
         <div style="font-size:1.2rem;font-weight:700;color:#4ade80;margin-bottom:8px;">No Injury!</div>
-        <div style="font-size:0.9rem;color:#888;">All players stay healthy after Game ${gameNum}.</div>
+        <div style="font-size:0.9rem;color:#86868b;">All players stay healthy after Game ${gameNum}.</div>
         <button class="btn btn-primary" style="margin-top:16px;" onclick="closeWizard()">Done</button>
       </div>`;
     return;
@@ -4363,7 +4376,7 @@ function renderBattingLeaderboard() {
       <td class="text-center">${s.specials}</td>
       <td class="text-center">${s.bigPlays}</td>
     </tr>
-  `).join('') || '<tr><td colspan="11" style="text-align:center;color:#666;padding:20px">No stats entered yet. Use "Enter Stats" to add player data for each game.</td></tr>';
+  `).join('') || '<tr><td colspan="11" style="text-align:center;color:#6e6e73;padding:20px">No stats entered yet. Use "Enter Stats" to add player data for each game.</td></tr>';
 
   document.querySelectorAll('#battingTable thead th').forEach(th => {
     th.classList.remove('sorted-asc','sorted-desc');
@@ -4400,7 +4413,7 @@ function renderPitchingLeaderboard() {
       <td class="text-center" style="font-weight:700">${s.era === Infinity ? '-' : s.era.toFixed(2)}</td>
       <td class="text-center">${s.pitchSpecials}</td>
     </tr>
-  `).join('') || '<tr><td colspan="11" style="text-align:center;color:#666;padding:20px">No pitching stats entered yet.</td></tr>';
+  `).join('') || '<tr><td colspan="11" style="text-align:center;color:#6e6e73;padding:20px">No pitching stats entered yet.</td></tr>';
 
   document.querySelectorAll('#pitchingTable thead th').forEach(th => {
     th.classList.remove('sorted-asc','sorted-desc');
@@ -4644,7 +4657,7 @@ function renderStatsEntry(gameNum) {
     return `<tr data-key="${key}" data-sp="${isSP}" data-owner="${owner}" data-player="${player}" draggable="true"
         ondragstart="statsRowDragStart(event)" ondragover="statsRowDragOver(event)" ondrop="statsRowDrop(event)" ondragend="statsRowDragEnd(event)"
         style="cursor:grab;">
-      <td><div class="player-cell"><span style="color:#666;font-size:0.7rem;margin-right:4px;cursor:grab;" title="Drag to reorder">☰</span>${pImg(player,'player-img-sm')}${player}${isSP ? ' <span style="color:#e94560;font-size:0.75rem;font-weight:700;">SP</span>' : ''}</div></td>
+      <td><div class="player-cell"><span style="color:#6e6e73;font-size:0.7rem;margin-right:4px;cursor:grab;" title="Drag to reorder">☰</span>${pImg(player,'player-img-sm')}${player}${isSP ? ' <span style="color:#e94560;font-size:0.75rem;font-weight:700;">SP</span>' : ''}</div></td>
       <td><input type="number" class="s-ab" min="0" value="${ps.ab||0}"></td>
       <td><input type="number" class="s-hits" min="0" value="${ps.hits||0}"></td>
       <td><input type="number" class="s-rbi" min="0" value="${ps.rbi||0}"></td>
@@ -4792,7 +4805,7 @@ function renderInjuries() {
       <td class="text-center">${inj.injuredGame}</td>
       <td class="text-center">${inj.gamesOut}</td>
       <td class="text-center">${inj.returnGame}</td>
-      <td>${isActive ? '<span style="color:#f59e0b">Active</span>' : '<span style="color:#4ecdc4">Healed</span>'}</td>
+      <td>${isActive ? '<span style="color:#ff9f0a">Active</span>' : '<span style="color:#4ecdc4">Healed</span>'}</td>
       <td><button class="btn btn-sm btn-danger" onclick="removeInjury(${idx})">Remove</button></td>
     </tr>`;
   }).join('');
@@ -4952,7 +4965,7 @@ function renderLineupCard(lineup, showDelete) {
     : (lineup.players ? Object.keys(lineup.players) : getOwnerKeys());
   return `<div style="border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:12px;margin:8px 0;background:rgba(255,255,255,0.02);">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-      <strong>Game ${lineup.gameNumber}</strong> <span style="color:#888;font-size:0.82rem;">${sImg(sched.stadium)} ${sched.stadium}</span> ${deleteBtn}
+      <strong>Game ${lineup.gameNumber}</strong> <span style="color:#86868b;font-size:0.82rem;">${sImg(sched.stadium)} ${sched.stadium}</span> ${deleteBtn}
     </div>
     <div style="display:flex;gap:16px;flex-wrap:wrap;">
       ${keys.map(k => `<div style="flex:1;min-width:200px;">
@@ -5016,7 +5029,7 @@ function renderOwnerPickStep(ownerKey) {
   const step2 = document.getElementById('wizStep2');
   step2.innerHTML = `
     <div class="stats-team-header" style="background:${getOwnerBgColor(ownerKey)};color:${color}">${ownerName}'s Lineup - Pick 6 Players</div>
-    <div style="font-size:0.82rem;color:#888;margin-bottom:8px;">Selected: <span id="ownerPickCount">0</span>/6 (Owner ${ownerIdx+1} of ${keys.length})</div>
+    <div style="font-size:0.82rem;color:#86868b;margin-bottom:8px;">Selected: <span id="ownerPickCount">0</span>/6 (Owner ${ownerIdx+1} of ${keys.length})</div>
     <div class="player-grid" id="ownerPlayerGrid"></div>
     <div class="btn-group" style="margin-top:8px;">
       <button class="btn btn-primary" id="btnLockOwner" disabled onclick="lockOwnerPicks()">Lock ${ownerName}'s 6 Picks &rarr;</button>
@@ -5230,12 +5243,12 @@ function importData(file) {
 // ========================================================================
 // TRENDS (dependency-free SVG charts)
 // ========================================================================
-const TREND_PALETTE = ['#e94560', '#4ecdc4', '#f7b731', '#8b5cf6', '#22c55e', '#3b82f6'];
+const TREND_PALETTE = ['#e94560', '#4ecdc4', '#f7b731', '#8b5cf6', '#30d158', '#3b82f6'];
 
 function svgLineChart(series, { height = 240, yFmt = v => Math.round(v * 10) / 10 } = {}) {
   const width = 760, padL = 44, padR = 120, padT = 14, padB = 24;
   const allPts = series.flatMap(s => s.points);
-  if (!allPts.length) return '<div style="color:#666;padding:12px;">Not enough data yet.</div>';
+  if (!allPts.length) return '<div style="color:#6e6e73;padding:12px;">Not enough data yet.</div>';
   const maxX = Math.max(...allPts.map(p => p.x)), minX = Math.min(...allPts.map(p => p.x));
   let maxY = Math.max(...allPts.map(p => p.y)), minY = Math.min(...allPts.map(p => p.y));
   if (maxY === minY) { maxY += 1; minY -= 1; }
@@ -5244,12 +5257,12 @@ function svgLineChart(series, { height = 240, yFmt = v => Math.round(v * 10) / 1
 
   let g = `<line x1="${padL}" y1="${padT}" x2="${padL}" y2="${height - padB}" stroke="rgba(255,255,255,0.15)"/>
     <line x1="${padL}" y1="${height - padB}" x2="${width - padR}" y2="${height - padB}" stroke="rgba(255,255,255,0.15)"/>
-    <text x="${padL - 6}" y="${Y(maxY) + 4}" fill="#888" font-size="10" text-anchor="end">${yFmt(maxY)}</text>
-    <text x="${padL - 6}" y="${Y(minY) + 4}" fill="#888" font-size="10" text-anchor="end">${yFmt(minY)}</text>
-    <text x="${width - padR}" y="${height - 8}" fill="#666" font-size="10" text-anchor="end">Game ${maxX}</text>`;
+    <text x="${padL - 6}" y="${Y(maxY) + 4}" fill="#86868b" font-size="10" text-anchor="end">${yFmt(maxY)}</text>
+    <text x="${padL - 6}" y="${Y(minY) + 4}" fill="#86868b" font-size="10" text-anchor="end">${yFmt(minY)}</text>
+    <text x="${width - padR}" y="${height - 8}" fill="#6e6e73" font-size="10" text-anchor="end">Game ${maxX}</text>`;
   if (minY < 0 && maxY > 0) {
     g += `<line x1="${padL}" y1="${Y(0)}" x2="${width - padR}" y2="${Y(0)}" stroke="rgba(255,255,255,0.2)" stroke-dasharray="4 3"/>
-      <text x="${padL - 6}" y="${Y(0) + 4}" fill="#888" font-size="10" text-anchor="end">0</text>`;
+      <text x="${padL - 6}" y="${Y(0) + 4}" fill="#86868b" font-size="10" text-anchor="end">0</text>`;
   }
   // Stagger end labels so they don't overlap
   const ends = series.map(s => ({ s, last: s.points[s.points.length - 1] })).filter(e => e.last)
@@ -5327,13 +5340,13 @@ function renderTrends() {
   });
   document.getElementById('trendMvp').innerHTML = topMvps.length
     ? svgLineChart(mvpSeries, { yFmt: v => Math.round(v) })
-    : '<div style="color:#666;padding:12px;">No MVPs recorded yet.</div>';
+    : '<div style="color:#6e6e73;padding:12px;">No MVPs recorded yet.</div>';
 
   // --- Batting average race (needs per-game player stats) ---
   const statGames = games.filter(g => g.playerStats);
   const avgEl = document.getElementById('trendAvg');
   if (!statGames.length) {
-    avgEl.innerHTML = '<div style="color:#666;padding:12px;">No per-game player stats recorded for this season.</div>';
+    avgEl.innerHTML = '<div style="color:#6e6e73;padding:12px;">No per-game player stats recorded for this season.</div>';
   } else {
     const abTotals = {};
     statGames.forEach(g => Object.entries(g.playerStats).forEach(([key, ps]) => {
@@ -5359,7 +5372,7 @@ function renderTrends() {
   document.getElementById('trendStadium').innerHTML = stadiums.map(st => {
     const stGames = games.filter(g => g.stadium === st);
     return `<div class="stadium-group">
-      <div class="stadium-group-title">${sImg(st)}${st} <span style="color:#666;font-weight:400;font-size:0.75rem;">(${stGames.length} games)</span></div>
+      <div class="stadium-group-title">${sImg(st)}${st} <span style="color:#6e6e73;font-weight:400;font-size:0.75rem;">(${stGames.length} games)</span></div>
       ${keys.map(k => {
         const played = stGames.filter(g => isInGame(g, k));
         const w = played.filter(g => g.winner === k).length;
@@ -5433,7 +5446,7 @@ function renderSeasonGrid() {
   seasons.forEach(s => {
     const rec = SeasonManager.getRecord(s.id);
     const ownerNames = Object.values(s.owners).map(o => o.name).join(' vs ');
-    let recordHtml = '<span style="color:#666">No games played</span>';
+    let recordHtml = '<span style="color:#6e6e73">No games played</span>';
     if (rec && rec.gamesPlayed > 0) {
       const parts = Object.keys(rec.wins).map(k =>
         `<span style="font-weight:600">${s.owners[k].name}: ${rec.wins[k]}-${rec.losses[k]}</span>`
@@ -5748,7 +5761,7 @@ function nsRenderDraft() {
   const status = document.getElementById('nsDraftStatus');
   if (remaining > 0) {
     const round = Math.floor(nsWizard.currentPick / nsWizard.ownerCount) + 1;
-    status.innerHTML = `<span style="color:#e94560;">Pick ${nsWizard.currentPick + 1}</span> &mdash; Round ${round} &mdash; <span style="font-size:1.2rem;">${drafterName}'s Pick</span> &mdash; <span style="color:#888;">${remaining} players left</span>`;
+    status.innerHTML = `<span style="color:#e94560;">Pick ${nsWizard.currentPick + 1}</span> &mdash; Round ${round} &mdash; <span style="font-size:1.2rem;">${drafterName}'s Pick</span> &mdash; <span style="color:#86868b;">${remaining} players left</span>`;
     status.style.background = 'rgba(233,69,96,0.1)';
   } else {
     status.innerHTML = '<span style="color:#4ecdc4;">Draft Complete! All players assigned.</span>';
@@ -5767,16 +5780,16 @@ function nsRenderDraft() {
     const base = PLAYER_PROFILES[name];
     const p = getPatchedPlayer(name, base);
     const isDrafted = drafted.has(name);
-    const typeColor = TYPE_COLORS[p.type] || '#888';
-    const patchIcon = p.patched ? ' <span style="color:#22c55e;font-size:0.6rem;" title="Patched">&#9650;</span>' : '';
+    const typeColor = TYPE_COLORS[p.type] || '#86868b';
+    const patchIcon = p.patched ? ' <span style="color:#30d158;font-size:0.6rem;" title="Patched">&#9650;</span>' : '';
     // Build stat line — show base→patched for changed stats
     let statLine = `B:${p.bat} P:${p.pitch} F:${p.field} R:${p.run}`;
     if (p.patched) {
       const parts = [];
-      parts.push(base.bat !== p.bat ? `<span style="color:#22c55e">B:${base.bat}→${p.bat}</span>` : `B:${p.bat}`);
-      parts.push(base.pitch !== p.pitch ? `<span style="color:#22c55e">P:${base.pitch}→${p.pitch}</span>` : `P:${p.pitch}`);
-      parts.push(base.field !== p.field ? `<span style="color:#22c55e">F:${base.field}→${p.field}</span>` : `F:${p.field}`);
-      parts.push(base.run !== p.run ? `<span style="color:#22c55e">R:${base.run}→${p.run}</span>` : `R:${p.run}`);
+      parts.push(base.bat !== p.bat ? `<span style="color:#30d158">B:${base.bat}→${p.bat}</span>` : `B:${p.bat}`);
+      parts.push(base.pitch !== p.pitch ? `<span style="color:#30d158">P:${base.pitch}→${p.pitch}</span>` : `P:${p.pitch}`);
+      parts.push(base.field !== p.field ? `<span style="color:#30d158">F:${base.field}→${p.field}</span>` : `F:${p.field}`);
+      parts.push(base.run !== p.run ? `<span style="color:#30d158">R:${base.run}→${p.run}</span>` : `R:${p.run}`);
       statLine = parts.join(' ');
     }
     // Patch notes
@@ -5802,7 +5815,7 @@ function nsRenderDraft() {
     const players = nsWizard.rosters[key];
     return `<div class="ns-roster-panel${isActive ? ' active-drafter' : ''}">
       <div class="roster-title" style="color:${isActive ? '#e94560' : '#fff'};">${nsWizard.ownerNames[i]} (${players.length})</div>
-      ${players.length === 0 ? '<div style="font-size:0.75rem;color:#555;">No picks yet</div>' :
+      ${players.length === 0 ? '<div style="font-size:0.75rem;color:#6e6e73;">No picks yet</div>' :
         players.map((pl, j) => {
           // Find pick number from draft order
           const pickInfo = nsWizard.draftOrder.find(d => d.player === pl);
@@ -5852,7 +5865,7 @@ function nsRenderReview() {
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;">
     ${nsWizard.ownerKeys.map((key, i) => {
       return `<div><strong style="color:#e94560;">${nsWizard.ownerNames[i]} (${nsWizard.rosters[key].length})</strong>
-        ${nsWizard.rosters[key].map(p => `<div style="font-size:0.8rem;color:#ccc;padding:1px 0;">${pImg(p,'player-img-sm')} ${p}</div>`).join('')}
+        ${nsWizard.rosters[key].map(p => `<div style="font-size:0.8rem;color:#d2d2d7;padding:1px 0;">${pImg(p,'player-img-sm')} ${p}</div>`).join('')}
       </div>`;
     }).join('')}
     </div>
