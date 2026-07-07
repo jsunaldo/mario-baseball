@@ -836,6 +836,10 @@ tr.draft-dan:hover { background: rgba(78,205,196,0.1); }
 .ns-draft-card .player-name { font-weight: 700; color: #fff; margin: 4px 0 2px; font-size: 0.85rem; }
 .ns-draft-card .player-type { font-size: 0.65rem; padding: 1px 6px; border-radius: 8px; display: inline-block; margin-bottom: 4px; }
 .ns-draft-card .player-stats { font-size: 0.7rem; color: #86868b; }
+.ns-card-bars { gap: 3px; margin: 6px 2px 2px; text-align: left; }
+.ns-card-bars .prof-stat-label { width: 30px; font-size: 0.6rem; }
+.ns-card-bars .prof-stat-bar { height: 5px; }
+.ns-card-bars .prof-stat-val { font-size: 0.68rem; }
 .ns-roster-panel { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; padding: 8px; margin-bottom: 8px; }
 .ns-roster-panel.active-drafter { border-color: #2997ff; box-shadow: 0 0 0 1px rgba(41,151,255,0.35); }
 .ns-roster-panel .roster-title { font-weight: 700; font-size: 0.85rem; margin-bottom: 6px; }
@@ -2283,6 +2287,18 @@ function getPlayerOwner(name) {
   return null;
 }
 
+// Shared BAT/PITCH/FIELD/RUN bar row (Players tab profile cards + draft board)
+function statBar(val, label, baseVal, max=10) {
+  const pct = (val/max)*100;
+  const color = val >= 7 ? '#30d158' : val >= 5 ? '#ff9f0a' : val >= 3 ? '#f97316' : '#ff453a';
+  const buffed = baseVal !== undefined && val > baseVal;
+  return `<div class="prof-stat">
+    <span class="prof-stat-label">${label}</span>
+    <div class="prof-stat-bar"><div class="prof-stat-fill" style="width:${pct}%;background:${buffed ? '#30d158' : color}${buffed ? ';box-shadow:0 0 6px rgba(48,209,88,0.5)' : ''}"></div></div>
+    <span class="prof-stat-val${buffed ? ' prof-stat-buffed' : ''}">${buffed ? baseVal+'\u2191'+val : val}</span>
+  </div>`;
+}
+
 function renderPlayerProfiles() {
   const grid = document.getElementById('profileGrid');
   if (!grid) return;
@@ -2315,17 +2331,6 @@ function renderPlayerProfiles() {
     overall: (a,b) => b.overall - a.overall || a.name.localeCompare(b.name)
   };
   players.sort(sortFns[sortBy] || sortFns.name);
-
-  function statBar(val, label, baseVal, max=10) {
-    const pct = (val/max)*100;
-    const color = val >= 7 ? '#30d158' : val >= 5 ? '#ff9f0a' : val >= 3 ? '#f97316' : '#ff453a';
-    const buffed = baseVal !== undefined && val > baseVal;
-    return `<div class="prof-stat">
-      <span class="prof-stat-label">${label}</span>
-      <div class="prof-stat-bar"><div class="prof-stat-fill" style="width:${pct}%;background:${buffed ? '#30d158' : color}${buffed ? ';box-shadow:0 0 6px rgba(48,209,88,0.5)' : ''}"></div></div>
-      <span class="prof-stat-val${buffed ? ' prof-stat-buffed' : ''}">${buffed ? baseVal+'\u2191'+val : val}</span>
-    </div>`;
-  }
 
   let html = '';
   players.forEach(p => {
@@ -5790,16 +5795,12 @@ function nsRenderDraft() {
     const isDrafted = drafted.has(name);
     const typeColor = TYPE_COLORS[p.type] || '#86868b';
     const patchIcon = p.patched ? ' <span style="color:#30d158;font-size:0.6rem;" title="Patched">&#9650;</span>' : '';
-    // Build stat line — show base→patched for changed stats
-    let statLine = `B:${p.bat} P:${p.pitch} F:${p.field} R:${p.run}`;
-    if (p.patched) {
-      const parts = [];
-      parts.push(base.bat !== p.bat ? `<span style="color:#30d158">B:${base.bat}→${p.bat}</span>` : `B:${p.bat}`);
-      parts.push(base.pitch !== p.pitch ? `<span style="color:#30d158">P:${base.pitch}→${p.pitch}</span>` : `P:${p.pitch}`);
-      parts.push(base.field !== p.field ? `<span style="color:#30d158">F:${base.field}→${p.field}</span>` : `F:${p.field}`);
-      parts.push(base.run !== p.run ? `<span style="color:#30d158">R:${base.run}→${p.run}</span>` : `R:${p.run}`);
-      statLine = parts.join(' ');
-    }
+    const statBars = `<div class="prof-stats ns-card-bars">
+      ${statBar(p.bat, 'BAT', p.patched ? base.bat : undefined)}
+      ${statBar(p.pitch, 'PITCH', p.patched ? base.pitch : undefined)}
+      ${statBar(p.field, 'FIELD', p.patched ? base.field : undefined)}
+      ${statBar(p.run, 'RUN', p.patched ? base.run : undefined)}
+    </div>`;
     // Patch notes
     let patchHtml = '';
     if (p.patched && p.patchNotes && p.patchNotes.length > 0) {
@@ -5809,7 +5810,7 @@ function nsRenderDraft() {
       ${pImg(name, 'player-img-sm')}
       <div class="player-name">${name}${patchIcon}</div>
       <div class="player-type" style="background:${typeColor};color:#000;">${TYPE_ICONS[p.type] || ''} ${p.type}</div>
-      <div class="player-stats">${statLine}</div>
+      ${statBars}
       ${p.captain ? '<div style="font-size:0.6rem;color:#f7b731;">&#9733; Captain</div>' : ''}
       ${patchHtml}
     </div>`;
