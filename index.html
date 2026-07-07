@@ -13,7 +13,7 @@
 <style>
 /* ========== RESET & BASE ========== */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { font-size: 14px; }
+html { font-size: 14px; color-scheme: dark; }
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   background: #000;
@@ -23,6 +23,14 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 input, select, textarea, button { font-family: inherit; font-size: inherit; }
+input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), select, textarea {
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 8px;
+  color: #f5f5f7;
+  padding: 4px 8px;
+}
+input:focus, select:focus, textarea:focus { outline: none; border-color: #2997ff; }
 button { cursor: pointer; }
 a { color: #2997ff; text-decoration: none; }
 
@@ -875,10 +883,10 @@ tr.draft-dan:hover { background: rgba(78,205,196,0.1); }
   <div class="season-landing">
     <div class="season-landing-header">
       <img src="images/Extra Sprites/105px-MSB_Mario_Batting_Artwork.png" alt="Mario" class="landing-art landing-art-left" onerror="this.style.display='none'">
-      <img src="images/Extra Sprites/200px-Bowser_Superstar_Base_Sprite.png" alt="Bowser" class="landing-art landing-art-right" onerror="this.style.display='none'">
+      <img src="images/Extra Sprites/107px-MSBBowser.png" alt="Bowser" class="landing-art landing-art-right" onerror="this.style.display='none'">
       <img src="images/Game/250px-MSBingamelogo.png" alt="Mario Superstar Baseball" class="landing-logo" onerror="this.style.display='none'">
-      <h1 style="font-size:1.6rem;color:#e94560;margin:0;">Season Tracker</h1>
-      <p style="color:#86868b;font-size:0.9rem;margin-top:4px;">Select a season or create a new one &bull; <a href="league/" style="color:#4ecdc4;">About the league</a></p>
+      <h1 style="font-size:1.7rem;color:#f5f5f7;letter-spacing:-0.02em;margin:0;">Season Tracker</h1>
+      <p style="color:#86868b;font-size:0.9rem;margin-top:4px;">Select a season or create a new one &bull; <a href="league/">About the league</a></p>
       <div class="sync-status" id="syncStatusLanding" onclick="Sync.init()" title="Click to sync now"></div>
     </div>
     <div class="landing-sprite-row">
@@ -910,7 +918,7 @@ tr.draft-dan:hover { background: rgba(78,205,196,0.1); }
     <div class="sync-status" id="syncStatusMain" onclick="Sync.init()" title="Click to sync now"></div>
     <button class="back-to-seasons" onclick="showSeasonSelect()">&#8592; Back to Seasons</button>
   </div>
-  <img src="images/Extra Sprites/200px-Bowser_Superstar_Base_Sprite.png" alt="Bowser" class="header-character header-character-right" onerror="this.style.display='none'">
+  <img src="images/Extra Sprites/107px-MSBBowser.png" alt="Bowser" class="header-character header-character-right" onerror="this.style.display='none'">
 </header>
 
 <!-- ========== TAB BAR ========== -->
@@ -964,7 +972,7 @@ tr.draft-dan:hover { background: rgba(78,205,196,0.1); }
       <!-- Step 4: Randomize + SP selection -->
       <div class="wizard-step" id="wizStep4">
         <div class="btn-group" style="margin-bottom:12px;">
-          <button class="btn btn-warning btn-lg" id="btnRandomize">&#127922; Randomize Final 3 Spots</button>
+          <button class="btn btn-warning btn-lg" id="btnRandomize">Randomize Final 3 Spots</button>
         </div>
         <div id="spInstruction" style="display:none; font-size:0.85rem; color:#d2d2d7; margin-bottom:12px; text-align:center;">
           Click a player to select them as <strong style="color:#e94560">Starting Pitcher</strong>
@@ -1177,7 +1185,7 @@ tr.draft-dan:hover { background: rgba(78,205,196,0.1); }
     <!-- Enter Stats -->
     <div class="subtab-content" id="subtab-enterStats" style="display:none">
       <div class="card">
-        <div class="card-title"><span class="icon">&#86868b9;&#65039;</span> Enter Player Stats</div>
+        <div class="card-title"><span class="icon">&#9999;&#65039;</span> Enter Player Stats</div>
         <div class="form-row">
           <div class="form-group">
             <label>Select Game</label>
@@ -1188,13 +1196,13 @@ tr.draft-dan:hover { background: rgba(78,205,196,0.1); }
         <!-- Screenshot scanner: upload the game's stat screens, AI fills the grid -->
         <div class="scan-panel" id="scanPanel" style="display:none">
           <div class="scan-panel-head">
-            <span>&#128247; <strong>Scan Screenshots</strong></span>
+            <span><strong>Scan Screenshots</strong></span>
             <span class="scan-hint">Drop in the Batter/Pitcher Stats screens from the game — every row gets filled in for you to review.</span>
           </div>
           <div class="scan-controls">
             <input type="file" id="scanFiles" accept="image/*" multiple style="display:none">
             <button class="btn btn-secondary btn-sm" onclick="document.getElementById('scanFiles').click()">Choose Images&hellip;</button>
-            <button class="btn btn-primary btn-sm" id="btnScan" onclick="scanScreenshots()" disabled>&#10024; Extract Stats</button>
+            <button class="btn btn-primary btn-sm" id="btnScan" onclick="scanScreenshots()" disabled>Extract Stats</button>
             <span class="scan-status" id="scanStatus"></span>
           </div>
           <div class="scan-thumbs" id="scanThumbs"></div>
@@ -1229,7 +1237,7 @@ tr.draft-dan:hover { background: rgba(78,205,196,0.1); }
           <input type="number" id="injuryMax" value="30" min="1" style="width:60px">
         </div>
       </div>
-      <button class="btn btn-warning btn-lg" id="btnRollInjury">&#127922; Roll for Injury</button>
+      <button class="btn btn-warning btn-lg" id="btnRollInjury">Roll for Injury</button>
       <div class="roller-result" id="rollerResult"></div>
       <div class="btn-group" id="injuryConfirmBtns" style="display:none; margin-top:8px;">
         <button class="btn btn-danger" id="btnConfirmInjury">Confirm Injury</button>
@@ -1622,7 +1630,7 @@ tr.draft-dan:hover { background: rgba(78,205,196,0.1); }
         <div class="card-title"><span class="icon">&#127918;</span> Step 4: Draft Order</div>
         <p style="color:#86868b;font-size:0.85rem;margin-bottom:12px;">Set the snake draft picking order. Drag to reorder, or use the randomize button.</p>
         <div class="btn-group" style="margin-bottom:12px;">
-          <button class="btn btn-warning btn-sm" onclick="nsRandomizeDraftOrder()">&#127922; Randomize Order</button>
+          <button class="btn btn-warning btn-sm" onclick="nsRandomizeDraftOrder()">Randomize Order</button>
         </div>
         <div id="nsDraftOrderList"></div>
         <div style="margin-top:12px;padding:10px;background:rgba(255,255,255,0.03);border-radius:8px;font-size:0.8rem;color:#86868b;">
@@ -1673,7 +1681,7 @@ tr.draft-dan:hover { background: rgba(78,205,196,0.1); }
         <div id="nsReviewContent"></div>
         <div class="btn-group" style="margin-top:16px;">
           <button class="btn btn-secondary" onclick="nsGoStep(5)">&#8592; Back to Draft</button>
-          <button class="btn btn-success btn-lg" onclick="finalizeNewSeason()">&#127942; Create Season</button>
+          <button class="btn btn-success btn-lg" onclick="finalizeNewSeason()">Create Season</button>
         </div>
       </div>
     </div>
@@ -2334,7 +2342,7 @@ function renderPlayerProfiles() {
       <div class="prof-header">
         <div class="prof-mugshot-wrap">${pImg(p.name, 'prof-mugshot')}${p.captain ? '<span class="prof-captain">C</span>' : ''}</div>
         <div class="prof-info">
-          <div class="prof-name">${p.name}${injured ? ' <span style="color:#ff453a;font-size:0.75rem">&#129657; Injured</span>' : ''}</div>
+          <div class="prof-name">${p.name}${injured ? ' <span style="color:#ff453a;font-size:0.75rem">Injured</span>' : ''}</div>
           <div class="prof-meta">
             <span class="prof-owner-badge prof-owner-${ownerClass}">${ownerName}</span>
             <span class="prof-type-badge" style="background:${tc}20;color:${tc};border:1px solid ${tc}40">${ti} ${p.type}</span>
@@ -2350,8 +2358,8 @@ function renderPlayerProfiles() {
       </div>
       <div class="prof-footer">
         <div class="prof-hands">
-          <span title="Batting Hand">&#9918; ${p.batHand === 'L' ? 'Left' : 'Right'}</span>
-          <span title="Throwing Hand">&#128588; ${p.throwHand === 'L' ? 'Left' : 'Right'}</span>
+          <span title="Batting Hand">Bats ${p.batHand === 'L' ? 'Left' : 'Right'}</span>
+          <span title="Throwing Hand">Throws ${p.throwHand === 'L' ? 'Left' : 'Right'}</span>
         </div>
         <div class="prof-abilities">${p.abilities.map(a => {
           const isNew = newAbilities.includes(a);
@@ -2516,7 +2524,7 @@ function renderWorldSeries() {
     const played = State.data.games.filter(g => g.gameNumber <= CONFIG.TOTAL_GAMES).length;
     area.innerHTML = played ? `<div style="text-align:right;margin-bottom:10px;">
       <button class="btn btn-sm btn-secondary" style="font-size:0.72rem;color:#86868b;" onclick="endRegularSeason()"
-        title="All seeds clinched? Cut the season short and go straight to the World Series">&#127937; End Regular Season Early&hellip;</button>
+        title="All seeds clinched? Cut the season short and go straight to the World Series">End Regular Season Early&hellip;</button>
     </div>` : '';
     return;
   }
@@ -2555,7 +2563,7 @@ function renderWorldSeries() {
     const sched = getSchedule(CONFIG.TOTAL_GAMES + nextN);
     body = `<div class="ws-status-line">${wsGames.length ? status : 'The stage is set!'}</div>
       <div style="text-align:center;margin:10px 0;">
-        <button class="btn btn-warning btn-lg" onclick="openAddGameWizard(${CONFIG.TOTAL_GAMES + nextN})">&#9918; Play WS Game ${nextN} — ${sched.stadium} (${CONFIG.OWNERS[sched.home].name} home)</button>
+        <button class="btn btn-warning btn-lg" onclick="openAddGameWizard(${CONFIG.TOTAL_GAMES + nextN})">Play WS Game ${nextN} — ${sched.stadium} (${CONFIG.OWNERS[sched.home].name} home)</button>
       </div>`;
   } else if (keys.length === 2) {
     // Setup: HFA to the better regular-season record, each owner picks a home stadium
@@ -2571,7 +2579,7 @@ function renderWorldSeries() {
           <label style="color:${getOwnerColor(k)}">${CONFIG.OWNERS[k].name}'s Home Stadium</label>
           <select id="wsStadium_${k}">${CONFIG.STADIUMS.map(s => `<option value="${s}">${s}</option>`).join('')}</select>
         </div>`).join('')}
-        <button class="btn btn-warning" onclick="startWorldSeries('${hfa}')">&#127942; Start World Series</button>
+        <button class="btn btn-warning" onclick="startWorldSeries('${hfa}')">Start World Series</button>
       </div>`;
   } else {
     body = `<div class="ws-status-line">Regular season complete!</div>
@@ -3533,7 +3541,7 @@ function renderHeader() {
   const recDiv = document.getElementById('headerRecords');
   recDiv.innerHTML = Object.keys(CONFIG.OWNERS).map(k => {
     const r = getRecord(k);
-    return `<span class="record-badge" style="background:${getOwnerBgColor(k)};color:${getOwnerColor(k)};border:1px solid ${getOwnerBorderColor(k)}">${CONFIG.OWNERS[k].name}: ${r.w}-${r.l}</span>`;
+    return `<span class="record-badge" style="background:${getOwnerBgColor(k)};color:${getOwnerColor(k)}">${CONFIG.OWNERS[k].name}: ${r.w}-${r.l}</span>`;
   }).join('');
   document.getElementById('headerSeasonBadge').textContent = CONFIG.SEASON_NAME || 'Season';
   const rulesName = document.getElementById('rulesSeasonName');
@@ -3697,7 +3705,7 @@ function renderGameLog() {
     const winnerColor = getOwnerColor(g.winner);
     const isWS = g.gameNumber > CONFIG.TOTAL_GAMES;
     return `<tr style="border-left: 3px solid ${winnerColor}${isWS ? ';background:rgba(247,183,49,0.06)' : ''}" onclick="showGameDetail(${g.gameNumber})">
-      <td class="text-center" style="font-weight:700;${isWS ? 'color:#f7b731' : ''}">${isWS ? '&#127942; WS' + (g.gameNumber - CONFIG.TOTAL_GAMES) : g.gameNumber}</td>
+      <td class="text-center" style="font-weight:700;${isWS ? 'color:#f7b731' : ''}">${isWS ? 'WS' + (g.gameNumber - CONFIG.TOTAL_GAMES) : g.gameNumber}</td>
       <td>${formatDate(g.date)}</td>
       <td><div class="stadium-cell">${sImg(g.stadium)}${g.stadium}</div></td>
       <td>${CONFIG.OWNERS[g.home]?.name || g.home}</td>
@@ -3734,7 +3742,7 @@ function showGameDetail(gameNum) {
   document.getElementById('modalButtons').style.display = 'none';
 
   const gameLabel = game.gameNumber > CONFIG.TOTAL_GAMES
-    ? `&#127942; World Series Game ${game.gameNumber - CONFIG.TOTAL_GAMES}`
+    ? `World Series Game ${game.gameNumber - CONFIG.TOTAL_GAMES}`
     : `Game ${game.gameNumber}`;
   title.innerHTML = `${gameLabel} — ${sImg(game.stadium)} ${game.stadium}`;
 
@@ -3841,7 +3849,7 @@ function showGameDetail(gameNum) {
   const hasLineup = !!game.playerStats || !!State.data.lineups[game.gameNumber];
   const hasStats = !!game.playerStats;
   const actions = [];
-  actions.push(`<button class="btn btn-secondary" style="font-size:0.8rem;" onclick="closeGameDetail();editGameResult(${game.gameNumber})">&#86868b8; Edit Result</button>`);
+  actions.push(`<button class="btn btn-secondary" style="font-size:0.8rem;" onclick="closeGameDetail();editGameResult(${game.gameNumber})">Edit Result</button>`);
   if (hasStats) {
     actions.push(`<button class="btn btn-secondary" style="font-size:0.8rem;" onclick="goToStatsEntry(${game.gameNumber})">Edit Player Stats</button>`);
   }
@@ -4024,7 +4032,7 @@ function renderSchedule() {
     const hasLineup = !!State.data.lineups[s.num];
     const isNext = s.num === next;
     const status = hasLineup
-      ? `<span style="color:#4ecdc4;font-weight:600;cursor:pointer" onclick="showScheduledLineup(${s.num})">&#9989; Lineup Set</span>`
+      ? `<span style="color:#30d158;font-weight:600;cursor:pointer" onclick="showScheduledLineup(${s.num})">&#10003; Lineup Set</span>`
       : (isNext ? '<span style="color:#f7b731;font-weight:600">Next Up</span>' : '<span style="color:#6e6e73">Upcoming</span>');
     const action = hasLineup
       ? `<button class="btn btn-sm btn-secondary" style="font-size:0.7rem;padding:2px 8px;" onclick="event.stopPropagation();openSetLineup(${s.num})">Edit Lineup</button>`
@@ -5481,7 +5489,7 @@ function selectSeason(id) {
   // Rebuild header records for this season's owners
   const recDiv = document.getElementById('headerRecords');
   recDiv.innerHTML = Object.keys(CONFIG.OWNERS).map(k =>
-    `<span class="record-badge" style="background:${getOwnerBgColor(k)};color:${getOwnerColor(k)};border:1px solid ${getOwnerBorderColor(k)}">${CONFIG.OWNERS[k].name}: 0-0</span>`
+    `<span class="record-badge" style="background:${getOwnerBgColor(k)};color:${getOwnerColor(k)}">${CONFIG.OWNERS[k].name}: 0-0</span>`
   ).join('');
   document.getElementById('seasonSelect').style.display = 'none';
   document.getElementById('mainApp').style.display = 'block';
