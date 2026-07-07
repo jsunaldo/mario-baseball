@@ -665,6 +665,35 @@ tr.draft-dan:hover { background: rgba(78,205,196,0.1); }
   .patch-toggle-label { font-size: 0.7rem; }
 }
 
+/* ========== SCREENSHOT SCANNER ========== */
+.scan-panel {
+  border: 1px dashed rgba(78,205,196,0.4);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  background: rgba(78,205,196,0.04);
+}
+.scan-panel-head { display: flex; flex-direction: column; gap: 2px; margin-bottom: 10px; }
+.scan-panel-head strong { color: #4ecdc4; }
+.scan-hint { font-size: 0.78rem; color: #888; }
+.scan-controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.scan-status { font-size: 0.8rem; color: #f7b731; }
+.scan-thumbs { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.scan-thumb { position: relative; }
+.scan-thumb img { height: 60px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.15); display: block; }
+.scan-thumb button {
+  position: absolute; top: -6px; right: -6px; width: 18px; height: 18px; border-radius: 50%;
+  border: none; background: #e94560; color: #fff; font-size: 0.65rem; line-height: 1; cursor: pointer; padding: 0;
+}
+/* cells auto-filled by a scan (cleared when the user edits them) */
+.stats-table input.scan-filled { background: rgba(78,205,196,0.16); border-color: rgba(78,205,196,0.5); }
+.stats-table input.scan-warn { background: rgba(233,69,96,0.14); border-color: rgba(233,69,96,0.55); }
+.scan-warnings {
+  margin-top: 10px; padding: 8px 12px; border-radius: 8px; font-size: 0.8rem;
+  background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.3); color: #f0b45f;
+}
+.scan-warnings div { padding: 1px 0; }
+
 /* ========== SYNC STATUS ========== */
 .sync-status { font-size: 0.72rem; color: #666; cursor: pointer; margin-top: 2px; user-select: none; }
 .sync-status:hover { color: #aaa; }
@@ -1142,6 +1171,22 @@ tr.draft-dan:hover { background: rgba(78,205,196,0.1); }
             <select id="statsGameSelect"></select>
           </div>
         </div>
+
+        <!-- Screenshot scanner: upload the game's stat screens, AI fills the grid -->
+        <div class="scan-panel" id="scanPanel" style="display:none">
+          <div class="scan-panel-head">
+            <span>&#128247; <strong>Scan Screenshots</strong></span>
+            <span class="scan-hint">Drop in the Batter/Pitcher Stats screens from the game — every row gets filled in for you to review.</span>
+          </div>
+          <div class="scan-controls">
+            <input type="file" id="scanFiles" accept="image/*" multiple style="display:none">
+            <button class="btn btn-secondary btn-sm" onclick="document.getElementById('scanFiles').click()">Choose Images&hellip;</button>
+            <button class="btn btn-primary btn-sm" id="btnScan" onclick="scanScreenshots()" disabled>&#10024; Extract Stats</button>
+            <span class="scan-status" id="scanStatus"></span>
+          </div>
+          <div class="scan-thumbs" id="scanThumbs"></div>
+        </div>
+
         <div id="statsEntryArea"></div>
       </div>
     </div>
