@@ -837,6 +837,8 @@ tr.draft-dan:hover { background: rgba(78,205,196,0.1); }
 .ns-draft-card .player-type { font-size: 0.65rem; padding: 1px 6px; border-radius: 8px; display: inline-block; margin-bottom: 4px; }
 .ns-draft-card .player-stats { font-size: 0.7rem; color: #86868b; }
 .ns-card-bars { gap: 3px; margin: 6px 2px 2px; text-align: left; }
+.pick-grid { grid-template-columns: repeat(auto-fill, minmax(136px, 1fr)); max-height: 520px; overflow-y: auto; margin: 10px 0; padding-right: 2px; }
+.pick-chip .player-type { font-size: 0.65rem; padding: 1px 6px; border-radius: 8px; display: inline-block; margin-top: 4px; }
 .ns-card-bars .prof-stat-label { width: 30px; font-size: 0.6rem; }
 .ns-card-bars .prof-stat-bar { height: 5px; }
 .ns-card-bars .prof-stat-val { font-size: 0.68rem; }
@@ -4948,6 +4950,8 @@ function removeInjury(idx) {
 // ========================================================================
 // LINEUP WIZARD (shared by Add Game + Set Lineup flows)
 // ========================================================================
+let wizPatchEnabled = false; // Balance Patch display toggle in the lineup wizard
+
 let wizardState = {
   step: 1,
   picks: {},      // { ownerKey: [player, ...] }
@@ -4969,6 +4973,7 @@ function resetWizardOwnerState() {
     wizardState.sps[k] = null;
   });
   wizardState.currentOwnerIdx = 0;
+  wizPatchEnabled = patchEnabled; // default the wizard's toggle to the Players-tab setting
 }
 
 // Returns only the 2 owner keys playing in the current wizard game
@@ -5030,10 +5035,8 @@ function setWizardStep(step) {
   document.getElementById(`wizStep${step}`).classList.add('active');
 
   if (step === 2) {
-    // Render current owner's player grid
-    const keys = getGameOwnerKeys();
-    const ownerKey = keys[wizardState.currentOwnerIdx];
-    renderOwnerPickStep(ownerKey);
+    // Both owners pick side by side
+    renderPickStep();
   }
   if (step === 3) {
     // Now acts as old step 3 for 2nd owner — but for N owners this is randomize/SP step
@@ -5043,7 +5046,7 @@ function setWizardStep(step) {
     const keys = getGameOwnerKeys();
     keys.forEach(k => { wizardState.sps[k] = null; });
     renderFinalLineups(false);
-    document.getElementById('btnRandomize').textContent = '\u{1F3B2} Randomize Final 3 Spots';
+    document.getElementById('btnRandomize').textContent = 'Randomize Final 3 Spots';
     document.getElementById('spInstruction').style.display = 'none';
     document.getElementById('wizStep4Buttons').style.display = 'none';
     // Update button text based on mode
@@ -5055,38 +5058,57 @@ function setWizardStep(step) {
   }
 }
 
-function renderOwnerPickStep(ownerKey) {
+// Both owners pick their 6 starters side by side — Jason and Dan are usually
+// looking at this screen together, so nobody waits for the other to finish.
+function renderPickStep() {
   const keys = getGameOwnerKeys();
-  const ownerIdx = keys.indexOf(ownerKey);
-  const ownerName = CONFIG.OWNERS[ownerKey].name;
-  const color = getOwnerColor(ownerKey);
-
-  // Dynamically populate wizStep2 content
   const step2 = document.getElementById('wizStep2');
   step2.innerHTML = `
-    <div class="stats-team-header" style="background:${getOwnerBgColor(ownerKey)};color:${color}">${ownerName}'s Lineup - Pick 6 Players</div>
-    <div style="font-size:0.82rem;color:#86868b;margin-bottom:8px;">Selected: <span id="ownerPickCount">0</span>/6 (Owner ${ownerIdx+1} of ${keys.length})</div>
-    <div class="player-grid" id="ownerPlayerGrid"></div>
-    <div class="btn-group" style="margin-top:8px;">
-      <button class="btn btn-primary" id="btnLockOwner" disabled onclick="lockOwnerPicks()">Lock ${ownerName}'s 6 Picks &rarr;</button>
-      <button class="btn btn-secondary" onclick="${ownerIdx === 0 ? 'setWizardStep(1)' : 'prevOwnerPick()'}">Back</button>
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+      <div style="font-size:0.85rem;color:#86868b;">Each owner picks 6 starters &mdash; tap a player to select.</div>
+      <label class="patch-toggle">
+        <input type="checkbox" id="wizPatchToggle" ${wizPatchEnabled ? 'checked' : ''} onchange="wizPatchEnabled=this.checked;renderAllPickGrids();">
+        <span class="patch-toggle-slider"></span>
+        <span class="patch-toggle-label">Balance Patch V1.1</span>
+      </label>
+    </div>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start;">
+      ${keys.map(owner => `
+        <div style="flex:1;min-width:300px;">
+          <div class="stats-team-header" style="background:${getOwnerBgColor(owner)};color:${getOwnerColor(owner)};display:flex;justify-content:space-between;align-items:center;">
+            <span>${CONFIG.OWNERS[owner].name}'s Lineup</span>
+            <span style="font-size:0.8rem;"><span id="pickCount_${owner}">0</span>/6 picked</span>
+          </div>
+          <div class="player-grid pick-grid" id="ownerPlayerGrid_${owner}"></div>
+        </div>`).join('')}
+    </div>
+    <div class="btn-group" style="margin-top:12px;">
+      <button class="btn btn-primary" id="btnWizContinue" disabled onclick="setWizardStep(4)">Continue &rarr;</button>
+      <button class="btn btn-secondary" onclick="setWizardStep(1)">Back</button>
     </div>
   `;
+  renderAllPickGrids();
+}
 
-  renderPlayerGrid(ownerKey);
+function renderAllPickGrids() {
+  getGameOwnerKeys().forEach(renderPlayerGrid);
 }
 
 function renderPlayerGrid(owner) {
   const nextGame = wizardState.gameInfo.num;
-  const grid = document.getElementById('ownerPlayerGrid');
+  const grid = document.getElementById(`ownerPlayerGrid_${owner}`);
   if (!grid) return;
   const picks = wizardState.picks[owner] || [];
 
+  // Chips carry the same stat bars as the Players tab / draft board,
+  // honoring the wizard's Balance Patch toggle
+  const origPatch = patchEnabled;
+  patchEnabled = wizPatchEnabled;
   grid.innerHTML = CONFIG.OWNERS[owner].roster.map(player => {
     const injured = isInjured(player, owner, nextGame);
     const noPitch = !canPitch(player, owner, nextGame);
     const selected = picks.includes(player);
-    let cls = 'player-chip';
+    let cls = 'player-chip pick-chip';
     if (injured) cls += ' disabled';
     if (selected) cls += ' selected';
 
@@ -5094,8 +5116,26 @@ function renderPlayerGrid(owner) {
     if (injured) badges += '<span class="badge badge-injured">INJURED</span>';
     else if (noPitch) badges += '<span class="badge badge-no-pitch">NO PITCH</span>';
 
-    return `<div class="${cls}" data-player="${player}" data-owner="${owner}" onclick="togglePlayerPick(this)"><div class="player-chip-inner">${pImg(player,'player-img')}${player}</div>${badges}</div>`;
+    const prof = PLAYER_PROFILES[player];
+    let typeHtml = '', barsHtml = '';
+    if (prof) {
+      const p = getPatchedPlayer(player, prof);
+      const typeColor = TYPE_COLORS[p.type] || '#86868b';
+      typeHtml = `<div class="player-type" style="background:${typeColor};color:#000;">${p.type}</div>`;
+      barsHtml = `<div class="prof-stats ns-card-bars">
+        ${statBar(p.bat, 'BAT', p.patched ? prof.bat : undefined)}
+        ${statBar(p.pitch, 'PITCH', p.patched ? prof.pitch : undefined)}
+        ${statBar(p.field, 'FIELD', p.patched ? prof.field : undefined)}
+        ${statBar(p.run, 'RUN', p.patched ? prof.run : undefined)}
+      </div>`;
+    }
+
+    return `<div class="${cls}" data-player="${player}" data-owner="${owner}" onclick="togglePlayerPick(this)">
+      <div class="player-chip-inner">${pImg(player,'player-img')}<span>${player}${prof?.captain ? ' <span style="color:#f7b731;font-size:0.7rem;">&#9733;</span>' : ''}</span></div>
+      ${typeHtml}${barsHtml}${badges}
+    </div>`;
   }).join('');
+  patchEnabled = origPatch;
 
   updatePickCount(owner);
 }
@@ -5122,33 +5162,10 @@ function togglePlayerPick(el) {
 
 function updatePickCount(owner) {
   const picks = wizardState.picks[owner] || [];
-  const countEl = document.getElementById('ownerPickCount');
+  const countEl = document.getElementById(`pickCount_${owner}`);
   if (countEl) countEl.textContent = picks.length;
-  const btn = document.getElementById('btnLockOwner');
-  if (btn) btn.disabled = picks.length !== 6;
-}
-
-function lockOwnerPicks() {
-  const keys = getGameOwnerKeys();
-  wizardState.currentOwnerIdx++;
-  if (wizardState.currentOwnerIdx < keys.length) {
-    // Move to next owner's picks
-    renderOwnerPickStep(keys[wizardState.currentOwnerIdx]);
-  } else {
-    // All owners done, go to randomize/SP step
-    setWizardStep(4);
-  }
-}
-
-function prevOwnerPick() {
-  const keys = getGameOwnerKeys();
-  wizardState.currentOwnerIdx--;
-  if (wizardState.currentOwnerIdx >= 0) {
-    renderOwnerPickStep(keys[wizardState.currentOwnerIdx]);
-  } else {
-    wizardState.currentOwnerIdx = 0;
-    setWizardStep(1);
-  }
+  const btn = document.getElementById('btnWizContinue');
+  if (btn) btn.disabled = !getGameOwnerKeys().every(k => (wizardState.picks[k] || []).length === 6);
 }
 
 function randomizeFinalSpots() {
@@ -6081,7 +6098,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const keys = getOwnerKeys();
     keys.forEach(k => { wizardState.sps[k] = null; });
     randomizeFinalSpots();
-    document.getElementById('btnRandomize').textContent = '\u{1F3B2} Re-Randomize';
+    document.getElementById('btnRandomize').textContent = 'Re-Randomize';
     document.getElementById('spInstruction').style.display = '';
     document.getElementById('wizStep4Buttons').style.display = '';
   });
