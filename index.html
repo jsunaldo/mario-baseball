@@ -726,6 +726,7 @@ tr.draft-dan:hover { background: rgba(78,205,196,0.1); }
 .sync-status.syncing { color: #f7b731; }
 .sync-status.offline { color: #86868b; }
 .sync-status.conflict { color: #e94560; }
+.sync-status.locked { color: #ff9f0a; }
 
 /* ========== WORLD SERIES PANEL ========== */
 .ws-card {
@@ -897,7 +898,7 @@ tr.draft-dan:hover { background: rgba(78,205,196,0.1); }
       <img src="images/Game/250px-MSBingamelogo.png" alt="Mario Superstar Baseball" class="landing-logo" onerror="this.style.display='none'">
       <h1 style="font-size:1.7rem;color:#f5f5f7;letter-spacing:-0.02em;margin:0;">Season Tracker</h1>
       <p style="color:#86868b;font-size:0.9rem;margin-top:4px;">Select a season or create a new one &bull; <a href="league/">About the league</a></p>
-      <div class="sync-status" id="syncStatusLanding" onclick="Sync.init()" title="Click to sync now"></div>
+      <div class="sync-status" id="syncStatusLanding" onclick="Sync.chipClick()" title="Click to sync now"></div>
     </div>
     <div class="landing-sprite-row">
       <img src="images/Extra Sprites/200px-Luigi_SuperStar_Base_Sprite.png" alt="Luigi" onerror="this.style.display='none'">
@@ -925,7 +926,7 @@ tr.draft-dan:hover { background: rgba(78,205,196,0.1); }
       <span class="record-badge dan" id="headerDanRecord">Dan: 0-0</span>
     </div>
     <div class="header-meta" id="headerMeta">Game 1 of 162</div>
-    <div class="sync-status" id="syncStatusMain" onclick="Sync.init()" title="Click to sync now"></div>
+    <div class="sync-status" id="syncStatusMain" onclick="Sync.chipClick()" title="Click to sync now"></div>
     <button class="back-to-seasons" onclick="showSeasonSelect()">&#8592; Back to Seasons</button>
   </div>
   <img src="images/Extra Sprites/107px-MSBBowser.png" alt="Bowser" class="header-character header-character-right" onerror="this.style.display='none'">
@@ -1047,8 +1048,10 @@ tr.draft-dan:hover { background: rgba(78,205,196,0.1); }
       <div class="btn-group">
         <button class="btn btn-sm btn-secondary" id="btnExport">Export Data (JSON)</button>
         <button class="btn btn-sm btn-secondary" id="btnImport">Import Data</button>
+        <button class="btn btn-sm btn-secondary" id="btnBackups">Cloud Backups&hellip;</button>
         <button class="btn btn-sm btn-danger" id="btnReset">Reset to Default</button>
       </div>
+      <div id="backupsArea"></div>
       <input type="file" id="importFile" accept=".json" style="display:none">
     </div>
   </div>
@@ -1875,6 +1878,7 @@ const Sync = {
       idle: '', syncing: '☁ Syncing…',
       synced: '☁ Synced' + (detail ? ' • ' + detail : ''),
       offline: '☁ Offline — changes saved on this device',
+      locked: '🔒 Locked — tap to enter the league passphrase',
       conflict: '⚠ Sync needs attention — tap to retry'
     };
     ['syncStatusLanding', 'syncStatusMain'].forEach(id => {
@@ -1908,15 +1912,33 @@ const Sync = {
     this._timer = setTimeout(() => this.push(), 2000);
   },
 
+  writeKey() { return localStorage.getItem('msb_writeKey') || ''; },
+
+  // Sync chips route here: when writes are locked, ask for the passphrase and
+  // retry the push; otherwise a plain re-sync.
+  chipClick() {
+    if (this.status === 'locked') this.promptKey();
+    else this.init();
+  },
+
+  promptKey() {
+    const k = prompt('This league is write-protected.\nEnter the league passphrase to sync changes from this device:');
+    if (k && k.trim()) {
+      localStorage.setItem('msb_writeKey', k.trim());
+      this.push();
+    }
+  },
+
   async push() {
     const snap = this.snapshot();
     this.setStatus('syncing');
     try {
       const res = await fetch(SYNC_URL, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-MSB-Key': this.writeKey() },
         body: JSON.stringify(snap)
       });
+      if (res.status === 401) { this.setStatus('locked'); return; }
       if (!res.ok) throw new Error('HTTP ' + res.status);
       localStorage.setItem('msb_lastSyncAt', snap.updatedAt);
       localStorage.setItem('msb_lastSyncRev', localStorage.getItem('msb_localRev') || '');
@@ -4540,6 +4562,56 @@ function statsRowDragEnd(e) {
 // SCREENSHOT SCANNER — AI stat extraction via the sync Worker's /scan route
 // ========================================================================
 const SCAN_URL = SYNC_URL + '/scan';
+
+// ---- Cloud backups (hourly snapshots the Worker keeps before overwrites) ----
+async function showCloudBackups() {
+  const area = document.getElementById('backupsArea');
+  area.innerHTML = '<div style="color:#86868b;font-size:0.82rem;padding:8px 0;">Loading backups\u2026</div>';
+  let backups;
+  try {
+    const res = await fetch(SYNC_URL + '/backups');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    backups = (await res.json()).backups || [];
+  } catch (e) {
+    area.innerHTML = '<div style="color:#ff453a;font-size:0.82rem;padding:8px 0;">Could not load backups (' + escapeHtml(String(e.message || e)) + ')</div>';
+    return;
+  }
+  if (!backups.length) {
+    area.innerHTML = '<div style="color:#86868b;font-size:0.82rem;padding:8px 0;">No cloud backups yet — one is taken automatically about once an hour when data changes.</div>';
+    return;
+  }
+  area.innerHTML = `<div style="margin-top:10px;border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:12px 14px;background:rgba(255,255,255,0.02);">
+    <div style="font-weight:600;margin-bottom:6px;">Cloud Backups</div>
+    <div style="font-size:0.75rem;color:#86868b;margin-bottom:8px;">Snapshots taken before the league is overwritten. Restoring replaces the current data everywhere (a fresh backup of the current state is taken first).</div>
+    ${backups.map(b => `<div style="display:flex;align-items:center;gap:10px;padding:5px 0;border-top:1px solid rgba(255,255,255,0.06);font-size:0.82rem;">
+      <span style="flex:1;">${new Date(b.savedAt).toLocaleString()}</span>
+      <span style="color:#86868b;">${b.games ?? '?'} games</span>
+      <button class="btn btn-sm btn-secondary" onclick="restoreCloudBackup('${b.key}')">Restore</button>
+    </div>`).join('')}
+  </div>`;
+}
+
+async function restoreCloudBackup(key) {
+  if (!confirm('Restore this backup? It replaces the current league data on ALL devices.\n(The current state gets backed up first, so this is reversible.)')) return;
+  try {
+    const res = await fetch(SYNC_URL + '/backups/' + encodeURIComponent(key));
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const snap = await res.json();
+    snap.updatedAt = new Date().toISOString(); // fresh stamp so every device pulls it
+    const put = await fetch(SYNC_URL, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'X-MSB-Key': Sync.writeKey() },
+      body: JSON.stringify(snap)
+    });
+    if (put.status === 401) { Sync.setStatus('locked'); Sync.promptKey(); return; }
+    if (!put.ok) throw new Error('HTTP ' + put.status);
+    Sync.apply(snap);
+    showToast('Backup restored \u2014 reloading\u2026');
+    setTimeout(() => location.reload(), 800);
+  } catch (e) {
+    showToast('Restore failed: ' + (e.message || e), true);
+  }
+}
 const SCAN_TOKEN = 'msb-scan-v1';
 let scanImages = []; // { name, dataUrl, data (base64, no prefix) }
 
@@ -4605,7 +4677,7 @@ async function scanScreenshots() {
   try {
     const res = await fetch(SCAN_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-MSB-Scan': SCAN_TOKEN },
+      headers: { 'Content-Type': 'application/json', 'X-MSB-Scan': SCAN_TOKEN, 'X-MSB-Key': Sync.writeKey() },
       body: JSON.stringify({
         images: scanImages.map(im => ({ media_type: 'image/jpeg', data: im.data })),
         candidates
@@ -6150,6 +6222,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Data management
+  document.getElementById('btnBackups').addEventListener('click', showCloudBackups);
   document.getElementById('btnExport').addEventListener('click', exportData);
   document.getElementById('btnImport').addEventListener('click', () => {
     document.getElementById('importFile').click();
