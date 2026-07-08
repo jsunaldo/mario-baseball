@@ -1117,6 +1117,7 @@ tr.draft-dan:hover { background: rgba(78,205,196,0.1); }
     <div class="sub-tabs">
       <button class="sub-tab active" data-subtab="batting">Batting Leaders</button>
       <button class="sub-tab" data-subtab="pitching">Pitching Leaders</button>
+      <button class="sub-tab" data-subtab="matchups">Matchups</button>
       <button class="sub-tab" data-subtab="enterStats">Enter Stats</button>
     </div>
 
@@ -1201,6 +1202,25 @@ tr.draft-dan:hover { background: rgba(78,205,196,0.1); }
     </div>
 
     <!-- Enter Stats -->
+    <div class="subtab-content" id="subtab-matchups" style="display:none">
+      <div class="card">
+        <div class="card-title">Starting Pitcher Scouting</div>
+        <div style="font-size:0.78rem;color:#86868b;margin-bottom:10px;">Every start in this season. Click a pitcher to see how the other team's batters fare in their starts.</div>
+        <div id="spScoutArea"></div>
+      </div>
+      <div class="card" id="spDetailCard" style="display:none"></div>
+      <div class="card">
+        <div class="card-title">Stadium Splits</div>
+        <div class="filter-bar">
+          <div class="form-group" style="min-width:200px;flex:0;">
+            <label>Player</label>
+            <select id="stadiumSplitPlayer" onchange="renderStadiumSplits()"></select>
+          </div>
+        </div>
+        <div id="stadiumSplitArea"></div>
+      </div>
+    </div>
+
     <div class="subtab-content" id="subtab-enterStats" style="display:none">
       <div class="card">
         <div class="card-title"><span class="icon">&#9999;&#65039;</span> Enter Player Stats</div>
@@ -3548,6 +3568,131 @@ function allPlayers() {
 // ========================================================================
 // AGGREGATE STATS COMPUTATION
 // ========================================================================
+// ========================================================================
+// MATCHUPS — SP scouting, batter-vs-pitcher, stadium splits
+// ========================================================================
+function getGameSP(g, ownerKey) {
+  if (g.sps && g.sps[ownerKey]) return g.sps[ownerKey];
+  return g[ownerKey + 'SP'] || null;
+}
+
+function opponentOf(g, owner) {
+  if (g.away) return g.home === owner ? g.away : g.home;
+  return getOwnerKeys().find(k => k !== owner);
+}
+
+function renderMatchups() {
+  renderSPScouting();
+  populateStadiumSplitPlayers();
+  renderStadiumSplits();
+}
+
+function renderSPScouting() {
+  const area = document.getElementById('spScoutArea');
+  const sps = {}; // owner_name -> aggregate
+  State.data.games.forEach(g => {
+    const parts = g.away ? [g.home, g.away] : getOwnerKeys();
+    parts.forEach(owner => {
+      const sp = getGameSP(g, owner);
+      if (!sp) return;
+      const id = owner + '_' + sp;
+      const s = sps[id] = sps[id] || { sp, owner, gs: 0, w: 0, l: 0, ip: 0, ha: 0, k: 0, ra: 0, statGames: 0 };
+      s.gs++;
+      g.winner === owner ? s.w++ : s.l++;
+      const ps = g.playerStats && g.playerStats[id];
+      if (ps && ps.pitched) {
+        s.statGames++;
+        s.ip += ps.ip || 0; s.ha += ps.hitsAllowed || 0;
+        s.k += ps.strikeouts || 0; s.ra += ps.runsAllowed || 0;
+      }
+    });
+  });
+  const rows = Object.values(sps).sort((a, b) => b.gs - a.gs || b.w - a.w);
+  if (!rows.length) {
+    area.innerHTML = '<div style="color:#6e6e73;font-size:0.85rem;">No starts recorded yet.</div>';
+    return;
+  }
+  area.innerHTML = `<div class="table-wrap"><table>
+    <thead><tr><th>Starter</th><th>Team</th><th class="text-center">GS</th><th class="text-center">W-L</th>
+    <th class="text-center">IP</th><th class="text-center">H</th><th class="text-center">K</th>
+    <th class="text-center">RA</th><th class="text-center">RA/GS</th></tr></thead>
+    <tbody>${rows.map(s => `<tr style="cursor:pointer" onclick="renderSPDetail('${s.owner}','${s.sp.replace(/'/g, "\\'")}')">
+      <td><span class="player-cell">${pImg(s.sp, 'player-img-sm')}${s.sp}</span></td>
+      <td><span style="color:${getOwnerColor(s.owner)}">${CONFIG.OWNERS[s.owner].name}</span></td>
+      <td class="text-center">${s.gs}</td>
+      <td class="text-center" style="font-weight:600">${s.w}-${s.l}</td>
+      <td class="text-center">${s.statGames ? formatIP(s.ip) : '—'}</td>
+      <td class="text-center">${s.statGames ? s.ha : '—'}</td>
+      <td class="text-center">${s.statGames ? s.k : '—'}</td>
+      <td class="text-center">${s.statGames ? s.ra : '—'}</td>
+      <td class="text-center">${s.statGames ? (s.ra / s.statGames).toFixed(1) : '—'}</td>
+    </tr>`).join('')}</tbody></table></div>`;
+}
+
+function renderSPDetail(owner, sp) {
+  const card = document.getElementById('spDetailCard');
+  const starts = State.data.games.filter(g => getGameSP(g, owner) === sp);
+  const opp = {};
+  starts.forEach(g => {
+    if (!g.playerStats) return;
+    const other = opponentOf(g, owner);
+    Object.entries(g.playerStats).forEach(([key, ps]) => {
+      if (!key.startsWith(other + '_')) return;
+      const player = key.slice(other.length + 1);
+      const b = opp[player] = opp[player] || { player, owner: other, g: 0, ab: 0, h: 0, hr: 0, rbi: 0 };
+      b.g++; b.ab += ps.ab || 0; b.h += ps.hits || 0; b.hr += ps.hr || 0; b.rbi += ps.rbi || 0;
+    });
+  });
+  const rows = Object.values(opp).filter(b => b.ab > 0).sort((a, b) => (b.ab ? b.h / b.ab : 0) - (a.ab ? a.h / a.ab : 0));
+  card.style.display = '';
+  card.innerHTML = `<div class="card-title" style="display:flex;justify-content:space-between;align-items:center;">
+      <span>Batting vs ${sp} <span style="color:${getOwnerColor(owner)};font-size:0.8rem;">(${CONFIG.OWNERS[owner].name}, ${starts.length} start${starts.length === 1 ? '' : 's'})</span></span>
+      <button class="btn btn-sm btn-secondary" onclick="document.getElementById('spDetailCard').style.display='none'">Close</button>
+    </div>
+    <div style="font-size:0.75rem;color:#86868b;margin-bottom:8px;">Opposing batters' lines from games ${sp} started (game totals — relief innings included).</div>
+    ${rows.length ? `<div class="table-wrap"><table>
+      <thead><tr><th>Batter</th><th class="text-center">G</th><th class="text-center">AB</th><th class="text-center">H</th><th class="text-center">AVG</th><th class="text-center">HR</th><th class="text-center">RBI</th></tr></thead>
+      <tbody>${rows.map(b => `<tr>
+        <td><span class="player-cell">${pImg(b.player, 'player-img-sm')}${b.player}</span></td>
+        <td class="text-center">${b.g}</td><td class="text-center">${b.ab}</td><td class="text-center">${b.h}</td>
+        <td class="text-center" style="font-weight:600">${(b.h / b.ab).toFixed(3).replace(/^0/, '')}</td>
+        <td class="text-center">${b.hr}</td><td class="text-center">${b.rbi}</td>
+      </tr>`).join('')}</tbody></table></div>` : '<div style="color:#6e6e73;font-size:0.85rem;">No box scores in this pitcher\'s starts yet.</div>'}`;
+  card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function populateStadiumSplitPlayers() {
+  const sel = document.getElementById('stadiumSplitPlayer');
+  const current = sel.value;
+  const players = allPlayers().filter(p =>
+    State.data.games.some(g => g.playerStats && g.playerStats[p.owner + '_' + p.name]));
+  sel.innerHTML = players.map(p => `<option value="${p.owner}_${p.name}">${p.name} (${CONFIG.OWNERS[p.owner].name})</option>`).join('');
+  if (current && [...sel.options].some(o => o.value === current)) sel.value = current;
+}
+
+function renderStadiumSplits() {
+  const area = document.getElementById('stadiumSplitArea');
+  const key = document.getElementById('stadiumSplitPlayer').value;
+  if (!key) { area.innerHTML = '<div style="color:#6e6e73;font-size:0.85rem;">No player stats yet.</div>'; return; }
+  const byStadium = {};
+  State.data.games.forEach(g => {
+    const ps = g.playerStats && g.playerStats[key];
+    if (!ps) return;
+    const s = byStadium[g.stadium] = byStadium[g.stadium] || { g: 0, ab: 0, h: 0, hr: 0, rbi: 0 };
+    s.g++; s.ab += ps.ab || 0; s.h += ps.hits || 0; s.hr += ps.hr || 0; s.rbi += ps.rbi || 0;
+  });
+  const rows = CONFIG.STADIUMS.filter(st => byStadium[st]);
+  if (!rows.length) { area.innerHTML = '<div style="color:#6e6e73;font-size:0.85rem;">No games with stats for this player yet.</div>'; return; }
+  area.innerHTML = `<div class="table-wrap"><table>
+    <thead><tr><th>Stadium</th><th class="text-center">G</th><th class="text-center">AB</th><th class="text-center">H</th><th class="text-center">AVG</th><th class="text-center">HR</th><th class="text-center">RBI</th></tr></thead>
+    <tbody>${rows.map(st => { const s = byStadium[st]; return `<tr>
+      <td><span class="stadium-cell">${sImg(st)} ${st}</span></td>
+      <td class="text-center">${s.g}</td><td class="text-center">${s.ab}</td><td class="text-center">${s.h}</td>
+      <td class="text-center" style="font-weight:600">${s.ab ? (s.h / s.ab).toFixed(3).replace(/^0/, '') : '—'}</td>
+      <td class="text-center">${s.hr}</td><td class="text-center">${s.rbi}</td>
+    </tr>`; }).join('')}</tbody></table></div>`;
+}
+
 function computeBattingStats(filterOwner, minGames, filterStadium, filterHomeAway) {
   filterStadium = filterStadium || 'all';
   filterHomeAway = filterHomeAway || 'all';
@@ -6268,6 +6413,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const target = document.getElementById('subtab-' + btn.dataset.subtab);
       target.style.display = 'block';
       target.classList.add('active');
+      if (btn.dataset.subtab === 'matchups') renderMatchups();
     });
   });
 
