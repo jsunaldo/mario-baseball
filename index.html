@@ -2555,6 +2555,162 @@ function getWsChampion() {
   return Object.keys(wins).find(k => wins[k] >= needed) || null;
 }
 
+// ========================================================================
+// PLAYOFFS (3+ owner leagues) — seeded bracket, series played sequentially
+// ========================================================================
+function getRegSeasonSeeds() {
+  const keys = getOwnerKeys();
+  const stats = keys.map(k => {
+    let w = 0, l = 0, diff = 0;
+    State.data.games.forEach(g => {
+      if (g.gameNumber > CONFIG.TOTAL_GAMES) return;
+      const parts = g.away ? [g.home, g.away] : keys;
+      if (!parts.includes(k)) return;
+      const sc = gameScoresOf(g, keys);
+      const opp = opponentOf(g, k);
+      diff += (sc[k] || 0) - (sc[opp] || 0);
+      g.winner === k ? w++ : l++;
+    });
+    return { k, w, l, diff };
+  });
+  stats.sort((a, b) => b.w - a.w || b.diff - a.diff);
+  return stats;
+}
+
+function homePatternFor(len) {
+  if (len >= 7) return [1, 1, 0, 0, 0, 1, 1]; // 2-3-2
+  if (len >= 5) return [1, 1, 0, 0, 1];       // 2-2-1
+  if (len >= 3) return [1, 0, 1];
+  return [1, 0];
+}
+
+// Pure bracket resolution — also used by League History on the landing page,
+// so it must not touch CONFIG/State. Series are played one at a time in
+// bracket order; postseason games are assigned to the first undecided series.
+function resolvePlayoffsPure(meta, data) {
+  const po = data.playoffs;
+  if (!po || !Array.isArray(po.seeds) || po.seeds.length < 3) return null;
+  const seeds = po.seeds; // owner keys, best seed first (max 4)
+  const need = Math.ceil((meta.wsGames || 7) / 2);
+  const rounds = seeds.length === 3
+    ? [{ name: 'Semifinal', series: [{ a: seeds[1], b: seeds[2] }] },
+       { name: 'Championship', series: [{ a: seeds[0], b: null }] }]
+    : [{ name: 'Semifinals', series: [{ a: seeds[0], b: seeds[3] }, { a: seeds[1], b: seeds[2] }] },
+       { name: 'Championship', series: [{ a: null, b: null }] }];
+  const flat = [];
+  rounds.forEach(r => r.series.forEach(s => { s.wins = {}; s.games = []; s.winner = null; flat.push(s); }));
+  const finalSeries = rounds[rounds.length - 1].series[0];
+  const games = (data.games || []).filter(g => g.gameNumber > meta.totalGames).sort((x, y) => x.gameNumber - y.gameNumber);
+  let si = 0;
+  games.forEach(g => {
+    while (si < flat.length && flat[si].winner) si++;
+    if (si >= flat.length) return;
+    const s = flat[si];
+    if (!s.a || !s.b) return; // participants unknown (shouldn't happen in order)
+    s.games.push(g.gameNumber);
+    s.wins[g.winner] = (s.wins[g.winner] || 0) + 1;
+    if (s.wins[g.winner] >= need && !s.winner) {
+      s.winner = g.winner;
+      if (s !== finalSeries) {
+        if (seeds.length === 3) finalSeries.b = s.winner;
+        else if (finalSeries.a === null) finalSeries.a = s.winner;
+        else finalSeries.b = s.winner;
+      }
+    }
+  });
+  const active = flat.find(s => !s.winner && s.a && s.b) || null;
+  return { rounds, active, champion: finalSeries.winner, need, seeds };
+}
+
+function startPlayoffs() {
+  const seeds = getRegSeasonSeeds().map(s => s.k).slice(0, 4);
+  const stadiums = {};
+  seeds.forEach(k => {
+    const sel = document.getElementById('poStadium_' + k);
+    stadiums[k] = sel ? sel.value : CONFIG.STADIUMS[0];
+  });
+  State.data.playoffs = { seeds, stadiums, startedAt: new Date().toISOString() };
+  State.save();
+  renderWorldSeries();
+  renderHeader();
+  showToast('Playoffs are set \u2014 play ball!');
+}
+
+function renderPlayoffsArea(area, wsGames) {
+  const po = State.data.playoffs;
+  let body = '';
+  if (!po) {
+    const seedStats = getRegSeasonSeeds();
+    const qualN = Math.min(seedStats.length, 4);
+    body = `<div class="ws-status-line">Regular season complete \u2014 set up the playoffs!</div>
+      <div style="text-align:center;font-size:0.85rem;color:#d2d2d7;margin-bottom:8px;">
+        ${qualN === 3 ? 'The #1 seed gets a bye to the Championship; #2 plays #3 in the semifinal.' : 'Semifinals: #1 vs #4 and #2 vs #3, then the winners meet.'}
+        Each series is best of ${CONFIG.WS_GAMES || 7}; the better seed has home field.
+        ${seedStats.length > 4 ? '<br>Only the top 4 seeds qualify.' : ''}
+      </div>
+      <div style="max-width:440px;margin:0 auto 10px;">
+        ${seedStats.map((s, i) => `<div style="display:flex;justify-content:space-between;font-size:0.85rem;padding:3px 0;${i >= 4 ? 'opacity:0.45;' : ''}">
+          <span><strong style="color:${getOwnerColor(s.k)}">#${i + 1} ${CONFIG.OWNERS[s.k].name}</strong>${i >= 4 ? ' \u2014 misses the playoffs' : ''}</span>
+          <span style="color:#a1a1a6;">${s.w}-${s.l} &middot; ${s.diff >= 0 ? '+' : ''}${s.diff}</span>
+        </div>`).join('')}
+      </div>
+      <div class="ws-setup">
+        ${seedStats.slice(0, 4).map(s => `<div class="form-group" style="min-width:170px;flex:0;">
+          <label style="color:${getOwnerColor(s.k)}">${CONFIG.OWNERS[s.k].name}'s Home Stadium</label>
+          <select id="poStadium_${s.k}">${CONFIG.STADIUMS.map(st => `<option value="${st}">${st}</option>`).join('')}</select>
+        </div>`).join('')}
+        <button class="btn btn-warning" onclick="startPlayoffs()">Start Playoffs</button>
+      </div>`;
+  } else {
+    const res = resolvePlayoffsPure({ totalGames: CONFIG.TOTAL_GAMES, wsGames: CONFIG.WS_GAMES }, State.data);
+    const rank = k => res.seeds.indexOf(k);
+    const label = k => k ? `<strong style="color:${getOwnerColor(k)}">#${rank(k) + 1} ${CONFIG.OWNERS[k].name}</strong>` : '<span style="color:#6e6e73">TBD</span>';
+    body = res.rounds.map(r => `
+      <div style="margin:10px 0;">
+        <div style="text-align:center;font-size:0.72rem;letter-spacing:0.08em;text-transform:uppercase;color:#86868b;margin-bottom:4px;">${r.name}</div>
+        ${r.series.map(s => {
+          let status;
+          if (s.winner) {
+            status = `<span style="color:${getOwnerColor(s.winner)};font-weight:700;">${CONFIG.OWNERS[s.winner].name} wins ${s.wins[s.winner]}-${s.games.length - s.wins[s.winner]}</span>`;
+          } else if (!s.a || !s.b) {
+            status = '<span style="color:#6e6e73">awaiting semifinal winner</span>';
+          } else if (!s.games.length) {
+            status = '<span style="color:#a1a1a6">up next</span>';
+          } else {
+            const wa = s.wins[s.a] || 0, wb = s.wins[s.b] || 0;
+            const ld = wa >= wb ? s.a : s.b;
+            status = wa === wb
+              ? `<span style="color:#a1a1a6">tied ${wa}-${wb}</span>`
+              : `<span style="color:${getOwnerColor(ld)}">${CONFIG.OWNERS[ld].name} leads ${Math.max(wa, wb)}-${Math.min(wa, wb)}</span>`;
+          }
+          const chips = s.games.map((gn, i) => {
+            const g = State.data.games.find(x => x.gameNumber === gn);
+            return `<span class="ws-game-chip" style="color:${getOwnerColor(g.winner)}" onclick="showGameDetail(${gn})">G${i + 1}: ${CONFIG.OWNERS[g.winner].name} ${getScoreDisplay(g)}</span>`;
+          }).join('');
+          return `<div style="text-align:center;font-size:0.95rem;margin:4px 0;">${label(s.a)} <span style="color:#6e6e73">vs</span> ${label(s.b)} &mdash; ${status}
+            ${chips ? `<div class="ws-games" style="margin-top:4px;">${chips}</div>` : ''}</div>`;
+        }).join('')}
+      </div>`).join('');
+    if (res.champion) {
+      body += `<div class="ws-champion">&#127942; ${CONFIG.OWNERS[res.champion].name} wins the Championship!</div>`;
+    } else if (res.active) {
+      const nextN = wsGames.length + 1;
+      const sched = getSchedule(CONFIG.TOTAL_GAMES + nextN);
+      body += `<div style="text-align:center;margin:10px 0;">
+        <button class="btn btn-warning btn-lg" onclick="openAddGameWizard(${CONFIG.TOTAL_GAMES + nextN})">Play Next Playoff Game \u2014 ${sched.stadium} (${CONFIG.OWNERS[sched.home].name} home)</button>
+      </div>`;
+    }
+  }
+  const meta = SeasonManager.get(CONFIG.SEASON_ID);
+  if (!wsGames.length && meta && meta.originalTotalGames) {
+    body += `<div style="text-align:center;margin-top:10px;font-size:0.75rem;color:#86868b;">
+      Regular season ended early after ${CONFIG.TOTAL_GAMES} of ${meta.originalTotalGames} scheduled games.
+      <button class="btn btn-sm btn-secondary" style="font-size:0.72rem;margin-left:6px;" onclick="resumeRegularSeason()">&#8617; Resume Regular Season</button>
+    </div>`;
+  }
+  area.innerHTML = `<div class="ws-card"><div class="ws-title">&#127942; Playoffs</div>${body}</div>`;
+}
+
 // End the regular season at the last played game (e.g. when all seeds are
 // clinched) — the remaining scheduled games are dropped and WS setup begins.
 function endRegularSeason() {
@@ -2596,6 +2752,7 @@ function resumeRegularSeason() {
   SeasonManager.save(seasons);
   CONFIG.TOTAL_GAMES = meta.totalGames;
   if (State.data.worldSeries) { delete State.data.worldSeries; State.save(); }
+  if (State.data.playoffs) { delete State.data.playoffs; State.save(); }
   Sync.markDirty();
   renderAll();
   showToast('Regular season resumed — back to the grind!');
@@ -2616,6 +2773,7 @@ function renderWorldSeries() {
   }
 
   const keys = getOwnerKeys();
+  if (keys.length >= 3) { renderPlayoffsArea(area, wsGames); return; }
   const needed = wsWinsNeeded();
   const wins = {};
   keys.forEach(k => wins[k] = 0);
@@ -2667,9 +2825,6 @@ function renderWorldSeries() {
         </div>`).join('')}
         <button class="btn btn-warning" onclick="startWorldSeries('${hfa}')">Start World Series</button>
       </div>`;
-  } else {
-    body = `<div class="ws-status-line">Regular season complete!</div>
-      <div style="text-align:center;font-size:0.85rem;color:#86868b;">Playoffs for ${keys.length}-owner leagues aren't supported yet.</div>`;
   }
 
   // Early-ended seasons can be resumed until the first WS game is played
@@ -2711,6 +2866,22 @@ function getSchedule(gameNum) {
       const other = keys.find(k => k !== ws.hfaOwner);
       const home = [1, 2, 6, 7].includes(n) ? ws.hfaOwner : other;
       return { stadium: ws.stadiums[home], home, away: home === ws.hfaOwner ? other : ws.hfaOwner };
+    }
+    // N-owner playoffs: the next game always belongs to the first undecided
+    // series (series are played one at a time), so this is only meaningful
+    // for the next unplayed postseason game.
+    const po = State.data && State.data.playoffs;
+    if (po && keys.length >= 3) {
+      const res = resolvePlayoffsPure({ totalGames: CONFIG.TOTAL_GAMES, wsGames: CONFIG.WS_GAMES }, State.data);
+      if (res && res.active) {
+        const s = res.active;
+        const rank = k => res.seeds.indexOf(k);
+        const hfa = rank(s.a) < rank(s.b) ? s.a : s.b;
+        const other = hfa === s.a ? s.b : s.a;
+        const pat = homePatternFor(CONFIG.WS_GAMES || 7);
+        const home = pat[Math.min(s.games.length, pat.length - 1)] ? hfa : other;
+        return { stadium: (po.stadiums && po.stadiums[home]) || CONFIG.STADIUMS[0], home, away: home === s.a ? s.b : s.a };
+      }
     }
     return { stadium: 'TBD', home: 'TBD', away: 'TBD' };
   }
@@ -3538,7 +3709,8 @@ function getLineupSP(lineup, ownerKey) {
 
 // Get score display string for a game (e.g. "7-5")
 function getScoreDisplay(game) {
-  const keys = getOwnerKeys();
+  // Only the two participants — in an N-owner league the other owners aren't in this game
+  const keys = game.away ? [game.home, game.away] : getOwnerKeys();
   return keys.map(k => getGameScore(game, k)).join('-');
 }
 
@@ -5822,10 +5994,13 @@ function renderLeagueHistory() {
       parts.forEach(k => { if (w[k] === undefined) return; g.winner === k ? w[k]++ : l[k]++; });
     });
     if (!data.games.some(g => g.playerStats)) anyMissingStats = true;
-    // champion = majority of games beyond the regular season
+    // champion: bracket winner for playoff leagues, else majority of WS games
     const ws = data.games.filter(g => g.gameNumber > meta.totalGames);
     let champ = null;
-    if (ws.length) {
+    if (keys.length >= 3 && data.playoffs) {
+      const res = resolvePlayoffsPure(meta, data);
+      champ = res ? res.champion : null;
+    } else if (ws.length) {
       const wsWins = {}; keys.forEach(k => { wsWins[k] = 0; });
       ws.forEach(g => { if (wsWins[g.winner] !== undefined) wsWins[g.winner]++; });
       const need = Math.ceil((meta.wsGames || 7) / 2);
