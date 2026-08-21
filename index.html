@@ -865,7 +865,7 @@ tr.draft-dan:hover { background: rgba(78,205,196,0.1); }
   transition: none;
 }
 .pick-chip.compact .player-chip-inner { display: contents; }
-.pick-chip.compact .player-img { width: 1.55em; height: 1.55em; flex: none; border-radius: 0.25em; }
+.pick-chip.compact .player-img { width: var(--pick-mug, 1.55em); height: var(--pick-mug, 1.55em); flex: none; border-radius: 0.25em; object-fit: contain; }
 .pick-chip.compact .pc-name { flex: 1 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.3; }
 .pick-chip.compact .pc-stats { flex: none; display: flex; gap: 0.14em; }
 .pick-chip.compact .mini-stat { display: inline-flex; align-items: baseline; line-height: 1; padding: 0.08em 0.1em; border-radius: 0.25em; }
@@ -876,9 +876,8 @@ tr.draft-dan:hover { background: rgba(78,205,196,0.1); }
 .pick-chip.compact .pc-flag.ir { background: #ff453a; color: #000; }
 .pick-chip.compact .pc-flag.np { background: rgba(255,255,255,0.14); color: #d2d2d7; }
 .pick-chip.compact.disabled { opacity: 0.45; }
-/* When the fit lands small, the mugshot is the first thing to go: a readable
-   name is worth more than a portrait at that size. */
-.pick-grid.compact.no-mug .player-img { display: none; }
+/* The mugshot always stays on screen — it only shrinks (--pick-mug) to make
+   room, never disappears. */
 .pick-key { font-size: 0.7rem; color: #6e6e73; }
 .pick-key b { color: #f7b731; }
 /* While picking, the header art and navigation give their space to the rosters. */
@@ -5447,6 +5446,9 @@ let wizCompact = localStorage.getItem('msb_pickCompact') !== '0';
 // rosters without scrolling. Called after each render and on resize, so it
 // adapts to any window, any display, any zoom level rather than assuming one.
 const PICK_FS_MIN = 7, PICK_FS_MAX = 26;
+// Mugshot size as a multiple of the row's font-size, biggest first. The last
+// entry is the floor — the portrait shrinks to make room but never vanishes.
+const PICK_MUG_SCALES = [1.55, 1.3, 1.1, 0.95];
 function fitPickGrids() {
   const step = document.getElementById('wizStep2');
   if (!step || !wizCompact) return;
@@ -5464,21 +5466,21 @@ function fitPickGrids() {
     [...g.querySelectorAll('.pc-name')].some(e => e.scrollWidth > e.clientWidth + 1));
 
   // Largest size wins: walk down from the cap and stop at the first size that
-  // clears both the vertical budget and the name column. At each size we try
-  // with mugshots first and then without — dropping the portrait buys name
-  // width, and bigger text is worth more than a 1.5em picture.
-  const apply = (fs, noMug) => {
+  // clears both the vertical budget and the name column. At each size the
+  // mugshot is tried biggest-first and shrunk to buy name width — it always
+  // stays visible, it just gets smaller when the row is tight.
+  const apply = (fs, mug) => {
     step.style.setProperty('--pick-fs', fs + 'px');
-    grids.forEach(g => g.classList.toggle('no-mug', noMug));
+    step.style.setProperty('--pick-mug', mug + 'em');
   };
-  let chosenFs = PICK_FS_MIN, chosenNoMug = true, found = false;
+  let chosenFs = PICK_FS_MIN, chosenMug = PICK_MUG_SCALES[PICK_MUG_SCALES.length - 1], found = false;
   for (let fs = PICK_FS_MAX; fs >= PICK_FS_MIN && !found; fs--) {
-    for (const noMug of [false, true]) {
-      apply(fs, noMug);
-      if (overflow() <= -6 && !anyNameClipped()) { chosenFs = fs; chosenNoMug = noMug; found = true; break; }
+    for (const mug of PICK_MUG_SCALES) {
+      apply(fs, mug);
+      if (overflow() <= -6 && !anyNameClipped()) { chosenFs = fs; chosenMug = mug; found = true; break; }
     }
   }
-  apply(chosenFs, chosenNoMug);
+  apply(chosenFs, chosenMug);
 }
 
 let _pickFitTimer = null;
