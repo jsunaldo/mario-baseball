@@ -841,6 +841,64 @@ tr.draft-dan:hover { background: rgba(78,205,196,0.1); }
 .ns-draft-card .player-stats { font-size: 0.7rem; color: #86868b; }
 .ns-card-bars { gap: 3px; margin: 6px 2px 2px; text-align: left; }
 .pick-grid { grid-template-columns: repeat(auto-fill, minmax(136px, 1fr)); max-height: 520px; overflow-y: auto; margin: 10px 0; padding-right: 2px; }
+/* Compact pick rows: both owners read their FULL roster side by side on a
+   half-screen window (the other half is the emulator) with no scrolling.
+   Cards become one-line rows; the type is the left border, the four ratings
+   collapse to colour-coded numbers. */
+.pick-grid.compact { grid-template-columns: repeat(2, minmax(0, 1fr)); max-height: none; overflow-y: visible; gap: 3px; margin: 6px 0; }
+.pick-chip.compact { display: flex; align-items: center; gap: 4px; padding: 2px 4px; text-align: left; border-width: 1px; border-left-width: 3px; border-radius: 5px; font-size: 0.72rem; }
+/* Row size: the same screen might be a monitor at arm's length or a 65" TV
+   across the room, so the pick rows scale without changing the layout shape. */
+.pick-grid.compact.size-m .pick-chip.compact { gap: 6px; padding: 4px 6px; font-size: 0.86rem; }
+.pick-grid.compact.size-m .player-img { width: 25px; height: 25px; }
+.pick-grid.compact.size-m .mini-stat { font-size: 0.66rem; padding: 1px 2px; }
+.pick-grid.compact.size-m .mini-stat b { font-size: 0.8rem; }
+.pick-grid.compact.size-m .mini-stat i { font-size: 0.6rem; }
+.pick-grid.compact.size-m .pc-flag { font-size: 0.6rem; }
+.pick-grid.compact.size-l .pick-chip.compact { gap: 7px; padding: 8px 8px; font-size: 1.22rem; }
+.pick-grid.compact.size-l .player-img { width: 32px; height: 32px; }
+.pick-grid.compact.size-l .mini-stat { font-size: 0.78rem; padding: 0 1px; background: none; }
+.pick-grid.compact.size-l .mini-stat b { font-size: 1.12rem; }
+.pick-grid.compact.size-l .pc-flag { font-size: 0.7rem; padding: 2px 4px; }
+/* At the bigger sizes the per-row B/P/F/R letters cost more width than the
+   names can spare, so the order moves to a legend above each roster; at L the
+   mugshot goes too, because a readable name beats a 32px portrait on a TV. */
+.pick-grid.compact.size-m .mini-stat i,
+.pick-grid.compact.size-l .mini-stat i { display: none; }
+.pick-grid.compact.size-l .player-img { display: none; }
+.pick-legend { font-size: 0.62rem; color: #6e6e73; font-weight: 600; letter-spacing: 0.06em; }
+/* Below ~900px a side is too narrow for two readable sub-columns; one column
+   with full names beats two columns of ellipses, even at the cost of a scroll. */
+@media (max-width: 900px) {
+  .pick-grid.compact { grid-template-columns: minmax(0, 1fr); }
+  .pick-legend { display: none; }
+}
+.size-picker { display: inline-flex; gap: 2px; background: rgba(255,255,255,0.06); border-radius: 980px; padding: 2px; }
+.size-btn { background: none; border: 0; color: #86868b; font-size: 0.7rem; font-weight: 700; padding: 3px 10px; border-radius: 980px; cursor: pointer; transition: all 0.15s; font-family: inherit; }
+.size-btn:hover { color: #d2d2d7; }
+.size-btn.active { background: #0071e3; color: #fff; }
+/* While picking, the header art and navigation give their space to the rosters. */
+body.picking .header-character,
+body.picking .header-logo,
+body.picking .header-season-badge,
+body.picking .back-to-seasons { display: none; }
+body.picking .header { padding: 6px 20px; }
+body.picking .tab-bar { display: none; }
+/* Reclaim side padding too — every pixel here widens the name column. */
+body.picking .card { padding: 12px 10px; }
+body.picking .container { padding-left: 8px; padding-right: 8px; }
+.pick-chip.compact .player-chip-inner { display: contents; }
+.pick-chip.compact .player-img { width: 19px; height: 19px; flex: none; border-radius: 3px; }
+.pick-chip.compact .pc-name { flex: 1 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.35; }
+.pick-chip.compact .pc-stats { flex: none; display: flex; gap: 1px; }
+.pick-chip.compact .mini-stat { display: inline-flex; align-items: baseline; gap: 1px; font-size: 0.58rem; line-height: 1; padding: 1px; border-radius: 3px; background: rgba(255,255,255,0.05); }
+.pick-chip.compact .mini-stat i { font-style: normal; color: #6e6e73; font-size: 0.52rem; }
+.pick-chip.compact .mini-stat b { font-weight: 700; font-size: 0.66rem; }
+.pick-chip.compact .mini-stat.mini-stat-touched { background: rgba(48,209,88,0.16); }
+.pick-chip.compact .pc-flag { flex: none; font-size: 0.52rem; font-weight: 700; letter-spacing: 0.02em; padding: 1px 3px; border-radius: 3px; }
+.pick-chip.compact .pc-flag.ir { background: #ff453a; color: #000; }
+.pick-chip.compact .pc-flag.np { background: rgba(255,255,255,0.14); color: #d2d2d7; }
+.pick-chip.compact.disabled { opacity: 0.4; }
 .pick-chip .player-type { font-size: 0.65rem; padding: 1px 6px; border-radius: 8px; display: inline-block; margin-top: 4px; }
 .ns-card-bars .prof-stat-label { width: 30px; font-size: 0.6rem; }
 .ns-card-bars .prof-stat-bar { height: 5px; }
@@ -2374,6 +2432,16 @@ function statBar(val, label, baseVal, touch, max=10) {
     <span class="prof-stat-val${buffed ? ' prof-stat-buffed' : ''}">${buffed ? baseVal+'\u2191'+val : val}</span>
     ${touch !== undefined ? `<span class="stat-touch-mark">${touched ? '\u25B2' : ''}</span>` : ''}
   </div>`;
+}
+
+// Compact-row counterpart to statBar(): same colour scale and same patch
+// semantics (buffed number turns green, a touched-but-unmoved stat keeps the
+// green tint + hover note), collapsed to a single colour-coded digit.
+function miniStat(val, label, baseVal, touch) {
+  const color = val >= 7 ? '#30d158' : val >= 5 ? '#ff9f0a' : val >= 3 ? '#f97316' : '#ff453a';
+  const buffed = baseVal !== undefined && val > baseVal;
+  const touched = !buffed && !!touch;
+  return `<span class="mini-stat${touched ? ' mini-stat-touched' : ''}"${touched ? ` title="${escapeHtml(touch)}"` : ''}><i>${label}</i><b style="color:${buffed ? '#30d158' : color}">${val}</b></span>`;
 }
 
 function renderPlayerProfiles() {
@@ -4520,6 +4588,7 @@ function openSetLineup(gameNum) {
 }
 
 function closeWizard() {
+  document.body.classList.remove('picking');
   document.getElementById('addGameWizard').style.display = 'none';
   renderAll();
 }
@@ -5377,6 +5446,20 @@ function removeInjury(idx) {
 // LINEUP WIZARD (shared by Add Game + Set Lineup flows)
 // ========================================================================
 let wizPatchEnabled = false; // Balance Patch display toggle in the lineup wizard
+// Compact pick rows default ON: the usual setup is the emulator on one half of
+// the screen and this on the other, with both owners reading their whole roster
+// at once. Remembered per device.
+let wizCompact = localStorage.getItem('msb_pickCompact') !== '0';
+// Row size for the compact pick rows: 's' dense monitor, 'm' default, 'l' for
+// reading across a room off a TV. Remembered per device.
+let wizPickSize = localStorage.getItem('msb_pickSize') || 'm';
+
+function setPickSize(sz) {
+  wizPickSize = sz;
+  localStorage.setItem('msb_pickSize', sz);
+  document.querySelectorAll('#wizStep2 .size-btn').forEach(b => b.classList.toggle('active', b.dataset.size === sz));
+  renderAllPickGrids();
+}
 
 let wizardState = {
   step: 1,
@@ -5457,6 +5540,8 @@ function setWizardStep(step) {
   wizardState.step = step;
   document.querySelectorAll('#addGameWizard .wizard-step').forEach(el => el.classList.remove('active'));
   document.getElementById(`wizStep${step}`).classList.add('active');
+  // Step 2 is the only screen that needs the whole viewport for rosters
+  document.body.classList.toggle('picking', step === 2 && wizCompact);
 
   if (step === 2) {
     // Both owners pick side by side
@@ -5490,17 +5575,28 @@ function renderPickStep() {
   step2.innerHTML = `
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
       <div style="font-size:0.85rem;color:#86868b;">Each owner picks 6 starters &mdash; tap a player to select.</div>
-      <label class="patch-toggle">
-        <input type="checkbox" id="wizPatchToggle" ${wizPatchEnabled ? 'checked' : ''} onchange="wizPatchEnabled=this.checked;renderAllPickGrids();">
-        <span class="patch-toggle-slider"></span>
-        <span class="patch-toggle-label">Balance Patch V1.1</span>
-      </label>
+      <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+        <div class="size-picker" title="Row size — bump it up when you're reading this off a TV">
+          ${['s','m','l'].map(sz => `<button type="button" class="size-btn${wizPickSize === sz ? ' active' : ''}" data-size="${sz}" onclick="setPickSize('${sz}')">${sz.toUpperCase()}</button>`).join('')}
+        </div>
+        <label class="patch-toggle">
+          <input type="checkbox" id="wizCompactToggle" ${wizCompact ? 'checked' : ''} onchange="wizCompact=this.checked;localStorage.setItem('msb_pickCompact',this.checked?'1':'0');document.body.classList.toggle('picking',this.checked);renderAllPickGrids();">
+          <span class="patch-toggle-slider"></span>
+          <span class="patch-toggle-label">Fit whole roster</span>
+        </label>
+        <label class="patch-toggle">
+          <input type="checkbox" id="wizPatchToggle" ${wizPatchEnabled ? 'checked' : ''} onchange="wizPatchEnabled=this.checked;renderAllPickGrids();">
+          <span class="patch-toggle-slider"></span>
+          <span class="patch-toggle-label">Balance Patch V1.1</span>
+        </label>
+      </div>
     </div>
     <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start;">
       ${keys.map(owner => `
         <div style="flex:1;min-width:300px;">
           <div class="stats-team-header" style="background:${getOwnerBgColor(owner)};color:${getOwnerColor(owner)};display:flex;justify-content:space-between;align-items:center;">
             <span>${CONFIG.OWNERS[owner].name}'s Lineup</span>
+            ${wizCompact ? '<span class="pick-legend">BAT &middot; PITCH &middot; FIELD &middot; RUN</span>' : ''}
             <span style="font-size:0.8rem;"><span id="pickCount_${owner}">0</span>/6 picked</span>
           </div>
           <div class="player-grid pick-grid" id="ownerPlayerGrid_${owner}"></div>
@@ -5528,36 +5624,59 @@ function renderPlayerGrid(owner) {
   // honoring the wizard's Balance Patch toggle
   const origPatch = patchEnabled;
   patchEnabled = wizPatchEnabled;
+  grid.classList.toggle('compact', wizCompact);
+  grid.classList.remove('size-s', 'size-m', 'size-l');
+  if (wizCompact) grid.classList.add('size-' + wizPickSize);
   grid.innerHTML = CONFIG.OWNERS[owner].roster.map(player => {
     const injured = isInjured(player, owner, nextGame);
     const noPitch = !canPitch(player, owner, nextGame);
     const selected = picks.includes(player);
     let cls = 'player-chip pick-chip';
+    if (wizCompact) cls += ' compact';
     if (injured) cls += ' disabled';
     if (selected) cls += ' selected';
+
+    const star = prof => prof?.captain ? ' <span style="color:#f7b731;font-size:0.7rem;">&#9733;</span>' : '';
+    const prof = PLAYER_PROFILES[player];
+    const p = prof ? getPatchedPlayer(player, prof) : null;
+    const typeColor = p ? (TYPE_COLORS[p.type] || '#86868b') : '#86868b';
+    const touches = p && p.patched ? getPatchTouches(p.patchNotes) : null;
+    const touch = s => touches ? (touches[s] || []).join(' \u2022 ') : undefined;
+    const base = s => (p && p.patched) ? prof[s] : undefined;
+
+    if (wizCompact) {
+      // One line per player: mugshot, name, four colour-coded ratings. The type
+      // moves to the left border so it costs no horizontal space.
+      const stats = p ? `<span class="pc-stats">
+        ${miniStat(p.bat, 'B', base('bat'), touch('bat'))}
+        ${miniStat(p.pitch, 'P', base('pitch'), touch('pitch'))}
+        ${miniStat(p.field, 'F', base('field'), touch('field'))}
+        ${miniStat(p.run, 'R', base('run'), touch('run'))}
+      </span>` : '';
+      const flag = injured ? '<span class="pc-flag ir">IR</span>'
+                 : noPitch ? '<span class="pc-flag np">NP</span>' : '';
+      return `<div class="${cls}" style="border-left-color:${typeColor};" data-player="${player}" data-owner="${owner}" title="${escapeHtml(player)}${p ? ' \u2014 ' + p.type : ''}" onclick="togglePlayerPick(this)">
+        ${pImg(player,'player-img')}<span class="pc-name">${player}${star(prof)}</span>${flag}${stats}
+      </div>`;
+    }
 
     let badges = '';
     if (injured) badges += '<span class="badge badge-injured">INJURED</span>';
     else if (noPitch) badges += '<span class="badge badge-no-pitch">NO PITCH</span>';
 
-    const prof = PLAYER_PROFILES[player];
     let typeHtml = '', barsHtml = '';
     if (prof) {
-      const p = getPatchedPlayer(player, prof);
-      const typeColor = TYPE_COLORS[p.type] || '#86868b';
-      const touches = p.patched ? getPatchTouches(p.patchNotes) : null;
-      const touch = s => touches ? (touches[s] || []).join(' \u2022 ') : undefined;
       typeHtml = `<div class="player-type" style="background:${typeColor};color:#000;">${p.type}</div>`;
       barsHtml = `<div class="prof-stats ns-card-bars">
-        ${statBar(p.bat, 'BAT', p.patched ? prof.bat : undefined, touch('bat'))}
-        ${statBar(p.pitch, 'PITCH', p.patched ? prof.pitch : undefined, touch('pitch'))}
-        ${statBar(p.field, 'FIELD', p.patched ? prof.field : undefined, touch('field'))}
-        ${statBar(p.run, 'RUN', p.patched ? prof.run : undefined, touch('run'))}
+        ${statBar(p.bat, 'BAT', base('bat'), touch('bat'))}
+        ${statBar(p.pitch, 'PITCH', base('pitch'), touch('pitch'))}
+        ${statBar(p.field, 'FIELD', base('field'), touch('field'))}
+        ${statBar(p.run, 'RUN', base('run'), touch('run'))}
       </div>`;
     }
 
     return `<div class="${cls}" data-player="${player}" data-owner="${owner}" onclick="togglePlayerPick(this)">
-      <div class="player-chip-inner">${pImg(player,'player-img')}<span>${player}${prof?.captain ? ' <span style="color:#f7b731;font-size:0.7rem;">&#9733;</span>' : ''}</span></div>
+      <div class="player-chip-inner">${pImg(player,'player-img')}<span>${player}${star(prof)}</span></div>
       ${typeHtml}${barsHtml}${badges}
     </div>`;
   }).join('');
