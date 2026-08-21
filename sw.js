@@ -1,4 +1,4 @@
-const CACHE_NAME = 'msb-tracker-v9';
+const CACHE_NAME = 'msb-tracker-v10';
 
 // Install: cache the main app files
 self.addEventListener('install', event => {
