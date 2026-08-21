@@ -856,8 +856,8 @@ tr.draft-dan:hover { background: rgba(78,205,196,0.1); }
   font-size: var(--pick-fs, 12px);
 }
 .pick-chip.compact {
-  display: flex; align-items: center; gap: 0.38em;
-  padding: 0.18em 0.35em; text-align: left;
+  display: flex; align-items: center; gap: 5px;
+  padding: 2px 4px; text-align: left;
   border-width: 1px; border-left-width: 3px; border-radius: 0.4em;
   font-size: var(--pick-fs, 12px);
   /* .player-chip animates `all`, which makes font-size transition — that would
@@ -865,7 +865,7 @@ tr.draft-dan:hover { background: rgba(78,205,196,0.1); }
   transition: none;
 }
 .pick-chip.compact .player-chip-inner { display: contents; }
-.pick-chip.compact .player-img { width: var(--pick-mug, 1.55em); height: var(--pick-mug, 1.55em); flex: none; border-radius: 0.25em; object-fit: contain; }
+.pick-chip.compact .player-img { width: var(--pick-mug, 20px); height: var(--pick-mug, 20px); flex: none; border-radius: 3px; object-fit: contain; }
 .pick-chip.compact .pc-name { flex: 1 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.3; }
 .pick-chip.compact .pc-stats { flex: none; display: flex; gap: 0.14em; }
 .pick-chip.compact .mini-stat { display: inline-flex; align-items: baseline; line-height: 1; padding: 0.08em 0.1em; border-radius: 0.25em; }
@@ -2199,7 +2199,10 @@ const STADIUM_IMGS = {
   'DK Jungle':`${IMG_BASE}/Stadiums/120px-Donkey_Kong_Jungle_1.png`,
   'Bowser Castle':`${IMG_BASE}/Stadiums/120px-Bowser_Castle_MSB.png`,
 };
-function pImg(name, cls='player-img') { return MUGSHOTS[name] ? `<img src="${MUGSHOTS[name]}" alt="${name}" class="${cls}" loading="lazy" onerror="this.style.display='none'">` : ''; }
+// `eager` matters where every portrait is on screen at once (the compact pick
+// rows): lazy loading defers them while fitPickGrids() is measuring oversized
+// rows, and they never come back once the layout settles.
+function pImg(name, cls='player-img', loading='lazy') { return MUGSHOTS[name] ? `<img src="${MUGSHOTS[name]}" alt="${name}" class="${cls}" loading="${loading}" onerror="this.style.display='none'">` : ''; }
 function sImg(name, cls='stadium-img') { return STADIUM_IMGS[name] ? `<img src="${STADIUM_IMGS[name]}" alt="${name}" class="${cls}" loading="lazy" onerror="this.style.display='none'">` : ''; }
 function escapeHtml(s) {
   return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -5445,10 +5448,16 @@ let wizCompact = localStorage.getItem('msb_pickCompact') !== '0';
 // Grow the pick rows to the largest size that still shows every player on both
 // rosters without scrolling. Called after each render and on resize, so it
 // adapts to any window, any display, any zoom level rather than assuming one.
-const PICK_FS_MIN = 7, PICK_FS_MAX = 26;
-// Mugshot size as a multiple of the row's font-size, biggest first. The last
-// entry is the floor — the portrait shrinks to make room but never vanishes.
-const PICK_MUG_SCALES = [1.55, 1.3, 1.1, 0.95];
+// The mugshot is sized independently of the text and takes priority: faces are
+// what you actually scan when picking, so the portrait is grown as large as
+// the rows allow and the names shrink around it.
+const PICK_FS_MAX = 20;
+const PICK_MUG_MIN = 14, PICK_MUG_MAX = 72;
+// Text floors tried in order. The portrait is maximised against the first
+// floor that leaves a workable row — starting at 11px because dropping the
+// text below that buys only a pixel or two of face, which is a bad trade.
+// The lower floors exist so a cramped window still fits rather than failing.
+const PICK_FS_FLOORS = [11, 9, 7];
 function fitPickGrids() {
   const step = document.getElementById('wizStep2');
   if (!step || !wizCompact) return;
@@ -5465,22 +5474,36 @@ function fitPickGrids() {
   const anyNameClipped = () => grids.some(g =>
     [...g.querySelectorAll('.pc-name')].some(e => e.scrollWidth > e.clientWidth + 1));
 
-  // Largest size wins: walk down from the cap and stop at the first size that
-  // clears both the vertical budget and the name column. At each size the
-  // mugshot is tried biggest-first and shrunk to buy name width — it always
-  // stays visible, it just gets smaller when the row is tight.
   const apply = (fs, mug) => {
     step.style.setProperty('--pick-fs', fs + 'px');
-    step.style.setProperty('--pick-mug', mug + 'em');
+    step.style.setProperty('--pick-mug', mug + 'px');
   };
-  let chosenFs = PICK_FS_MIN, chosenMug = PICK_MUG_SCALES[PICK_MUG_SCALES.length - 1], found = false;
-  for (let fs = PICK_FS_MAX; fs >= PICK_FS_MIN && !found; fs--) {
-    for (const mug of PICK_MUG_SCALES) {
-      apply(fs, mug);
-      if (overflow() <= -6 && !anyNameClipped()) { chosenFs = fs; chosenMug = mug; found = true; break; }
+  const fits = () => overflow() <= -6 && !anyNameClipped();
+
+  // Mugshot first: binary-search the biggest portrait that still leaves room
+  // for the text floor. Growing either dimension only ever makes a row bigger,
+  // so feasibility is monotonic and the search is safe.
+  let floor = PICK_FS_FLOORS[PICK_FS_FLOORS.length - 1], bestMug = PICK_MUG_MIN;
+  for (const f of PICK_FS_FLOORS) {
+    apply(f, PICK_MUG_MIN);
+    if (!fits()) continue;
+    floor = f;
+    let lo = PICK_MUG_MIN, hi = PICK_MUG_MAX;
+    while (lo <= hi) {
+      const mid = (lo + hi) >> 1;
+      apply(f, mid);
+      if (fits()) { bestMug = mid; lo = mid + 1; } else { hi = mid - 1; }
     }
+    break;
   }
-  apply(chosenFs, chosenMug);
+
+  // Then spend whatever slack is left on the text, without shrinking the face.
+  let bestFs = floor;
+  for (let fs = PICK_FS_MAX; fs > floor; fs--) {
+    apply(fs, bestMug);
+    if (fits()) { bestFs = fs; break; }
+  }
+  apply(bestFs, bestMug);
 }
 
 let _pickFitTimer = null;
@@ -5682,7 +5705,7 @@ function renderPlayerGrid(owner) {
       const flag = injured ? '<span class="pc-flag ir">IR</span>'
                  : noPitch ? '<span class="pc-flag np">NP</span>' : '';
       return `<div class="${cls}" style="border-left-color:${typeColor};" data-player="${player}" data-owner="${owner}" title="${escapeHtml(player)}${p ? ' \u2014 ' + p.type : ''}" onclick="togglePlayerPick(this)">
-        ${pImg(player,'player-img')}<span class="pc-name">${player}${star(prof)}</span>${flag}${stats}
+        ${pImg(player,'player-img','eager')}<span class="pc-name">${player}${star(prof)}</span>${flag}${stats}
       </div>`;
     }
 
