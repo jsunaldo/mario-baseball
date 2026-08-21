@@ -844,39 +844,43 @@ tr.draft-dan:hover { background: rgba(78,205,196,0.1); }
 /* Compact pick rows: both owners read their FULL roster side by side on a
    half-screen window (the other half is the emulator) with no scrolling.
    Cards become one-line rows; the type is the left border, the four ratings
-   collapse to colour-coded numbers. */
-.pick-grid.compact { grid-template-columns: repeat(2, minmax(0, 1fr)); max-height: none; overflow-y: visible; gap: 3px; margin: 6px 0; }
-.pick-chip.compact { display: flex; align-items: center; gap: 4px; padding: 2px 4px; text-align: left; border-width: 1px; border-left-width: 3px; border-radius: 5px; font-size: 0.72rem; }
-/* Row size: the same screen might be a monitor at arm's length or a 65" TV
-   across the room, so the pick rows scale without changing the layout shape. */
-.pick-grid.compact.size-m .pick-chip.compact { gap: 6px; padding: 4px 6px; font-size: 0.86rem; }
-.pick-grid.compact.size-m .player-img { width: 25px; height: 25px; }
-.pick-grid.compact.size-m .mini-stat { font-size: 0.66rem; padding: 1px 2px; }
-.pick-grid.compact.size-m .mini-stat b { font-size: 0.8rem; }
-.pick-grid.compact.size-m .mini-stat i { font-size: 0.6rem; }
-.pick-grid.compact.size-m .pc-flag { font-size: 0.6rem; }
-.pick-grid.compact.size-l .pick-chip.compact { gap: 7px; padding: 8px 8px; font-size: 1.22rem; }
-.pick-grid.compact.size-l .player-img { width: 32px; height: 32px; }
-.pick-grid.compact.size-l .mini-stat { font-size: 0.78rem; padding: 0 1px; background: none; }
-.pick-grid.compact.size-l .mini-stat b { font-size: 1.12rem; }
-.pick-grid.compact.size-l .pc-flag { font-size: 0.7rem; padding: 2px 4px; }
-/* At the bigger sizes the per-row B/P/F/R letters cost more width than the
-   names can spare, so the order moves to a legend above each roster; at L the
-   mugshot goes too, because a readable name beats a 32px portrait on a TV. */
-.pick-grid.compact.size-m .mini-stat i,
-.pick-grid.compact.size-l .mini-stat i { display: none; }
-.pick-grid.compact.size-l .player-img { display: none; }
-.pick-legend { font-size: 0.62rem; color: #6e6e73; font-weight: 600; letter-spacing: 0.06em; }
-/* Below ~900px a side is too narrow for two readable sub-columns; one column
-   with full names beats two columns of ellipses, even at the cost of a scroll. */
-@media (max-width: 900px) {
-  .pick-grid.compact { grid-template-columns: minmax(0, 1fr); }
-  .pick-legend { display: none; }
+   collapse to colour-coded numbers.
+   Every dimension below is in em off the grid's own font-size, and
+   fitPickGrids() picks the largest font-size at which all 27 rows per side
+   still fit the viewport. That way "no scrolling" holds on any screen instead
+   of only the one it was designed against. */
+.pick-grid.compact {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  max-height: none; overflow-y: visible;
+  gap: 0.25em; margin: 0.5em 0;
+  font-size: var(--pick-fs, 12px);
 }
-.size-picker { display: inline-flex; gap: 2px; background: rgba(255,255,255,0.06); border-radius: 980px; padding: 2px; }
-.size-btn { background: none; border: 0; color: #86868b; font-size: 0.7rem; font-weight: 700; padding: 3px 10px; border-radius: 980px; cursor: pointer; transition: all 0.15s; font-family: inherit; }
-.size-btn:hover { color: #d2d2d7; }
-.size-btn.active { background: #0071e3; color: #fff; }
+.pick-chip.compact {
+  display: flex; align-items: center; gap: 0.38em;
+  padding: 0.18em 0.35em; text-align: left;
+  border-width: 1px; border-left-width: 3px; border-radius: 0.4em;
+  font-size: var(--pick-fs, 12px);
+  /* .player-chip animates `all`, which makes font-size transition — that would
+     feed fitPickGrids() mid-animation heights and it would never find a fit. */
+  transition: none;
+}
+.pick-chip.compact .player-chip-inner { display: contents; }
+.pick-chip.compact .player-img { width: 1.55em; height: 1.55em; flex: none; border-radius: 0.25em; }
+.pick-chip.compact .pc-name { flex: 1 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.3; }
+.pick-chip.compact .pc-stats { flex: none; display: flex; gap: 0.14em; }
+.pick-chip.compact .mini-stat { display: inline-flex; align-items: baseline; line-height: 1; padding: 0.08em 0.1em; border-radius: 0.25em; }
+.pick-chip.compact .mini-stat i { display: none; }
+.pick-chip.compact .mini-stat b { font-weight: 700; font-size: 0.94em; }
+.pick-chip.compact .mini-stat.mini-stat-touched { background: rgba(48,209,88,0.18); }
+.pick-chip.compact .pc-flag { flex: none; font-size: 0.68em; font-weight: 700; padding: 0.1em 0.28em; border-radius: 0.25em; }
+.pick-chip.compact .pc-flag.ir { background: #ff453a; color: #000; }
+.pick-chip.compact .pc-flag.np { background: rgba(255,255,255,0.14); color: #d2d2d7; }
+.pick-chip.compact.disabled { opacity: 0.45; }
+/* When the fit lands small, the mugshot is the first thing to go: a readable
+   name is worth more than a portrait at that size. */
+.pick-grid.compact.no-mug .player-img { display: none; }
+.pick-key { font-size: 0.7rem; color: #6e6e73; }
+.pick-key b { color: #f7b731; }
 /* While picking, the header art and navigation give their space to the rosters. */
 body.picking .header-character,
 body.picking .header-logo,
@@ -887,18 +891,6 @@ body.picking .tab-bar { display: none; }
 /* Reclaim side padding too — every pixel here widens the name column. */
 body.picking .card { padding: 12px 10px; }
 body.picking .container { padding-left: 8px; padding-right: 8px; }
-.pick-chip.compact .player-chip-inner { display: contents; }
-.pick-chip.compact .player-img { width: 19px; height: 19px; flex: none; border-radius: 3px; }
-.pick-chip.compact .pc-name { flex: 1 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.35; }
-.pick-chip.compact .pc-stats { flex: none; display: flex; gap: 1px; }
-.pick-chip.compact .mini-stat { display: inline-flex; align-items: baseline; gap: 1px; font-size: 0.58rem; line-height: 1; padding: 1px; border-radius: 3px; background: rgba(255,255,255,0.05); }
-.pick-chip.compact .mini-stat i { font-style: normal; color: #6e6e73; font-size: 0.52rem; }
-.pick-chip.compact .mini-stat b { font-weight: 700; font-size: 0.66rem; }
-.pick-chip.compact .mini-stat.mini-stat-touched { background: rgba(48,209,88,0.16); }
-.pick-chip.compact .pc-flag { flex: none; font-size: 0.52rem; font-weight: 700; letter-spacing: 0.02em; padding: 1px 3px; border-radius: 3px; }
-.pick-chip.compact .pc-flag.ir { background: #ff453a; color: #000; }
-.pick-chip.compact .pc-flag.np { background: rgba(255,255,255,0.14); color: #d2d2d7; }
-.pick-chip.compact.disabled { opacity: 0.4; }
 .pick-chip .player-type { font-size: 0.65rem; padding: 1px 6px; border-radius: 8px; display: inline-block; margin-top: 4px; }
 .ns-card-bars .prof-stat-label { width: 30px; font-size: 0.6rem; }
 .ns-card-bars .prof-stat-bar { height: 5px; }
@@ -2290,7 +2282,7 @@ const PLAYER_PROFILES = {
   'Waluigi':        { type:'Technique', bat:4, pitch:9, field:4, run:4, batHand:'L', throwHand:'L', abilities:['Laser Beam','Super Jump'], captain:true },
   'Bowser':         { type:'Power',     bat:9, pitch:9, field:1, run:1, batHand:'L', throwHand:'R', abilities:['Body Check','Laser Beam'], captain:true },
   'Bowser Jr.':     { type:'Power',     bat:8, pitch:5, field:3, run:4, batHand:'R', throwHand:'L', abilities:['Body Check','Wall Jump'], captain:true },
-  'King Boo':       { type:'Power',     bat:7, pitch:5, field:4, run:3, batHand:'R', throwHand:'R', abilities:['Super Jump'], captain:true },
+  'King Boo':       { type:'Power',     bat:7, pitch:5, field:4, run:3, batHand:'R', throwHand:'R', abilities:['Super Jump'], captain:false },
   'Petey':          { type:'Power',     bat:9, pitch:4, field:3, run:1, batHand:'L', throwHand:'L', abilities:['Body Check'], captain:false },
   'Boo':            { type:'Technique', bat:3, pitch:8, field:2, run:4, batHand:'L', throwHand:'L', abilities:['Super Jump'], captain:false },
   'Toadsworth':     { type:'Technique', bat:4, pitch:4, field:6, run:4, batHand:'R', throwHand:'R', abilities:['Super Catch'], captain:false },
@@ -5450,16 +5442,50 @@ let wizPatchEnabled = false; // Balance Patch display toggle in the lineup wizar
 // the screen and this on the other, with both owners reading their whole roster
 // at once. Remembered per device.
 let wizCompact = localStorage.getItem('msb_pickCompact') !== '0';
-// Row size for the compact pick rows: 's' dense monitor, 'm' default, 'l' for
-// reading across a room off a TV. Remembered per device.
-let wizPickSize = localStorage.getItem('msb_pickSize') || 'm';
 
-function setPickSize(sz) {
-  wizPickSize = sz;
-  localStorage.setItem('msb_pickSize', sz);
-  document.querySelectorAll('#wizStep2 .size-btn').forEach(b => b.classList.toggle('active', b.dataset.size === sz));
-  renderAllPickGrids();
+// Grow the pick rows to the largest size that still shows every player on both
+// rosters without scrolling. Called after each render and on resize, so it
+// adapts to any window, any display, any zoom level rather than assuming one.
+const PICK_FS_MIN = 7, PICK_FS_MAX = 26;
+function fitPickGrids() {
+  const step = document.getElementById('wizStep2');
+  if (!step || !wizCompact) return;
+  const grids = getGameOwnerKeys().map(o => document.getElementById(`ownerPlayerGrid_${o}`)).filter(Boolean);
+  if (!grids.length) return;
+  const btn = document.getElementById('btnWizContinue');
+
+  const overflow = () => {
+    const bottoms = grids.map(g => g.getBoundingClientRect().bottom);
+    if (btn) bottoms.push(btn.getBoundingClientRect().bottom);
+    return Math.max(...bottoms) - window.innerHeight;
+  };
+  // A row that fits the page but cuts the name in half is not a fit.
+  const anyNameClipped = () => grids.some(g =>
+    [...g.querySelectorAll('.pc-name')].some(e => e.scrollWidth > e.clientWidth + 1));
+
+  // Largest size wins: walk down from the cap and stop at the first size that
+  // clears both the vertical budget and the name column. At each size we try
+  // with mugshots first and then without — dropping the portrait buys name
+  // width, and bigger text is worth more than a 1.5em picture.
+  const apply = (fs, noMug) => {
+    step.style.setProperty('--pick-fs', fs + 'px');
+    grids.forEach(g => g.classList.toggle('no-mug', noMug));
+  };
+  let chosenFs = PICK_FS_MIN, chosenNoMug = true, found = false;
+  for (let fs = PICK_FS_MAX; fs >= PICK_FS_MIN && !found; fs--) {
+    for (const noMug of [false, true]) {
+      apply(fs, noMug);
+      if (overflow() <= -6 && !anyNameClipped()) { chosenFs = fs; chosenNoMug = noMug; found = true; break; }
+    }
+  }
+  apply(chosenFs, chosenNoMug);
 }
+
+let _pickFitTimer = null;
+window.addEventListener('resize', () => {
+  clearTimeout(_pickFitTimer);
+  _pickFitTimer = setTimeout(fitPickGrids, 120);
+});
 
 let wizardState = {
   step: 1,
@@ -5574,11 +5600,11 @@ function renderPickStep() {
   const step2 = document.getElementById('wizStep2');
   step2.innerHTML = `
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
-      <div style="font-size:0.85rem;color:#86868b;">Each owner picks 6 starters &mdash; tap a player to select.</div>
+      <div>
+        <div style="font-size:0.85rem;color:#86868b;">Each owner picks 6 starters &mdash; tap a player to select.</div>
+        ${wizCompact ? '<div class="pick-key">Numbers are <b style="color:#6e6e73;">BAT PITCH FIELD RUN</b> &middot; <b>&#9733;</b> captain &middot; <span style="color:#ff453a;font-weight:700;">IR</span> injured &middot; <span style="font-weight:700;">NP</span> can&rsquo;t pitch</div>' : ''}
+      </div>
       <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
-        <div class="size-picker" title="Row size — bump it up when you're reading this off a TV">
-          ${['s','m','l'].map(sz => `<button type="button" class="size-btn${wizPickSize === sz ? ' active' : ''}" data-size="${sz}" onclick="setPickSize('${sz}')">${sz.toUpperCase()}</button>`).join('')}
-        </div>
         <label class="patch-toggle">
           <input type="checkbox" id="wizCompactToggle" ${wizCompact ? 'checked' : ''} onchange="wizCompact=this.checked;localStorage.setItem('msb_pickCompact',this.checked?'1':'0');document.body.classList.toggle('picking',this.checked);renderAllPickGrids();">
           <span class="patch-toggle-slider"></span>
@@ -5593,10 +5619,9 @@ function renderPickStep() {
     </div>
     <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start;">
       ${keys.map(owner => `
-        <div style="flex:1;min-width:300px;">
+        <div style="flex:1 1 0;min-width:${wizCompact ? '0' : '300px'};">
           <div class="stats-team-header" style="background:${getOwnerBgColor(owner)};color:${getOwnerColor(owner)};display:flex;justify-content:space-between;align-items:center;">
             <span>${CONFIG.OWNERS[owner].name}'s Lineup</span>
-            ${wizCompact ? '<span class="pick-legend">BAT &middot; PITCH &middot; FIELD &middot; RUN</span>' : ''}
             <span style="font-size:0.8rem;"><span id="pickCount_${owner}">0</span>/6 picked</span>
           </div>
           <div class="player-grid pick-grid" id="ownerPlayerGrid_${owner}"></div>
@@ -5612,6 +5637,7 @@ function renderPickStep() {
 
 function renderAllPickGrids() {
   getGameOwnerKeys().forEach(renderPlayerGrid);
+  fitPickGrids();
 }
 
 function renderPlayerGrid(owner) {
@@ -5625,8 +5651,6 @@ function renderPlayerGrid(owner) {
   const origPatch = patchEnabled;
   patchEnabled = wizPatchEnabled;
   grid.classList.toggle('compact', wizCompact);
-  grid.classList.remove('size-s', 'size-m', 'size-l');
-  if (wizCompact) grid.classList.add('size-' + wizPickSize);
   grid.innerHTML = CONFIG.OWNERS[owner].roster.map(player => {
     const injured = isInjured(player, owner, nextGame);
     const noPitch = !canPitch(player, owner, nextGame);
