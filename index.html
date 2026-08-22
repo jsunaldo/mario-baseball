@@ -911,6 +911,41 @@ tr.draft-dan:hover { background: rgba(78,205,196,0.1); }
 .pace-label { font-size: 0.72rem; color: #86868b; margin-bottom: 4px; }
 .pace-val { font-size: 1.25rem; font-weight: 700; }
 .pace-note { margin-top: 12px; font-size: 0.85rem; color: #d2d2d7; line-height: 1.5; }
+/* Who's Hot */
+.hot-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+.hot-head { font-size: 0.85rem; font-weight: 700; margin-bottom: 6px; }
+.hot-head span { font-weight: 400; color: #6e6e73; font-size: 0.75rem; }
+/* Season summary */
+#summaryOverlay { z-index: 260; }
+#summaryBox { max-width: 820px; width: 94%; max-height: 92vh; overflow-y: auto; }
+.summary-head { text-align: center; border-bottom: 1px solid rgba(255,255,255,0.12); padding-bottom: 12px; margin-bottom: 14px; }
+.summary-title { font-size: 1.4rem; font-weight: 700; }
+.summary-sub { font-size: 0.78rem; color: #86868b; margin-top: 4px; }
+.summary-score { display: flex; gap: 14px; justify-content: center; margin-bottom: 18px; flex-wrap: wrap; }
+.summary-team { flex: 1; min-width: 180px; text-align: center; background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.10); border-radius: 12px; padding: 12px; }
+.summary-team-name { font-size: 0.9rem; font-weight: 700; }
+.summary-team-rec { font-size: 1.9rem; font-weight: 700; line-height: 1.2; }
+.summary-team-meta { font-size: 0.72rem; color: #86868b; }
+.summary-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; margin-bottom: 16px; }
+.summary-cols h4 { margin: 0 0 6px; font-size: 0.85rem; }
+.summary-cols h4 span { font-weight: 400; color: #6e6e73; font-size: 0.72rem; }
+.summary-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+.summary-table td { padding: 4px 6px; border-bottom: 1px solid rgba(255,255,255,0.07); }
+.summary-table td.num { text-align: right; font-weight: 700; white-space: nowrap; }
+.summary-empty { color: #6e6e73; font-size: 0.8rem; }
+@media print {
+  body * { visibility: hidden !important; }
+  #summaryOverlay, #summaryOverlay * { visibility: visible !important; }
+  #summaryOverlay { position: absolute; inset: 0; display: block !important; background: #fff !important;
+    backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+  #summaryBox { max-width: 100%; width: 100%; max-height: none; overflow: visible; background: #fff !important;
+    color: #000 !important; border: 0; box-shadow: none; }
+  #summaryBox, #summaryBox * { color: #000 !important; }
+  .summary-team { border: 1px solid #ccc !important; background: #fff !important; }
+  .summary-table td { border-bottom: 1px solid #ddd !important; }
+  .no-print, .modal-close { display: none !important; }
+}
 /* Series banner in the game log */
 .series-banner td { background: rgba(255,255,255,0.045); border-top: 1px solid rgba(255,255,255,0.10);
   padding: 7px 12px !important; cursor: default; }
@@ -1052,6 +1087,7 @@ body.picking .container { padding-left: 8px; padding-right: 8px; }
     <div class="btn-group">
       <button class="btn btn-primary" id="btnAddGame">+ Add Game Result</button>
       <button class="btn btn-secondary" id="btnToggleSchedule">View Full Schedule</button>
+      <button class="btn btn-secondary" onclick="openSeasonSummary()">Season Summary</button>
     </div>
 
     <!-- World Series panel (appears when the regular season is complete) -->
@@ -1112,6 +1148,11 @@ body.picking .container { padding-left: 8px; padding-right: 8px; }
       <div class="card-title">Season Pace</div>
       <div id="trendPace"></div>
     </div>
+    <div class="card" id="trendHotCard">
+      <div class="card-title">Who&rsquo;s Hot</div>
+      <div style="font-size:0.78rem;color:#86868b;margin-bottom:10px;">Form over the last 10 games with recorded stats &mdash; season totals move too slowly to show a streak.</div>
+      <div id="trendHot"></div>
+    </div>
     <div class="card" id="trendStripCard">
       <div class="card-title">Season Timeline</div>
       <div style="font-size:0.78rem;color:#86868b;margin-bottom:8px;">Every game, colored by winner. Click a bar for details. Gold-topped bars are World Series games.</div>
@@ -1137,6 +1178,11 @@ body.picking .container { padding-left: 8px; padding-right: 8px; }
 
   <!-- ====== TAB 2: TEAM STATS ====== -->
   <div class="tab-content" id="tab-teamstats">
+    <div class="card" id="seriesRecordCard">
+      <div class="card-title">Series Record</div>
+      <div style="font-size:0.78rem;color:#86868b;margin-bottom:10px;">Three games at one park is a series. Sweeps are 3&ndash;0.</div>
+      <div id="seriesRecordArea"></div>
+    </div>
     <div class="filter-bar" id="teamStatsFilterBar">
       <div class="form-group">
         <label>Stadium</label>
@@ -1305,6 +1351,12 @@ body.picking .container { padding-left: 8px; padding-right: 8px; }
       <div class="card-title">Active Injuries</div>
       <div id="activeInjuries"></div>
       <div id="noInjuries" style="color:#6e6e73;font-size:0.9rem;padding:8px;">No active injuries</div>
+    </div>
+
+    <div class="card" id="injuryHistoryCard">
+      <div class="card-title">Injury History</div>
+      <div style="font-size:0.78rem;color:#86868b;margin-bottom:10px;">Every injury this season, and what it cost each side.</div>
+      <div id="injuryHistoryArea"></div>
     </div>
 
     <div class="card">
@@ -1607,6 +1659,19 @@ body.picking .container { padding-left: 8px; padding-right: 8px; }
 
 <!-- Toast notification -->
 <div class="toast" id="toast"></div>
+
+<!-- One-page season recap. Printing is the export route: no libraries, and the
+     browser's own "Save as PDF" covers both paper and a shareable file. -->
+<div class="modal-overlay" id="summaryOverlay">
+  <div class="modal" id="summaryBox">
+    <button class="modal-close" onclick="closeSeasonSummary()">&times;</button>
+    <div id="summaryContent"></div>
+    <div class="btn-group no-print" style="margin-top:16px;">
+      <button class="btn btn-primary" onclick="window.print()">Print / Save as PDF</button>
+      <button class="btn btn-secondary" onclick="closeSeasonSummary()">Close</button>
+    </div>
+  </div>
+</div>
 
 <!-- The whole add-game flow runs in an overlay: picks -> randomize -> SP ->
      results, then the injury modal. Lives outside .tab-content so it is not
@@ -4196,6 +4261,218 @@ let gameLogSort = { col: 'gameNumber', dir: 'asc' };
 // A banner above each 3-game series in the game log: where it was played, who
 // hosted, and how the series went. The schedule is series-based now, so the log
 // reads that way too instead of as 162 undifferentiated rows.
+// Walk the completed 3-game series and tally who won them. A series is only
+// counted once all three of its games are in, so an in-progress set doesn't
+// masquerade as a win.
+// ---- Season summary ------------------------------------------------------
+function openSeasonSummary() {
+  renderSeasonSummary();
+  document.getElementById('summaryOverlay').classList.add('show');
+}
+function closeSeasonSummary() {
+  document.getElementById('summaryOverlay').classList.remove('show');
+}
+
+function renderSeasonSummary() {
+  const el = document.getElementById('summaryContent');
+  const keys = getOwnerKeys();
+  const total = CONFIG.TOTAL_GAMES;
+  const reg = State.data.games.filter(g => g.gameNumber <= total);
+  const wins = {}; keys.forEach(k => wins[k] = reg.filter(g => g.winner === k).length);
+  const runs = {}; keys.forEach(k => runs[k] = reg.reduce((n, g) => n + (getGameScore(g, k) || 0), 0));
+  const series = computeSeriesResults();
+  const seriesWon = {}; keys.forEach(k => seriesWon[k] = series.filter(s => s.winner === k).length);
+
+  // season batting leaders across all recorded games
+  const bat = {};
+  reg.forEach(g => Object.entries(g.playerStats || {}).forEach(([key, s]) => {
+    const [owner, ...rest] = key.split('_');
+    const b = bat[key] = bat[key] || { name: rest.join('_'), owner, ab: 0, hits: 0, hr: 0, rbi: 0 };
+    b.ab += s.ab || 0; b.hits += s.hits || 0; b.hr += s.hr || 0; b.rbi += s.rbi || 0;
+  }));
+  const leaders = Object.values(bat).filter(b => b.ab >= 10)
+    .map(b => ({ ...b, avg: b.hits / b.ab })).sort((x, y) => y.avg - x.avg).slice(0, 5);
+  const hrLeaders = Object.values(bat).sort((x, y) => y.hr - x.hr).filter(b => b.hr > 0).slice(0, 5);
+
+  const biggest = reg.reduce((best, g) => {
+    const d = Math.abs((getGameScore(g, keys[0]) || 0) - (getGameScore(g, keys[1]) || 0));
+    return (!best || d > best.d) ? { g, d } : best;
+  }, null);
+
+  el.innerHTML = `
+    <div class="summary-head">
+      <div class="summary-title">${CONFIG.SEASON_NAME || 'Season'}</div>
+      <div class="summary-sub">${reg.length} of ${total} games played &middot; generated ${new Date().toLocaleDateString()}</div>
+    </div>
+    <div class="summary-score">
+      ${keys.map(k => `<div class="summary-team">
+        <div class="summary-team-name" style="color:${getOwnerColor(k)}">${CONFIG.OWNERS[k].name}</div>
+        <div class="summary-team-rec">${wins[k]}&ndash;${reg.length - wins[k]}</div>
+        <div class="summary-team-meta">${runs[k]} runs &middot; ${seriesWon[k]} series won</div>
+      </div>`).join('')}
+    </div>
+    <div class="summary-cols">
+      <div>
+        <h4>Batting leaders <span>(min 10 AB)</span></h4>
+        ${leaders.length ? `<table class="summary-table"><tbody>${leaders.map(b => `<tr>
+          <td>${b.name}</td><td style="color:${getOwnerColor(b.owner)}">${CONFIG.OWNERS[b.owner]?.name||''}</td>
+          <td class="num">${b.avg.toFixed(3).replace(/^0/,'')}</td><td class="num">${b.hits}/${b.ab}</td></tr>`).join('')}</tbody></table>`
+          : '<div class="summary-empty">No stats recorded yet.</div>'}
+      </div>
+      <div>
+        <h4>Home runs</h4>
+        ${hrLeaders.length ? `<table class="summary-table"><tbody>${hrLeaders.map(b => `<tr>
+          <td>${b.name}</td><td style="color:${getOwnerColor(b.owner)}">${CONFIG.OWNERS[b.owner]?.name||''}</td>
+          <td class="num">${b.hr}</td></tr>`).join('')}</tbody></table>`
+          : '<div class="summary-empty">None yet.</div>'}
+      </div>
+    </div>
+    <div class="summary-cols">
+      <div>
+        <h4>Series by stadium</h4>
+        <table class="summary-table"><tbody>${(() => {
+          const by = {};
+          series.forEach(s => { by[s.stadium] = by[s.stadium] || {}; keys.forEach(k => by[s.stadium][k] = by[s.stadium][k] || 0); if (s.winner) by[s.stadium][s.winner]++; });
+          const rows = Object.keys(by);
+          return rows.length ? rows.map(st => `<tr><td>${st}</td>${keys.map(k => `<td class="num" style="color:${getOwnerColor(k)}">${by[st][k]}</td>`).join('')}</tr>`).join('')
+            : '<tr><td colspan="3" class="summary-empty">No completed series yet.</td></tr>';
+        })()}</tbody></table>
+      </div>
+      <div>
+        <h4>Notables</h4>
+        <table class="summary-table"><tbody>
+          ${biggest ? `<tr><td>Biggest win</td><td class="num">${getGameScore(biggest.g, keys[0])}&ndash;${getGameScore(biggest.g, keys[1])}</td><td>G${biggest.g.gameNumber}</td></tr>` : ''}
+          <tr><td>Completed series</td><td class="num">${series.length}</td><td></td></tr>
+          <tr><td>Sweeps</td><td class="num">${series.filter(s => s.sweep).length}</td><td></td></tr>
+          <tr><td>Injuries</td><td class="num">${(State.data.injuries || []).length}</td><td></td></tr>
+        </tbody></table>
+      </div>
+    </div>`;
+}
+
+function computeSeriesResults() {
+  const keys = getOwnerKeys();
+  const total = CONFIG.TOTAL_GAMES;
+  const out = [];
+  for (let si = 0; si * 3 < total; si++) {
+    const nums = [1, 2, 3].map(n => si * 3 + n).filter(n => n <= total);
+    const played = nums.map(n => State.data.games.find(g => g.gameNumber === n)).filter(Boolean);
+    if (played.length !== nums.length) continue;
+    const wins = {};
+    keys.forEach(k => wins[k] = 0);
+    played.forEach(g => { if (wins[g.winner] !== undefined) wins[g.winner]++; });
+    const [a, b] = keys;
+    const winner = wins[a] === wins[b] ? null : (wins[a] > wins[b] ? a : b);
+    out.push({
+      idx: si, stadium: played[0].stadium, wins,
+      winner, sweep: winner !== null && wins[winner] === nums.length
+    });
+  }
+  return out;
+}
+
+function renderSeriesRecord() {
+  const area = document.getElementById('seriesRecordArea');
+  if (!area) return;
+  const keys = getOwnerKeys();
+  if (keys.length !== 2) { area.innerHTML = '<div style="color:#6e6e73;">Series records are for 2-owner seasons.</div>'; return; }
+  const series = computeSeriesResults();
+  if (!series.length) { area.innerHTML = '<div style="color:#6e6e73;">No completed series yet.</div>'; return; }
+
+  const tally = {};
+  keys.forEach(k => tally[k] = { won: 0, sweeps: 0, best: 0, cur: 0 });
+  let split = 0;
+  series.forEach(s => {
+    if (!s.winner) { split++; keys.forEach(k => tally[k].cur = 0); return; }
+    tally[s.winner].won++;
+    if (s.sweep) tally[s.winner].sweeps++;
+    keys.forEach(k => {
+      tally[k].cur = k === s.winner ? tally[k].cur + 1 : 0;
+      if (tally[k].cur > tally[k].best) tally[k].best = tally[k].cur;
+    });
+  });
+
+  // per-stadium series record
+  const byStad = {};
+  series.forEach(s => {
+    byStad[s.stadium] = byStad[s.stadium] || {};
+    keys.forEach(k => byStad[s.stadium][k] = byStad[s.stadium][k] || 0);
+    if (s.winner) byStad[s.stadium][s.winner]++;
+  });
+
+  area.innerHTML = `
+    <div class="pace-grid">
+      ${keys.map(k => `<div class="pace-cell">
+        <div class="pace-label">${CONFIG.OWNERS[k].name} series</div>
+        <div class="pace-val" style="color:${getOwnerColor(k)}">${tally[k].won}&ndash;${series.length - tally[k].won - split}</div>
+      </div>`).join('')}
+      ${keys.map(k => `<div class="pace-cell">
+        <div class="pace-label">${CONFIG.OWNERS[k].name} sweeps</div>
+        <div class="pace-val" style="color:${getOwnerColor(k)}">${tally[k].sweeps}</div>
+      </div>`).join('')}
+      <div class="pace-cell"><div class="pace-label">Series split 2&ndash;1 each way</div><div class="pace-val">${split}</div></div>
+      <div class="pace-cell"><div class="pace-label">Completed series</div><div class="pace-val">${series.length}</div></div>
+      ${keys.map(k => `<div class="pace-cell">
+        <div class="pace-label">${CONFIG.OWNERS[k].name} best run</div>
+        <div class="pace-val" style="color:${getOwnerColor(k)}">${tally[k].best}</div>
+      </div>`).join('')}
+    </div>
+    <div class="table-wrap" style="margin-top:14px;"><table class="stats-table">
+      <thead><tr><th>Stadium</th>${keys.map(k => `<th class="text-center">${CONFIG.OWNERS[k].name}</th>`).join('')}</tr></thead>
+      <tbody>${Object.keys(byStad).map(st => `<tr>
+        <td><div class="stadium-cell">${sImg(st)}${st}</div></td>
+        ${keys.map(k => `<td class="text-center" style="font-weight:700;color:${getOwnerColor(k)}">${byStad[st][k]}</td>`).join('')}
+      </tr>`).join('')}</tbody>
+    </table></div>`;
+}
+
+// Every injury this season plus what it actually cost — games missed is capped
+// at the games played so far, so an ongoing injury doesn't over-report.
+function renderInjuryHistory() {
+  const area = document.getElementById('injuryHistoryArea');
+  if (!area) return;
+  const inj = [...(State.data.injuries || [])].sort((a, b) => a.injuredGame - b.injuredGame);
+  if (!inj.length) { area.innerHTML = '<div style="color:#6e6e73;">No injuries yet this season.</div>'; return; }
+  const keys = getOwnerKeys();
+  const lastPlayed = State.data.games.reduce((m, g) => Math.max(m, g.gameNumber), 0);
+
+  const cost = {};
+  keys.forEach(k => cost[k] = { count: 0, games: 0 });
+  inj.forEach(i => {
+    if (!cost[i.owner]) return;
+    cost[i.owner].count++;
+    cost[i.owner].games += Math.max(0, Math.min(i.returnGame, lastPlayed + 1) - i.injuredGame);
+  });
+
+  area.innerHTML = `
+    <div class="pace-grid" style="margin-bottom:14px;">
+      ${keys.map(k => `<div class="pace-cell">
+        <div class="pace-label">${CONFIG.OWNERS[k].name} injuries</div>
+        <div class="pace-val" style="color:${getOwnerColor(k)}">${cost[k].count}</div>
+      </div>`).join('')}
+      ${keys.map(k => `<div class="pace-cell">
+        <div class="pace-label">${CONFIG.OWNERS[k].name} games lost</div>
+        <div class="pace-val" style="color:${getOwnerColor(k)}">${cost[k].games}</div>
+      </div>`).join('')}
+    </div>
+    <div class="table-wrap"><table class="stats-table">
+      <thead><tr><th>Player</th><th>Owner</th><th class="text-center">Hurt in</th><th class="text-center">Out</th><th class="text-center">Returns</th><th>Status</th></tr></thead>
+      <tbody>${inj.map(i => {
+        const active = lastPlayed + 1 < i.returnGame;
+        return `<tr>
+          <td><div class="player-cell">${pImg(i.player,'player-img-sm')}${i.player}</div></td>
+          <td style="color:${getOwnerColor(i.owner)};font-weight:600">${CONFIG.OWNERS[i.owner]?.name || i.owner}</td>
+          <td class="text-center">Game ${i.injuredGame}</td>
+          <td class="text-center">${i.gamesOut}</td>
+          <td class="text-center">Game ${i.returnGame}</td>
+          <td>${active
+            ? `<span style="color:#e94560;font-weight:700;">Out ${Math.max(0, i.returnGame - (lastPlayed + 1))} more</span>`
+            : `<span style="color:#30d158;">Back</span>`}</td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table></div>`;
+}
+
 function seriesBannerRow(seriesIdx, colCount) {
   const keys = getOwnerKeys();
   const nums = [1, 2, 3].map(n => seriesIdx * 3 + n).filter(n => n <= CONFIG.TOTAL_GAMES);
@@ -6204,6 +6481,77 @@ function svgLineChart(series, { height = 240, yFmt = v => Math.round(v * 10) / 1
 
 // Where the season is headed: current record, what it projects to over the full
 // schedule, and what it would take for the trailing owner to still catch up.
+// Recent form. Only games that actually have playerStats count toward the
+// window — otherwise an unentered game silently shortens everyone's sample.
+const HOT_WINDOW = 10;
+function renderWhosHot() {
+  const el = document.getElementById('trendHot');
+  if (!el) return;
+  const withStats = State.data.games
+    .filter(g => g.playerStats && Object.keys(g.playerStats).length)
+    .sort((a, b) => a.gameNumber - b.gameNumber);
+  if (!withStats.length) {
+    el.innerHTML = '<div style="color:#6e6e73;">No player stats recorded yet.</div>';
+    return;
+  }
+  const window_ = withStats.slice(-HOT_WINDOW);
+  const first = window_[0].gameNumber, last = window_[window_.length - 1].gameNumber;
+
+  const bat = {}, pit = {};
+  window_.forEach(g => {
+    Object.entries(g.playerStats).forEach(([key, s]) => {
+      const [owner, ...rest] = key.split('_');
+      const name = rest.join('_');
+      const b = bat[key] = bat[key] || { name, owner, ab: 0, hits: 0, hr: 0, rbi: 0, g: 0 };
+      b.ab += s.ab || 0; b.hits += s.hits || 0; b.hr += s.hr || 0; b.rbi += s.rbi || 0;
+      if ((s.ab || 0) > 0) b.g++;
+      if (s.pitched && (s.ip || 0) > 0) {
+        const p = pit[key] = pit[key] || { name, owner, ip: 0, ra: 0, k: 0, starts: 0 };
+        p.ip += s.ip || 0; p.ra += s.runsAllowed || 0; p.k += s.strikeouts || 0; p.starts++;
+      }
+    });
+  });
+
+  const hitters = Object.values(bat).filter(b => b.ab >= 5)
+    .map(b => ({ ...b, avg: b.hits / b.ab }))
+    .sort((x, y) => y.avg - x.avg || y.hits - x.hits);
+  const arms = Object.values(pit).filter(p => p.ip >= 3)
+    .map(p => ({ ...p, era: (p.ra / p.ip) * 9 }))
+    .sort((x, y) => x.era - y.era);
+
+  const list = (rows, cols) => `<div class="table-wrap"><table class="stats-table">
+    <thead><tr>${cols.map(c => `<th${c.c ? ' class="text-center"' : ''}>${c.h}</th>`).join('')}</tr></thead>
+    <tbody>${rows.join('')}</tbody></table></div>`;
+
+  const hotRows = hitters.slice(0, 5).map(b => `<tr>
+    <td><div class="player-cell">${pImg(b.name,'player-img-sm')}${b.name}</div></td>
+    <td style="color:${getOwnerColor(b.owner)};font-weight:600">${CONFIG.OWNERS[b.owner]?.name || b.owner}</td>
+    <td class="text-center" style="font-weight:700">${b.avg.toFixed(3).replace(/^0/,'')}</td>
+    <td class="text-center">${b.hits}/${b.ab}</td>
+    <td class="text-center">${b.hr}</td><td class="text-center">${b.rbi}</td></tr>`);
+  const coldRows = hitters.slice(-3).reverse().map(b => `<tr>
+    <td><div class="player-cell">${pImg(b.name,'player-img-sm')}${b.name}</div></td>
+    <td style="color:${getOwnerColor(b.owner)};font-weight:600">${CONFIG.OWNERS[b.owner]?.name || b.owner}</td>
+    <td class="text-center" style="font-weight:700;color:#6e6e73">${b.avg.toFixed(3).replace(/^0/,'')}</td>
+    <td class="text-center">${b.hits}/${b.ab}</td></tr>`);
+  const armRows = arms.slice(0, 5).map(p => `<tr>
+    <td><div class="player-cell">${pImg(p.name,'player-img-sm')}${p.name}</div></td>
+    <td style="color:${getOwnerColor(p.owner)};font-weight:600">${CONFIG.OWNERS[p.owner]?.name || p.owner}</td>
+    <td class="text-center" style="font-weight:700">${p.era.toFixed(2)}</td>
+    <td class="text-center">${formatIP(p.ip)}</td><td class="text-center">${p.k}</td></tr>`);
+
+  el.innerHTML = `
+    <div style="font-size:0.8rem;color:#6e6e73;margin-bottom:10px;">Games ${first}&ndash;${last} &middot; ${window_.length} game${window_.length===1?'':'s'} with stats</div>
+    <div class="hot-grid">
+      <div><div class="hot-head">Hot bats <span>(min 5 AB)</span></div>
+        ${hotRows.length ? list(hotRows,[{h:'Player'},{h:'Owner'},{h:'AVG',c:1},{h:'H/AB',c:1},{h:'HR',c:1},{h:'RBI',c:1}]) : '<div style="color:#6e6e73;font-size:0.85rem;">Not enough at-bats yet.</div>'}</div>
+      <div><div class="hot-head">Best arms <span>(min 3 IP)</span></div>
+        ${armRows.length ? list(armRows,[{h:'Pitcher'},{h:'Owner'},{h:'ERA',c:1},{h:'IP',c:1},{h:'K',c:1}]) : '<div style="color:#6e6e73;font-size:0.85rem;">Not enough innings yet.</div>'}</div>
+      <div><div class="hot-head">Gone cold <span>(min 5 AB)</span></div>
+        ${coldRows.length ? list(coldRows,[{h:'Player'},{h:'Owner'},{h:'AVG',c:1},{h:'H/AB',c:1}]) : '<div style="color:#6e6e73;font-size:0.85rem;">Not enough at-bats yet.</div>'}</div>
+    </div>`;
+}
+
 function renderSeasonPace() {
   const el = document.getElementById('trendPace');
   if (!el) return;
@@ -6252,7 +6600,7 @@ function renderTrends() {
   const empty = document.getElementById('trendsEmpty');
   if (!empty) return;
   const games = [...State.data.games].sort((a, b) => a.gameNumber - b.gameNumber);
-  const cards = ['trendPaceCard', 'trendStripCard', 'trendRunDiffCard', 'trendMvpCard', 'trendAvgCard', 'trendStadiumCard'];
+  const cards = ['trendPaceCard', 'trendHotCard', 'trendStripCard', 'trendRunDiffCard', 'trendMvpCard', 'trendAvgCard', 'trendStadiumCard'];
   if (!games.length) {
     empty.style.display = 'block';
     cards.forEach(id => document.getElementById(id).style.display = 'none');
@@ -6261,6 +6609,7 @@ function renderTrends() {
   empty.style.display = 'none';
   cards.forEach(id => document.getElementById(id).style.display = '');
   renderSeasonPace();
+  renderWhosHot();
   const keys = getOwnerKeys();
 
   // --- Season timeline strip ---
@@ -6391,6 +6740,8 @@ function renderAll() {
   renderPitchingLeaderboard();
   renderStatsGameSelect();
   renderInjuries();
+  renderInjuryHistory();
+  renderSeriesRecord();
   renderPlayerProfiles();
   renderDraft();
 }
