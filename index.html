@@ -3061,6 +3061,14 @@ function startWorldSeries(hfaOwner) {
 // each). Only needed where already-played games broke the series pattern.
 const HOME_MAKEUP_SERIES = { S2: 12 }; // games 37-39, Mario Stadium
 
+// Single-game host override. 162 games split into 54 clean 3-game series, so
+// whole series can only move the home count in 3s — and games 1-20 left Jason
+// two hosts up, which 3s can't undo. Game 21 is the one game not locked into a
+// clean future block (it closes the series the old scheduler already broke), so
+// it's the only lever that reaches an exact 81/81. Verified: with it, Jason
+// needs 69 more home games = exactly 23 of the 47 remaining series.
+const HOME_OVERRIDE_GAMES = { S2: { 21: 'jason' } };
+
 function getSchedule(gameNum) {
   const keys = getOwnerKeys();
   if (gameNum > CONFIG.TOTAL_GAMES) {
@@ -3112,6 +3120,8 @@ function getSchedule(gameNum) {
     if (HOME_MAKEUP_SERIES[CONFIG.SEASON_ID] === seriesIdx) {
       home = home === keys[0] ? keys[1] : keys[0];
     }
+    const ov = (HOME_OVERRIDE_GAMES[CONFIG.SEASON_ID] || {})[gameNum];
+    if (ov && keys.includes(ov)) home = ov;
     return { stadium, home, away: home === keys[0] ? keys[1] : keys[0] };
   }
 
