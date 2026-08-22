@@ -904,6 +904,32 @@ tr.draft-dan:hover { background: rgba(78,205,196,0.1); }
 .pick-chip.compact.disabled { opacity: 0.45; }
 /* The mugshot always stays on screen — it only shrinks (--pick-mug) to make
    room, never disappears. */
+/* Season pace card */
+.pace-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+.pace-cell { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px; padding: 10px 12px; }
+.pace-label { font-size: 0.72rem; color: #86868b; margin-bottom: 4px; }
+.pace-val { font-size: 1.25rem; font-weight: 700; }
+.pace-note { margin-top: 12px; font-size: 0.85rem; color: #d2d2d7; line-height: 1.5; }
+/* Series banner in the game log */
+.series-banner td { background: rgba(255,255,255,0.045); border-top: 1px solid rgba(255,255,255,0.10);
+  padding: 7px 12px !important; cursor: default; }
+.series-banner:hover td { background: rgba(255,255,255,0.045); }
+.series-tag { display: inline-block; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.05em;
+  text-transform: uppercase; color: #6e6e73; margin-right: 10px; }
+.series-venue { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: 0.85rem; margin-right: 12px; }
+.stadium-img-xs { width: 26px; height: 17px; object-fit: cover; border-radius: 3px; }
+.series-host { font-size: 0.78rem; color: #86868b; margin-right: 12px; }
+.series-result { font-size: 0.8rem; }
+/* Team-total reconciliation bar above each stats table */
+.team-recon { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 8px 10px; margin: 8px 0 4px;
+  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.10); border-radius: 10px; font-size: 0.8rem; }
+.team-recon-label { color: #86868b; }
+.team-recon label { display: inline-flex; align-items: center; gap: 4px; color: #d2d2d7; }
+.btn-sm { padding: 4px 12px; font-size: 0.75rem; }
+.team-recon-status { font-size: 0.78rem; font-weight: 600; }
+.team-recon-status.ok { color: #30d158; }
+.team-recon-status.bad { color: #f7b731; }
 .pick-key { font-size: 0.7rem; color: #6e6e73; }
 .pick-key b { color: #f7b731; }
 /* While picking, the header art and navigation give their space to the rosters. */
@@ -1082,6 +1108,10 @@ body.picking .container { padding-left: 8px; padding-right: 8px; }
   <!-- ====== TAB: TRENDS ====== -->
   <div class="tab-content" id="tab-trends">
     <div id="trendsEmpty" style="display:none;color:#6e6e73;padding:24px;text-align:center;">No games played yet — trends appear once the season starts.</div>
+    <div class="card" id="trendPaceCard">
+      <div class="card-title">Season Pace</div>
+      <div id="trendPace"></div>
+    </div>
     <div class="card" id="trendStripCard">
       <div class="card-title">Season Timeline</div>
       <div style="font-size:0.78rem;color:#86868b;margin-bottom:8px;">Every game, colored by winner. Click a bar for details. Gold-topped bars are World Series games.</div>
@@ -4163,6 +4193,51 @@ function renderSummary() {
 // ========================================================================
 let gameLogSort = { col: 'gameNumber', dir: 'asc' };
 
+// A banner above each 3-game series in the game log: where it was played, who
+// hosted, and how the series went. The schedule is series-based now, so the log
+// reads that way too instead of as 162 undifferentiated rows.
+function seriesBannerRow(seriesIdx, colCount) {
+  const keys = getOwnerKeys();
+  const nums = [1, 2, 3].map(n => seriesIdx * 3 + n).filter(n => n <= CONFIG.TOTAL_GAMES);
+  const played = nums.map(n => State.data.games.find(g => g.gameNumber === n)).filter(Boolean);
+  const first = played[0] || null;
+  const sched = first ? { stadium: first.stadium, home: first.home } : getSchedule(nums[0]);
+
+  const wins = {};
+  keys.forEach(k => wins[k] = 0);
+  played.forEach(g => { if (wins[g.winner] !== undefined) wins[g.winner]++; });
+
+  let result = '';
+  if (played.length === 0) {
+    result = `<span style="color:#6e6e73;">upcoming</span>`;
+  } else {
+    const [a, b] = keys;
+    const done = played.length === nums.length;
+    if (wins[a] === wins[b]) {
+      result = `<span style="color:#86868b;">${done ? 'split' : 'level'} ${wins[a]}&ndash;${wins[b]}</span>`;
+    } else {
+      const lead = wins[a] > wins[b] ? a : b;
+      const hi = Math.max(wins[a], wins[b]), lo = Math.min(wins[a], wins[b]);
+      result = `<span style="color:${getOwnerColor(lead)};font-weight:700;">${CONFIG.OWNERS[lead].name} ${done ? 'takes it' : 'leads'} ${hi}&ndash;${lo}</span>`;
+    }
+    if (!done) result += `<span style="color:#6e6e73;"> &middot; ${nums.length - played.length} to play</span>`;
+  }
+
+  return `<tr class="series-banner"><td colspan="${colCount}">
+    <span class="series-tag">Series ${seriesIdx + 1}</span>
+    <span class="series-venue">${sImg(sched.stadium, 'stadium-img-xs')}${sched.stadium}</span>
+    <span class="series-host">${(() => {
+      // Games 16-20 were played under the old scheduler, which swapped the host
+      // mid-series — say so rather than quietly reporting whoever hosted first.
+      const hosts = [...new Set(played.map(g => g.home))];
+      return hosts.length > 1
+        ? `hosts split (${hosts.map(h => CONFIG.OWNERS[h]?.name || h).join(' / ')})`
+        : `${CONFIG.OWNERS[sched.home]?.name || sched.home} hosts`;
+    })()}</span>
+    <span class="series-result">${result}</span>
+  </td></tr>`;
+}
+
 function renderGameLog() {
   let games = [...State.data.games];
   const keys = getOwnerKeys();
@@ -4206,10 +4281,18 @@ function renderGameLog() {
   });
 
   const tbody = document.getElementById('gameLogBody');
+  // Series banners only make sense while the log is in game order — any other
+  // sort scatters the series, so they're dropped.
+  const grouped = gameLogSort.col === 'gameNumber' && gameLogSort.dir === 'asc' && keys.length === 2;
+  const colCount = 7 + keys.length * 2;
   tbody.innerHTML = games.map(g => {
     const winnerColor = getOwnerColor(g.winner);
+    let banner = '';
+    if (grouped && g.gameNumber <= CONFIG.TOTAL_GAMES && (g.gameNumber - 1) % 3 === 0) {
+      banner = seriesBannerRow(Math.floor((g.gameNumber - 1) / 3), colCount);
+    }
     const isWS = g.gameNumber > CONFIG.TOTAL_GAMES;
-    return `<tr style="border-left: 3px solid ${winnerColor}${isWS ? ';background:rgba(247,183,49,0.06)' : ''}" onclick="showGameDetail(${g.gameNumber})">
+    return banner + `<tr style="border-left: 3px solid ${winnerColor}${isWS ? ';background:rgba(247,183,49,0.06)' : ''}" onclick="showGameDetail(${g.gameNumber})">
       <td class="text-center" style="font-weight:700;${isWS ? 'color:#f7b731' : ''}">${isWS ? 'WS' + (g.gameNumber - CONFIG.TOTAL_GAMES) : g.gameNumber}</td>
       <td>${formatDate(g.date)}</td>
       <td><div class="stadium-cell">${sImg(g.stadium)}${g.stadium}</div></td>
@@ -5291,8 +5374,9 @@ function renderStatsEntry(gameNum) {
         ondragstart="statsRowDragStart(event)" ondragover="statsRowDragOver(event)" ondrop="statsRowDrop(event)" ondragend="statsRowDragEnd(event)"
         style="cursor:grab;">
       <td><div class="player-cell"><span style="color:#6e6e73;font-size:0.7rem;margin-right:4px;cursor:grab;" title="Drag to reorder">☰</span>${pImg(player,'player-img-sm')}${player}${isSP ? ' <span style="color:#e94560;font-size:0.75rem;font-weight:700;">SP</span>' : ''}</div></td>
-      <td><input type="number" class="s-ab" min="0" value="${ps.ab||0}"></td>
-      <td><input type="number" class="s-hits" min="0" value="${ps.hits||0}"></td>
+      <td><input type="number" class="s-hits" min="0" value="${ps.hits||0}" oninput="onStatsHitsOrAvg(this)"></td>
+      <td><input type="number" class="s-avg" min="0" max="1" step="0.001" placeholder=".000" value="${ps.ab ? (ps.hits/ps.ab).toFixed(3) : ''}" style="width:62px" title="Batting Avg. straight off the game screen — AB is worked out from H ÷ AVG" oninput="onStatsHitsOrAvg(this)"></td>
+      <td><input type="number" class="s-ab" min="0" value="${ps.ab||0}" style="width:52px" title="Filled in from H ÷ AVG; the game never shows AB directly"></td>
       <td><input type="number" class="s-rbi" min="0" value="${ps.rbi||0}"></td>
       <td><input type="number" class="s-hr" min="0" value="${ps.hr||0}"></td>
       <td><input type="number" class="s-sb" min="0" value="${ps.sb||0}"></td>
@@ -5307,7 +5391,7 @@ function renderStatsEntry(gameNum) {
   }
 
   const thRow = `<tr>
-    <th>Player</th><th title="At-Bats">AB</th><th title="Hits">H</th><th title="Runs Batted In">RBI</th><th title="Home Runs">HR</th><th title="Stolen Bases">SB</th><th title="Specials Used">SPEC</th><th title="Big Plays">BIG</th>
+    <th>Player</th><th title="Hits">H</th><th title="Batting Avg. as shown on the game screen">AVG</th><th title="At-Bats — derived from H ÷ AVG">AB</th><th title="Runs Batted In">RBI</th><th title="Home Runs">HR</th><th title="Stolen Bases">SB</th><th title="Specials Used">SPEC</th><th title="Big Plays">BIG</th>
     <th title="Innings Pitched (.1 = 1 out, .2 = 2 outs)">IP</th><th title="Hits Allowed">HA</th><th title="Strikeouts">K</th><th title="Runs Allowed">RA</th><th title="Pitching Specials">PS</th>
   </tr>`;
 
@@ -5321,6 +5405,13 @@ function renderStatsEntry(gameNum) {
     ${!game.playerStats && !lineup ? '<div style="color:#f7b731;margin-bottom:8px;">No lineup set — showing full roster. Set a lineup first to narrow to players in this game.</div>' : ''}
     ${ownerKeys.map(k => `
       <div class="stats-team-header" style="background:${getOwnerBgColor(k)};color:${getOwnerColor(k)}">${CONFIG.OWNERS[k].name}'s Players (${ownerPlayerLists[k].length})</div>
+      <div class="team-recon" data-owner="${k}">
+        <span class="team-recon-label">Team totals from the game screen:</span>
+        <label>H <input type="number" class="tr-hits" min="0" placeholder="0" style="width:56px"></label>
+        <label>AVG <input type="number" class="tr-avg" min="0" max="1" step="0.001" placeholder=".000" style="width:66px"></label>
+        <button class="btn btn-secondary btn-sm" onclick="fillTeamAB('${k}')">Work out AB</button>
+        <span class="team-recon-status" id="reconStatus_${k}"></span>
+      </div>
       <div class="table-wrap"><table class="stats-table"><thead>${thRow}</thead><tbody>
         ${ownerPlayerLists[k].map(p => makeRow(p, k)).join('')}
       </tbody></table></div>
@@ -5330,6 +5421,79 @@ function renderStatsEntry(gameNum) {
       <button class="btn btn-success" onclick="savePlayerStats(${gameNum})">Save Stats for Game ${gameNum}</button>
     </div>
   `;
+}
+
+// ---- AB derivation -------------------------------------------------------
+// The game never displays AB, only H and AVG, so AB has to be solved for.
+// A batter with hits gives it up exactly (AB = H / AVG). A hitless batter
+// shows .000 and is ambiguous on his own — those are recovered from the team
+// line: team AB = team H / team AVG, and whatever is left over is spread down
+// the batting order (earlier spots bat more often, never by more than one).
+function onStatsHitsOrAvg(el) {
+  const row = el.closest('tr');
+  const hits = parseInt(row.querySelector('.s-hits').value) || 0;
+  const avg = parseFloat(row.querySelector('.s-avg').value) || 0;
+  if (hits > 0 && avg > 0) row.querySelector('.s-ab').value = Math.round(hits / avg);
+  const owner = row.dataset.owner;
+  if (owner) checkTeamReconcile(owner);
+}
+
+function fillTeamAB(owner) {
+  const bar = document.querySelector(`.team-recon[data-owner="${owner}"]`);
+  const rows = [...document.querySelectorAll(`#statsEntryArea tr[data-owner="${owner}"]`)];
+  const teamHits = parseInt(bar.querySelector('.tr-hits').value) || 0;
+  const teamAvg = parseFloat(bar.querySelector('.tr-avg').value) || 0;
+  if (!teamHits || !teamAvg) { showToast('Enter the team H and AVG first', true); return; }
+
+  const teamAB = Math.round(teamHits / teamAvg);
+  let known = 0;
+  const hitless = [];
+  rows.forEach(row => {
+    const hits = parseInt(row.querySelector('.s-hits').value) || 0;
+    const avg = parseFloat(row.querySelector('.s-avg').value) || 0;
+    if (hits > 0 && avg > 0) {
+      const ab = Math.round(hits / avg);
+      row.querySelector('.s-ab').value = ab;
+      known += ab;
+    } else if (hits === 0) {
+      hitless.push(row);
+    }
+  });
+
+  // Spread the remainder down the order: the first `rem` spots get one extra.
+  const leftover = teamAB - known;
+  if (hitless.length && leftover >= 0) {
+    const base = Math.floor(leftover / hitless.length);
+    const rem = leftover % hitless.length;
+    hitless.forEach((row, i) => { row.querySelector('.s-ab').value = base + (i < rem ? 1 : 0); });
+  }
+  checkTeamReconcile(owner);
+}
+
+function checkTeamReconcile(owner) {
+  const bar = document.querySelector(`.team-recon[data-owner="${owner}"]`);
+  const status = document.getElementById(`reconStatus_${owner}`);
+  if (!bar || !status) return;
+  const rows = [...document.querySelectorAll(`#statsEntryArea tr[data-owner="${owner}"]`)];
+  const sum = cls => rows.reduce((n, r) => n + (parseInt(r.querySelector(cls).value) || 0), 0);
+  const hits = sum('.s-hits'), ab = sum('.s-ab');
+  const teamHits = parseInt(bar.querySelector('.tr-hits').value) || 0;
+  const teamAvg = parseFloat(bar.querySelector('.tr-avg').value) || 0;
+  if (!teamHits && !teamAvg) { status.textContent = ''; return; }
+
+  const problems = [];
+  if (teamHits && hits !== teamHits) problems.push(`hits add up to ${hits}, screen says ${teamHits}`);
+  if (teamHits && teamAvg) {
+    const teamAB = Math.round(teamHits / teamAvg);
+    if (ab !== teamAB) problems.push(`AB add up to ${ab}, ${teamHits}/${teamAvg.toFixed(3)} needs ${teamAB}`);
+  }
+  if (problems.length) {
+    status.className = 'team-recon-status bad';
+    status.textContent = '⚠ ' + problems.join(' · ');
+  } else {
+    status.className = 'team-recon-status ok';
+    status.textContent = `✓ ${hits} H / ${ab} AB = ${(hits / ab).toFixed(3)}`;
+  }
 }
 
 function savePlayerStats(gameNum) {
@@ -6038,11 +6202,57 @@ function svgLineChart(series, { height = 240, yFmt = v => Math.round(v * 10) / 1
   return `<div class="trend-svg-wrap"><svg viewBox="0 0 ${width} ${height}" style="width:100%;min-width:520px;" xmlns="http://www.w3.org/2000/svg">${g}</svg></div>`;
 }
 
+// Where the season is headed: current record, what it projects to over the full
+// schedule, and what it would take for the trailing owner to still catch up.
+function renderSeasonPace() {
+  const el = document.getElementById('trendPace');
+  if (!el) return;
+  const keys = getOwnerKeys();
+  const total = CONFIG.TOTAL_GAMES;
+  const reg = State.data.games.filter(g => g.gameNumber <= total);
+  const playedN = reg.length;
+  if (!playedN || keys.length !== 2) { el.innerHTML = ''; return; }
+
+  const wins = {};
+  keys.forEach(k => wins[k] = reg.filter(g => g.winner === k).length);
+  const remaining = total - playedN;
+  const [a, b] = keys;
+  const leader = wins[a] >= wins[b] ? a : b;
+  const trailer = leader === a ? b : a;
+  const lead = wins[leader] - wins[trailer];
+
+  const proj = k => Math.round((wins[k] / playedN) * total);
+  // Clinch: leader needs (games trailer could still win) + 1 more than the gap.
+  const clinch = Math.max(0, Math.floor((remaining - lead) / 2) + 1);
+  const clinchable = lead <= remaining;
+
+  const row = (label, val, color) =>
+    `<div class="pace-cell"><div class="pace-label">${label}</div><div class="pace-val" style="${color?`color:${color}`:''}">${val}</div></div>`;
+
+  el.innerHTML = `
+    <div class="pace-grid">
+      ${keys.map(k => row(`${CONFIG.OWNERS[k].name} now`, `${wins[k]}&ndash;${playedN - wins[k]}`, getOwnerColor(k))).join('')}
+      ${keys.map(k => row(`${CONFIG.OWNERS[k].name} projected`, `${proj(k)}&ndash;${total - proj(k)}`, getOwnerColor(k))).join('')}
+      ${row('Games played', `${playedN} of ${total}`)}
+      ${row('Remaining', remaining)}
+    </div>
+    <div class="pace-note">
+      ${playedN >= total
+        ? 'Regular season complete.'
+        : lead === 0
+          ? `Dead level after ${playedN} games.`
+          : clinchable
+            ? `<strong style="color:${getOwnerColor(leader)}">${CONFIG.OWNERS[leader].name}</strong> leads by ${lead}. ${clinch} more win${clinch === 1 ? '' : 's'} clinches it${remaining ? '' : ''}.`
+            : `<strong style="color:${getOwnerColor(leader)}">${CONFIG.OWNERS[leader].name}</strong> has clinched &mdash; the lead of ${lead} is bigger than the ${remaining} games left.`}
+      ${remaining ? ` <span style="color:#6e6e73;">${CONFIG.OWNERS[trailer].name} must go ${Math.max(0, Math.ceil((remaining + lead) / 2))}&ndash;${remaining - Math.max(0, Math.ceil((remaining + lead) / 2))} the rest of the way just to draw level.</span>` : ''}
+    </div>`;
+}
+
 function renderTrends() {
   const empty = document.getElementById('trendsEmpty');
   if (!empty) return;
   const games = [...State.data.games].sort((a, b) => a.gameNumber - b.gameNumber);
-  const cards = ['trendStripCard', 'trendRunDiffCard', 'trendMvpCard', 'trendAvgCard', 'trendStadiumCard'];
+  const cards = ['trendPaceCard', 'trendStripCard', 'trendRunDiffCard', 'trendMvpCard', 'trendAvgCard', 'trendStadiumCard'];
   if (!games.length) {
     empty.style.display = 'block';
     cards.forEach(id => document.getElementById(id).style.display = 'none');
@@ -6050,6 +6260,7 @@ function renderTrends() {
   }
   empty.style.display = 'none';
   cards.forEach(id => document.getElementById(id).style.display = '');
+  renderSeasonPace();
   const keys = getOwnerKeys();
 
   // --- Season timeline strip ---
