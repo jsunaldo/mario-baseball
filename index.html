@@ -1170,7 +1170,7 @@ body.picking .container { padding-left: 8px; padding-right: 8px; }
       <div id="trendMvp"></div>
     </div>
     <div class="card" id="trendAvgCard">
-      <div class="card-title">Batting Average Race <span style="font-size:0.72rem;color:#86868b;font-weight:400;">(min 10 AB, top 6 by at-bats)</span></div>
+      <div class="card-title">Batting Average Race <span style="font-size:0.72rem;color:#86868b;font-weight:400;">(top 6 averages, min 10 AB)</span></div>
       <div id="trendAvg"></div>
     </div>
     <div class="card" id="trendStadiumCard">
@@ -6684,11 +6684,18 @@ function renderTrends() {
   if (!statGames.length) {
     avgEl.innerHTML = '<div style="color:#6e6e73;padding:12px;">No per-game player stats recorded for this season.</div>';
   } else {
-    const abTotals = {};
+    // The 10-AB floor is the qualifier; the ranking is by average. Sorting by
+    // at-bats instead just surfaced whoever bats most, which is not a race.
+    const totals = {};
     statGames.forEach(g => Object.entries(g.playerStats).forEach(([key, ps]) => {
-      abTotals[key] = (abTotals[key] || 0) + (ps.ab || 0);
+      const t = totals[key] = totals[key] || { ab: 0, hits: 0 };
+      t.ab += ps.ab || 0; t.hits += ps.hits || 0;
     }));
-    const topBats = Object.entries(abTotals).filter(e => e[1] >= 10).sort((a, b) => b[1] - a[1]).slice(0, 6).map(e => e[0]);
+    const topBats = Object.entries(totals)
+      .filter(([, t]) => t.ab >= 10)
+      .sort((a, b) => (b[1].hits / b[1].ab) - (a[1].hits / a[1].ab) || b[1].ab - a[1].ab)
+      .slice(0, 6)
+      .map(([key]) => key);
     const avgSeries = topBats.map((key, i) => {
       const name = key.substring(key.indexOf('_') + 1);
       let h = 0, ab = 0;
