@@ -710,34 +710,6 @@ tr.draft-dan:hover { background: rgba(78,205,196,0.1); }
   .patch-toggle-label { font-size: 0.7rem; }
 }
 
-/* ========== SCREENSHOT SCANNER ========== */
-.scan-panel {
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 14px;
-  padding: 14px 16px;
-  margin-bottom: 14px;
-  background: rgba(255,255,255,0.03);
-}
-.scan-panel-head { display: flex; flex-direction: column; gap: 2px; margin-bottom: 10px; }
-.scan-panel-head strong { color: #2997ff; }
-.scan-hint { font-size: 0.78rem; color: #86868b; }
-.scan-controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.scan-status { font-size: 0.8rem; color: #f7b731; }
-.scan-thumbs { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
-.scan-thumb { position: relative; }
-.scan-thumb img { height: 60px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.15); display: block; }
-.scan-thumb button {
-  position: absolute; top: -6px; right: -6px; width: 18px; height: 18px; border-radius: 50%;
-  border: none; background: #ff453a; color: #fff; font-size: 0.65rem; line-height: 1; cursor: pointer; padding: 0;
-}
-/* cells auto-filled by a scan (cleared when the user edits them) */
-.stats-table input.scan-filled { background: rgba(41,151,255,0.16); border-color: rgba(41,151,255,0.55); }
-.stats-table input.scan-warn { background: rgba(255,69,58,0.16); border-color: rgba(255,69,58,0.55); }
-.scan-warnings {
-  margin-top: 10px; padding: 8px 12px; border-radius: 8px; font-size: 0.8rem;
-  background: rgba(255,159,10,0.08); border: 1px solid rgba(255,159,10,0.3); color: #f0b45f;
-}
-.scan-warnings div { padding: 1px 0; }
 
 /* ========== SYNC STATUS ========== */
 .sync-status { font-size: 0.72rem; color: #6e6e73; cursor: pointer; margin-top: 2px; user-select: none; }
@@ -964,7 +936,6 @@ tr.draft-dan:hover { background: rgba(78,205,196,0.1); }
   background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.10); border-radius: 10px; font-size: 0.8rem; }
 .team-recon-label { color: #86868b; }
 .team-recon label { display: inline-flex; align-items: center; gap: 4px; color: #d2d2d7; }
-.btn-sm { padding: 4px 12px; font-size: 0.75rem; }
 .team-recon-status { font-size: 0.78rem; font-weight: 600; }
 .team-recon-status.ok { color: #30d158; }
 .team-recon-status.bad { color: #f7b731; }
@@ -1329,19 +1300,6 @@ body.picking .container { padding-left: 8px; padding-right: 8px; }
         </div>
 
         <!-- Screenshot scanner: upload the game's stat screens, AI fills the grid -->
-        <div class="scan-panel" id="scanPanel" style="display:none">
-          <div class="scan-panel-head">
-            <span><strong>Scan Screenshots</strong></span>
-            <span class="scan-hint">Drop in the Batter/Pitcher Stats screens from the game — every row gets filled in for you to review.</span>
-          </div>
-          <div class="scan-controls">
-            <input type="file" id="scanFiles" accept="image/*" multiple style="display:none">
-            <button class="btn btn-secondary btn-sm" onclick="document.getElementById('scanFiles').click()">Choose Images&hellip;</button>
-            <button class="btn btn-primary btn-sm" id="btnScan" onclick="scanScreenshots()" disabled>Extract Stats</button>
-            <span class="scan-status" id="scanStatus"></span>
-          </div>
-          <div class="scan-thumbs" id="scanThumbs"></div>
-        </div>
 
         <div id="statsEntryArea"></div>
       </div>
@@ -1723,9 +1681,6 @@ body.picking .container { padding-left: 8px; padding-right: 8px; }
           <div id="wizStep5Content"></div>
         </div>
   
-        <!-- Step 6 retired: the injury roll is now its own modal (#injuryOverlay) so
-             it lands in front of you instead of above the fold you just scrolled past. -->
-        <div class="wizard-step" id="wizStep6"></div>
       </div>
 </div>
 
@@ -4813,7 +4768,6 @@ function editGameResult(gameNum) {
   });
   document.getElementById('gameMVP').value = game.mvp || '';
   document.getElementById('gameNotes').value = game.notes || '';
-  window.scrollTo(0, 0);
 }
 
 function deleteGame(gameNum) {
@@ -5422,10 +5376,6 @@ function statsRowDragEnd(e) {
   _dragRow = null;
 }
 
-// ========================================================================
-// SCREENSHOT SCANNER — AI stat extraction via the sync Worker's /scan route
-// ========================================================================
-const SCAN_URL = SYNC_URL + '/scan';
 
 // ---- Cloud backups (hourly snapshots the Worker keeps before overwrites) ----
 async function showCloudBackups() {
@@ -5476,155 +5426,11 @@ async function restoreCloudBackup(key) {
     showToast('Restore failed: ' + (e.message || e), true);
   }
 }
-const SCAN_TOKEN = 'msb-scan-v1';
-let scanImages = []; // { name, dataUrl, data (base64, no prefix) }
 
-// Downscale to keep uploads/token costs sane; the stat digits stay crisp at this size
-function scanPrepareImage(file) {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    const url = URL.createObjectURL(file);
-    img.onload = () => {
-      const MAX = 1800;
-      const scale = Math.min(1, MAX / Math.max(img.width, img.height));
-      const canvas = document.createElement('canvas');
-      canvas.width = Math.round(img.width * scale);
-      canvas.height = Math.round(img.height * scale);
-      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
-      URL.revokeObjectURL(url);
-      resolve({ name: file.name, dataUrl, data: dataUrl.split(',')[1] });
-    };
-    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Could not read ' + file.name)); };
-    img.src = url;
-  });
-}
 
-function renderScanThumbs() {
-  const wrap = document.getElementById('scanThumbs');
-  wrap.innerHTML = scanImages.map((im, i) => `
-    <div class="scan-thumb">
-      <img src="${im.dataUrl}" alt="${escapeHtml(im.name)}" title="${escapeHtml(im.name)}">
-      <button onclick="scanImages.splice(${i},1);renderScanThumbs()" title="Remove">&times;</button>
-    </div>`).join('');
-  document.getElementById('btnScan').disabled = scanImages.length === 0;
-}
 
-async function scanFilesChosen(fileList) {
-  const status = document.getElementById('scanStatus');
-  status.textContent = 'Preparing images…';
-  try {
-    for (const f of Array.from(fileList).slice(0, 12 - scanImages.length)) {
-      scanImages.push(await scanPrepareImage(f));
-    }
-    status.textContent = '';
-  } catch (e) {
-    status.textContent = e.message;
-  }
-  renderScanThumbs();
-}
 
-async function scanScreenshots() {
-  const gameNum = parseInt(document.getElementById('statsGameSelect').value);
-  const game = State.data.games.find(g => g.gameNumber === gameNum);
-  if (!game) { showToast('Select a game first', true); return; }
-  if (!scanImages.length) { showToast('Add at least one screenshot', true); return; }
 
-  const lists = getStatsPlayerLists(game);
-  const candidates = {};
-  Object.keys(lists).forEach(k => { candidates[CONFIG.OWNERS[k]?.name || k] = lists[k]; });
-
-  const btn = document.getElementById('btnScan');
-  const status = document.getElementById('scanStatus');
-  btn.disabled = true;
-  status.textContent = `Reading ${scanImages.length} screenshot${scanImages.length > 1 ? 's' : ''}… (~30s)`;
-  try {
-    const res = await fetch(SCAN_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-MSB-Scan': SCAN_TOKEN, 'X-MSB-Key': Sync.writeKey() },
-      body: JSON.stringify({
-        images: scanImages.map(im => ({ media_type: 'image/jpeg', data: im.data })),
-        candidates
-      })
-    });
-    const out = await res.json();
-    if (!res.ok || !out.ok) throw new Error(out.error || ('Scan failed (HTTP ' + res.status + ')'));
-    const summary = applyScanResults(out.data, lists);
-    status.textContent = '';
-    showToast(summary);
-    scanImages = [];
-    renderScanThumbs();
-  } catch (e) {
-    status.textContent = e.message;
-    showToast('Scan failed: ' + e.message, true);
-  } finally {
-    btn.disabled = scanImages.length === 0;
-  }
-}
-
-// Fill the stats grid from the extraction. Filled cells get highlighted for review;
-// cells the scan couldn't determine (0-hit at-bats) get a red flag instead.
-function applyScanResults(data, lists) {
-  const ownerOf = name => Object.keys(lists).find(k => (lists[k] || []).includes(name));
-  const rowFor = (owner, player) => document.querySelector(`#statsEntryArea tr[data-key="${owner}_${player}"]`);
-  const setVal = (row, cls, v, warn, title) => {
-    if (v === null || v === undefined) return;
-    const el = row.querySelector(cls);
-    if (!el) return;
-    el.value = v;
-    el.classList.add(warn ? 'scan-warn' : 'scan-filled');
-    if (title) el.title = title;
-  };
-
-  let battersFilled = 0, pitchersFilled = 0;
-  const unmatched = [];
-
-  (data.batting || []).forEach(b => {
-    const owner = ownerOf(b.player);
-    const row = owner && rowFor(owner, b.player);
-    if (!row) { unmatched.push(b.player); return; }
-    battersFilled++;
-    setVal(row, '.s-hits', b.hits);
-    setVal(row, '.s-rbi', b.rbi);
-    setVal(row, '.s-hr', b.homeRuns);
-    setVal(row, '.s-sb', b.basesStolen);
-    setVal(row, '.s-specials', b.specials);
-    // The game shows AVG, not at-bats — derive AB where the math allows it
-    if (b.hits !== null && b.battingAvg !== null) {
-      if (b.hits > 0 && b.battingAvg > 0) {
-        setVal(row, '.s-ab', Math.round(b.hits / b.battingAvg));
-      } else if (b.hits === 0) {
-        setVal(row, '.s-ab', 0, true, "0 hits with .000 AVG — the screenshot can't tell us the at-bats; enter them manually");
-      }
-    }
-  });
-
-  (data.pitching || []).forEach(p => {
-    const owner = ownerOf(p.player);
-    const row = owner && rowFor(owner, p.player);
-    if (!row) { unmatched.push(p.player + ' (pitching)'); return; }
-    pitchersFilled++;
-    setVal(row, '.s-ip', p.inningsPitched);
-    setVal(row, '.s-hitsAllowed', p.hitsAllowed);
-    setVal(row, '.s-strikeouts', p.strikeouts);
-    setVal(row, '.s-runsAllowed', p.runsAllowed);
-    setVal(row, '.s-pitchSpecials', p.specials);
-  });
-
-  // Surface model warnings + unmatched players under the grid
-  const notes = [...(data.warnings || []), ...unmatched.map(u => `Couldn't match "${u}" to a player in this game`)];
-  document.querySelectorAll('.scan-warnings').forEach(el => el.remove());
-  if (notes.length) {
-    const div = document.createElement('div');
-    div.className = 'scan-warnings';
-    div.innerHTML = '<strong>&#9888; Check these:</strong>' + notes.map(n => `<div>&bull; ${escapeHtml(n)}</div>`).join('');
-    document.getElementById('statsEntryArea').appendChild(div);
-  }
-
-  return `Scanned: filled ${battersFilled} batter${battersFilled === 1 ? '' : 's'}` +
-    (pitchersFilled ? ` + ${pitchersFilled} pitcher line${pitchersFilled === 1 ? '' : 's'}` : '') +
-    (notes.length ? ` — ${notes.length} item${notes.length === 1 ? '' : 's'} to check` : ' — review & save');
-}
 
 // Which players belong in a game's stats grid, per owner.
 // Priority: saved batting order > existing playerStats keys > planned lineup > full roster.
@@ -5647,8 +5453,6 @@ function getStatsPlayerLists(game) {
 
 function renderStatsEntry(gameNum) {
   const area = document.getElementById('statsEntryArea');
-  const scanPanel = document.getElementById('scanPanel');
-  if (scanPanel) scanPanel.style.display = gameNum ? '' : 'none';
   if (!gameNum) { area.innerHTML = ''; return; }
   const game = State.data.games.find(g => g.gameNumber === gameNum);
   if (!game) return;
@@ -7539,15 +7343,6 @@ document.addEventListener('DOMContentLoaded', () => {
     renderStatsEntry(parseInt(e.target.value) || null);
   });
 
-  // Screenshot scanner
-  document.getElementById('scanFiles').addEventListener('change', (e) => {
-    if (e.target.files.length) scanFilesChosen(e.target.files);
-    e.target.value = ''; // allow re-choosing the same files
-  });
-  // Editing a scanned cell clears its highlight — it's been reviewed
-  document.getElementById('statsEntryArea').addEventListener('input', (e) => {
-    if (e.target.classList) e.target.classList.remove('scan-filled', 'scan-warn');
-  });
 
   // Injury buttons
   document.getElementById('btnRollInjury').addEventListener('click', rollInjury);
