@@ -416,7 +416,15 @@ input[type="number"] { width: 70px; text-align: center; }
   justify-content: center;
 }
 .modal-overlay.show { display: flex; }
-/* The injury result sits above everything, including the game-detail modal. */
+/* The add-game wizard fills the overlay rather than sitting as a centred card:
+   the pick step needs the full viewport height for fitPickGrids to work with. */
+#wizardOverlay { z-index: 250; align-items: stretch; padding: 10px; }
+#wizardOverlay #addGameWizard {
+  width: 100%; max-width: 1280px; margin: 0 auto;
+  max-height: 100%; overflow-y: auto;
+  border-radius: 16px;
+}
+/* The injury result sits above everything, including the wizard and game detail. */
 #injuryOverlay { z-index: 300; }
 /* Brief "rolling" phase before the result, so the check is visibly happening
    rather than a verdict appearing from nowhere. */
@@ -1024,53 +1032,6 @@ body.picking .container { padding-left: 8px; padding-right: 8px; }
     <div id="worldSeriesArea"></div>
 
     <!-- Add Game Wizard (lineup builder + game result entry) -->
-    <div class="card" id="addGameWizard" style="display:none">
-      <div class="card-title">Add Game Result</div>
-
-      <!-- Step 1: Game Info -->
-      <div class="wizard-step active" id="wizStep1">
-        <div style="margin-bottom:12px;">
-          <strong>Next Game:</strong> <span id="wizGameInfo"></span>
-        </div>
-        <div id="savedLineupPreview"></div>
-        <div class="btn-group">
-          <button class="btn btn-primary" id="btnWizStart">Build Lineups</button>
-          <button class="btn btn-success" id="btnSkipToResults" style="display:none">Skip to Results &rarr;</button>
-          <button class="btn btn-secondary" id="btnCancelWizard">Cancel</button>
-        </div>
-      </div>
-
-      <!-- Step 2: Owner picks (dynamically populated) -->
-      <div class="wizard-step" id="wizStep2"></div>
-
-      <!-- Step 3: unused (kept for step numbering) -->
-      <div class="wizard-step" id="wizStep3" style="display:none"></div>
-
-      <!-- Step 4: Randomize + SP selection -->
-      <div class="wizard-step" id="wizStep4">
-        <div class="btn-group" style="margin-bottom:12px;">
-          <button class="btn btn-warning btn-lg" id="btnRandomize">Randomize Final 3 Spots</button>
-        </div>
-        <div id="spInstruction" style="display:none; font-size:0.85rem; color:#d2d2d7; margin-bottom:12px; text-align:center;">
-          Click a player to select them as <strong style="color:#e94560">Starting Pitcher</strong>
-        </div>
-        <div style="display:flex;gap:20px;flex-wrap:wrap;" id="finalLineupsContainer"></div>
-        <div class="btn-group" id="wizStep4Buttons" style="margin-top:16px;display:none;">
-          <button class="btn btn-success" id="btnToResults" disabled>Enter Game Results &rarr;</button>
-          <button class="btn btn-secondary" id="btnReRandomize">Re-Randomize</button>
-          <button class="btn btn-secondary" id="btnResetWizard">Start Over</button>
-        </div>
-      </div>
-
-      <!-- Step 5: Game Results (dynamically populated) -->
-      <div class="wizard-step" id="wizStep5">
-        <div id="wizStep5Content"></div>
-      </div>
-
-      <!-- Step 6 retired: the injury roll is now its own modal (#injuryOverlay) so
-           it lands in front of you instead of above the fold you just scrolled past. -->
-      <div class="wizard-step" id="wizStep6"></div>
-    </div>
 
     <!-- Game Log Table -->
     <div class="table-wrap">
@@ -1616,6 +1577,59 @@ body.picking .container { padding-left: 8px; padding-right: 8px; }
 
 <!-- Toast notification -->
 <div class="toast" id="toast"></div>
+
+<!-- The whole add-game flow runs in an overlay: picks -> randomize -> SP ->
+     results, then the injury modal. Lives outside .tab-content so it is not
+     tied to the active tab. -->
+<div class="modal-overlay" id="wizardOverlay">
+      <div class="card" id="addGameWizard">
+        <div class="card-title">Add Game Result</div>
+  
+        <!-- Step 1: Game Info -->
+        <div class="wizard-step active" id="wizStep1">
+          <div style="margin-bottom:12px;">
+            <strong>Next Game:</strong> <span id="wizGameInfo"></span>
+          </div>
+          <div id="savedLineupPreview"></div>
+          <div class="btn-group">
+            <button class="btn btn-primary" id="btnWizStart">Build Lineups</button>
+            <button class="btn btn-success" id="btnSkipToResults" style="display:none">Skip to Results &rarr;</button>
+            <button class="btn btn-secondary" id="btnCancelWizard">Cancel</button>
+          </div>
+        </div>
+  
+        <!-- Step 2: Owner picks (dynamically populated) -->
+        <div class="wizard-step" id="wizStep2"></div>
+  
+        <!-- Step 3: unused (kept for step numbering) -->
+        <div class="wizard-step" id="wizStep3" style="display:none"></div>
+  
+        <!-- Step 4: Randomize + SP selection -->
+        <div class="wizard-step" id="wizStep4">
+          <div class="btn-group" style="margin-bottom:12px;">
+            <button class="btn btn-warning btn-lg" id="btnRandomize">Randomize Final 3 Spots</button>
+          </div>
+          <div id="spInstruction" style="display:none; font-size:0.85rem; color:#d2d2d7; margin-bottom:12px; text-align:center;">
+            Click a player to select them as <strong style="color:#e94560">Starting Pitcher</strong>
+          </div>
+          <div style="display:flex;gap:20px;flex-wrap:wrap;" id="finalLineupsContainer"></div>
+          <div class="btn-group" id="wizStep4Buttons" style="margin-top:16px;display:none;">
+            <button class="btn btn-success" id="btnToResults" disabled>Enter Game Results &rarr;</button>
+            <button class="btn btn-secondary" id="btnReRandomize">Re-Randomize</button>
+            <button class="btn btn-secondary" id="btnResetWizard">Start Over</button>
+          </div>
+        </div>
+  
+        <!-- Step 5: Game Results (dynamically populated) -->
+        <div class="wizard-step" id="wizStep5">
+          <div id="wizStep5Content"></div>
+        </div>
+  
+        <!-- Step 6 retired: the injury roll is now its own modal (#injuryOverlay) so
+             it lands in front of you instead of above the fold you just scrolled past. -->
+        <div class="wizard-step" id="wizStep6"></div>
+      </div>
+</div>
 
 <!-- Injury roll result. Its own overlay rather than the shared one, which is wired
      to closeGameDetail. Deliberately NOT dismissable by clicking the backdrop —
@@ -4403,7 +4417,7 @@ function editGameResult(gameNum) {
   const game = State.data.games.find(g => g.gameNumber === gameNum);
   if (!game) return;
   const away = game.away || getOwnerKeys().find(k => k !== game.home);
-  document.getElementById('addGameWizard').style.display = 'block';
+  openWizardShell();
   wizardState.gameInfo = { num: gameNum, stadium: game.stadium, home: game.home, away };
   wizardState.mode = 'editGame';
   setWizardStep(5);
@@ -4544,8 +4558,7 @@ function renderSchedule() {
 // GAME LOG - ADD GAME WIZARD
 // ========================================================================
 function openAddGameWizard(gameNum) {
-  const wiz = document.getElementById('addGameWizard');
-  wiz.style.display = 'block';
+  openWizardShell();
   const next = gameNum || getNextGameNumber();
   const sched = getSchedule(next);
 
@@ -4573,8 +4586,7 @@ function openAddGameWizard(gameNum) {
 }
 
 function openSetLineup(gameNum) {
-  const wiz = document.getElementById('addGameWizard');
-  wiz.style.display = 'block';
+  openWizardShell();
   // A played game (e.g. a World Series game beyond the schedule) knows its own
   // stadium/home; only fall back to the schedule for future games
   const played = State.data.games.find(g => g.gameNumber === gameNum);
@@ -4604,9 +4616,16 @@ function openSetLineup(gameNum) {
   setWizardStep(1);
 }
 
+// The wizard is an overlay now; `picking` still trims the card padding for the
+// roster step, it just no longer needs to hide page chrome the overlay covers.
+function openWizardShell() {
+  document.getElementById('wizardOverlay').classList.add('show');
+  document.getElementById('addGameWizard').scrollTop = 0;
+}
+
 function closeWizard() {
   document.body.classList.remove('picking');
-  document.getElementById('addGameWizard').style.display = 'none';
+  document.getElementById('wizardOverlay').classList.remove('show');
   renderAll();
 }
 
