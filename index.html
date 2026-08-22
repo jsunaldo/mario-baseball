@@ -2959,6 +2959,10 @@ function startWorldSeries(hfaOwner) {
 // ========================================================================
 // SCHEDULE HELPER
 // ========================================================================
+// One-off home-team makeup per season, keyed by series index (0-based, 3 games
+// each). Only needed where already-played games broke the series pattern.
+const HOME_MAKEUP_SERIES = { S2: 12 }; // games 37-39, Mario Stadium
+
 function getSchedule(gameNum) {
   const keys = getOwnerKeys();
   if (gameNum > CONFIG.TOTAL_GAMES) {
@@ -2991,20 +2995,25 @@ function getSchedule(gameNum) {
   }
 
   if (keys.length === 2) {
-    // 2-owner: 3-game series per stadium, home alternating within each series.
-    // Which owner opens a series as home flips every full stadium cycle, so
-    // per-stadium home/away counts even out over the season. (The first cycle
-    // matches the original formula — played S1/S2 games line up unchanged.)
+    // 2-owner: real-baseball style. Three games as one series at a single
+    // stadium, and the home team does NOT change inside a series. Series walk
+    // through the stadiums in order; each new lap flips who hosts that stadium,
+    // so over the season both owners host each park about equally.
     const numStadiums = CONFIG.STADIUMS.length;
-    const gamesPerStadium = 3;
-    const cycleLen = numStadiums * gamesPerStadium;
-    const cycle = (gameNum - 1) % cycleLen;
-    const cycleNum = Math.floor((gameNum - 1) / cycleLen);
-    const stadIdx = Math.floor(cycle / gamesPerStadium);
-    const posInStad = cycle % gamesPerStadium;
-    const stadium = CONFIG.STADIUMS[stadIdx % CONFIG.STADIUMS.length];
-    const firstHome = (stadIdx + cycleNum) % 2 === 0 ? keys[0] : keys[1];
-    const home = posInStad % 2 === 0 ? firstHome : (firstHome === keys[0] ? keys[1] : keys[0]);
+    const GAMES_PER_SERIES = 3;
+    const seriesIdx = Math.floor((gameNum - 1) / GAMES_PER_SERIES);
+    const stadIdx = seriesIdx % numStadiums;
+    const lap = Math.floor(seriesIdx / numStadiums);
+    const stadium = CONFIG.STADIUMS[stadIdx];
+    let home = (stadIdx + lap) % 2 === 0 ? keys[0] : keys[1];
+    // Makeup series: games 17 and 20 were played under the old formula, which
+    // flipped home mid-series and handed Jason two hosts that belonged to Dan.
+    // Flipping one later Mario Stadium series squares the season back up —
+    // 3-game blocks can't undo a 2-game error exactly, so this is the closest
+    // it gets (80/82 overall, Mario 13/14 instead of 16/11).
+    if (HOME_MAKEUP_SERIES[CONFIG.SEASON_ID] === seriesIdx) {
+      home = home === keys[0] ? keys[1] : keys[0];
+    }
     return { stadium, home, away: home === keys[0] ? keys[1] : keys[0] };
   }
 
@@ -4517,8 +4526,15 @@ function renderSchedule() {
   const next = getNextGameNumber();
   const allGames = [];
   for (let i = 1; i <= CONFIG.TOTAL_GAMES; i++) {
-    const s = getSchedule(i);
-    allGames.push({ num: i, ...s });
+    // A played game is history: show where it was actually played and who
+    // actually hosted, not what the current formula would have picked.
+    const rec = State.data.games.find(g => g.gameNumber === i);
+    if (rec && rec.stadium && rec.home) {
+      const away = rec.away || getOwnerKeys().find(k => k !== rec.home);
+      allGames.push({ num: i, stadium: rec.stadium, home: rec.home, away });
+    } else {
+      allGames.push({ num: i, ...getSchedule(i) });
+    }
   }
   document.getElementById('scheduleBody').innerHTML = allGames.map(s => {
     const played = State.data.games.find(g => g.gameNumber === s.num);
