@@ -416,6 +416,8 @@ input[type="number"] { width: 70px; text-align: center; }
   justify-content: center;
 }
 .modal-overlay.show { display: flex; }
+/* The injury result sits above everything, including the game-detail modal. */
+#injuryOverlay { z-index: 300; }
 .modal {
   background: #1c1c1e;
   border: 1px solid rgba(255,255,255,0.1);
@@ -1049,13 +1051,9 @@ body.picking .container { padding-left: 8px; padding-right: 8px; }
         <div id="wizStep5Content"></div>
       </div>
 
-      <!-- Step 6: Injury Roll -->
-      <div class="wizard-step" id="wizStep6">
-        <div id="injuryRollContent"></div>
-        <div class="btn-group" style="margin-top:16px">
-          <button class="btn btn-success" onclick="closeWizard(); renderAll();">Done</button>
-        </div>
-      </div>
+      <!-- Step 6 retired: the injury roll is now its own modal (#injuryOverlay) so
+           it lands in front of you instead of above the fold you just scrolled past. -->
+      <div class="wizard-step" id="wizStep6"></div>
     </div>
 
     <!-- Game Log Table -->
@@ -1602,6 +1600,15 @@ body.picking .container { padding-left: 8px; padding-right: 8px; }
 
 <!-- Toast notification -->
 <div class="toast" id="toast"></div>
+
+<!-- Injury roll result. Its own overlay rather than the shared one, which is wired
+     to closeGameDetail. Deliberately NOT dismissable by clicking the backdrop —
+     the whole point is that you have to acknowledge the result. -->
+<div class="modal-overlay" id="injuryOverlay">
+  <div class="modal" id="injuryModalBox" style="max-width:420px;text-align:center;">
+    <div id="injuryRollContent"></div>
+  </div>
+</div>
 
 <!-- Modal -->
 <div class="modal-overlay" id="modalOverlay">
@@ -4743,15 +4750,25 @@ function saveGame() {
   }
 }
 
+// The roll used to render inside the wizard card, which sits mid-page — after
+// scrolling through a stat entry the result appeared above the fold and was easy
+// to miss entirely. It now closes the wizard and opens a modal you must dismiss.
+function openInjuryModal() {
+  document.getElementById('injuryOverlay').classList.add('show');
+}
+
+function closeInjuryModal() {
+  document.getElementById('injuryOverlay').classList.remove('show');
+  renderAll();
+}
+
 function performInjuryRoll(gameNum) {
   const game = State.data.games.find(g => g.gameNumber === gameNum);
   if (!game) { closeWizard(); return; }
 
-  // Show step 6
-  document.querySelectorAll('#addGameWizard .wizard-step').forEach(el => el.classList.remove('active'));
-  document.getElementById('wizStep6').classList.add('active');
-
+  closeWizard();
   const contentDiv = document.getElementById('injuryRollContent');
+  openInjuryModal();
 
   // Get players from lineup — only from the 2 owners in this game
   let players = [];
@@ -4782,7 +4799,7 @@ function performInjuryRoll(gameNum) {
         <div style="font-size:3rem;margin-bottom:12px;">&#127922;</div>
         <div style="font-size:1.2rem;font-weight:700;color:#30d158;margin-bottom:8px;">No Injury!</div>
         <div style="font-size:0.9rem;color:#86868b;">All players stay healthy after Game ${gameNum}.</div>
-        <button class="btn btn-primary" style="margin-top:16px;" onclick="closeWizard()">Done</button>
+        <button class="btn btn-primary" style="margin-top:20px;" onclick="closeInjuryModal()">Done</button>
       </div>`;
     return;
   }
@@ -4805,7 +4822,7 @@ function performInjuryRoll(gameNum) {
 
   contentDiv.innerHTML = `
     <div style="text-align:center;padding:30px 0;">
-      <div style="font-size:3rem;margin-bottom:12px;">&#129405;</div>
+      <div style="font-size:3rem;margin-bottom:12px;">&#129301;</div>
       <div style="font-size:1.2rem;font-weight:700;color:#e94560;margin-bottom:12px;">Injury!</div>
       <div style="display:inline-flex;align-items:center;gap:10px;background:rgba(233,69,96,0.1);border:1px solid rgba(233,69,96,0.3);border-radius:8px;padding:12px 20px;">
         ${pImg(victim.name, 'player-img-sm')}
@@ -4814,7 +4831,7 @@ function performInjuryRoll(gameNum) {
           <div style="font-size:0.85rem;color:#e94560;">Out ${gamesOut} games — returns Game ${injury.returnGame}</div>
         </div>
       </div>
-      <button class="btn btn-primary" style="margin-top:16px;" onclick="closeWizard()">Done</button>
+      <button class="btn btn-primary" style="margin-top:20px;" onclick="closeInjuryModal()">Done</button>
     </div>`;
   showToast(`${victim.name} injured for ${gamesOut} games!`, true);
 }
@@ -6905,7 +6922,13 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.target === document.getElementById('modalOverlay')) closeGameDetail();
   });
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && document.getElementById('modalOverlay').classList.contains('show')) {
+    if (e.key !== 'Escape') return;
+    // Injury result first — it sits on top and is the only thing dismissable there.
+    if (document.getElementById('injuryOverlay').classList.contains('show')) {
+      closeInjuryModal();
+      return;
+    }
+    if (document.getElementById('modalOverlay').classList.contains('show')) {
       closeGameDetail();
     }
   });
