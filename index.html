@@ -4293,7 +4293,10 @@ function renderSeasonSummary() {
   const reg = State.data.games.filter(g => g.gameNumber <= total);
   const wins = {}; keys.forEach(k => wins[k] = reg.filter(g => g.winner === k).length);
   const runs = {}; keys.forEach(k => runs[k] = reg.reduce((n, g) => n + (getGameScore(g, k) || 0), 0));
-  const series = computeSeriesResults();
+  // Series and head-to-head margins are 2-owner concepts; a 3+ owner league
+  // plays a round-robin with no fixed series, so those sections are skipped.
+  const twoOwner = keys.length === 2;
+  const series = twoOwner ? computeSeriesResults() : [];
   const seriesWon = {}; keys.forEach(k => seriesWon[k] = series.filter(s => s.winner === k).length);
 
   // season batting leaders across all recorded games
@@ -4307,10 +4310,10 @@ function renderSeasonSummary() {
     .map(b => ({ ...b, avg: b.hits / b.ab })).sort((x, y) => y.avg - x.avg).slice(0, 5);
   const hrLeaders = Object.values(bat).sort((x, y) => y.hr - x.hr).filter(b => b.hr > 0).slice(0, 5);
 
-  const biggest = reg.reduce((best, g) => {
+  const biggest = twoOwner ? reg.reduce((best, g) => {
     const d = Math.abs((getGameScore(g, keys[0]) || 0) - (getGameScore(g, keys[1]) || 0));
     return (!best || d > best.d) ? { g, d } : best;
-  }, null);
+  }, null) : null;
 
   el.innerHTML = `
     <div class="summary-head">
@@ -4321,7 +4324,7 @@ function renderSeasonSummary() {
       ${keys.map(k => `<div class="summary-team">
         <div class="summary-team-name" style="color:${getOwnerColor(k)}">${CONFIG.OWNERS[k].name}</div>
         <div class="summary-team-rec">${wins[k]}&ndash;${reg.length - wins[k]}</div>
-        <div class="summary-team-meta">${runs[k]} runs &middot; ${seriesWon[k]} series won</div>
+        <div class="summary-team-meta">${runs[k]} runs${twoOwner ? ` &middot; ${seriesWon[k]} series won` : ''}</div>
       </div>`).join('')}
     </div>
     <div class="summary-cols">
@@ -4340,7 +4343,7 @@ function renderSeasonSummary() {
           : '<div class="summary-empty">None yet.</div>'}
       </div>
     </div>
-    <div class="summary-cols">
+    ${twoOwner ? `<div class="summary-cols">
       <div>
         <h4>Series by stadium</h4>
         <table class="summary-table"><tbody>${(() => {
@@ -4360,7 +4363,7 @@ function renderSeasonSummary() {
           <tr><td>Injuries</td><td class="num">${(State.data.injuries || []).length}</td><td></td></tr>
         </tbody></table>
       </div>
-    </div>`;
+    </div>` : ''}`;
 }
 
 function computeSeriesResults() {
@@ -4369,6 +4372,9 @@ function computeSeriesResults() {
   const out = [];
   for (let si = 0; si * 3 < total; si++) {
     const nums = [1, 2, 3].map(n => si * 3 + n).filter(n => n <= total);
+    // A trailing block shorter than three (S1 ends on a lone game 100) isn't a
+    // series and shouldn't count as one won or lost.
+    if (nums.length < 3) continue;
     const played = nums.map(n => State.data.games.find(g => g.gameNumber === n)).filter(Boolean);
     if (played.length !== nums.length) continue;
     const wins = {};
@@ -5598,10 +5604,20 @@ function renderStatsEntry(gameNum) {
 // shows .000 and is ambiguous on his own — those are recovered from the team
 // line: team AB = team H / team AVG, and whatever is left over is spread down
 // the batting order (earlier spots bat more often, never by more than one).
+// Reads an AVG field. The game prints ".303"; people type "303" as often as
+// ".303", so whole numbers up to 1000 are taken as thousandths. Anything else
+// over 1 is not an average and is ignored rather than producing a silent 0 AB.
+function readAvgInput(el) {
+  let v = parseFloat(el.value);
+  if (!isFinite(v) || v <= 0) return 0;
+  if (v > 1 && v <= 1000) v = v / 1000;
+  return v > 1 ? 0 : v;
+}
+
 function onStatsHitsOrAvg(el) {
   const row = el.closest('tr');
   const hits = parseInt(row.querySelector('.s-hits').value) || 0;
-  const avg = parseFloat(row.querySelector('.s-avg').value) || 0;
+  const avg = readAvgInput(row.querySelector('.s-avg'));
   if (hits > 0 && avg > 0) row.querySelector('.s-ab').value = Math.round(hits / avg);
   const owner = row.dataset.owner;
   if (owner) checkTeamReconcile(owner);
@@ -5611,7 +5627,7 @@ function fillTeamAB(owner) {
   const bar = document.querySelector(`.team-recon[data-owner="${owner}"]`);
   const rows = [...document.querySelectorAll(`#statsEntryArea tr[data-owner="${owner}"]`)];
   const teamHits = parseInt(bar.querySelector('.tr-hits').value) || 0;
-  const teamAvg = parseFloat(bar.querySelector('.tr-avg').value) || 0;
+  const teamAvg = readAvgInput(bar.querySelector('.tr-avg'));
   if (!teamHits || !teamAvg) { showToast('Enter the team H and AVG first', true); return; }
 
   const teamAB = Math.round(teamHits / teamAvg);
@@ -5619,7 +5635,7 @@ function fillTeamAB(owner) {
   const hitless = [];
   rows.forEach(row => {
     const hits = parseInt(row.querySelector('.s-hits').value) || 0;
-    const avg = parseFloat(row.querySelector('.s-avg').value) || 0;
+    const avg = readAvgInput(row.querySelector('.s-avg'));
     if (hits > 0 && avg > 0) {
       const ab = Math.round(hits / avg);
       row.querySelector('.s-ab').value = ab;
@@ -5647,7 +5663,7 @@ function checkTeamReconcile(owner) {
   const sum = cls => rows.reduce((n, r) => n + (parseInt(r.querySelector(cls).value) || 0), 0);
   const hits = sum('.s-hits'), ab = sum('.s-ab');
   const teamHits = parseInt(bar.querySelector('.tr-hits').value) || 0;
-  const teamAvg = parseFloat(bar.querySelector('.tr-avg').value) || 0;
+  const teamAvg = readAvgInput(bar.querySelector('.tr-avg'));
   if (!teamHits && !teamAvg) { status.textContent = ''; return; }
 
   const problems = [];
@@ -7486,6 +7502,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Injury result first — it sits on top and is the only thing dismissable there.
     if (document.getElementById('injuryOverlay').classList.contains('show')) {
       closeInjuryModal();
+      return;
+    }
+    if (document.getElementById('summaryOverlay').classList.contains('show')) {
+      closeSeasonSummary();
       return;
     }
     if (document.getElementById('modalOverlay').classList.contains('show')) {
