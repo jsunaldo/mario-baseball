@@ -5804,7 +5804,9 @@ function renderInjuries() {
 function updateManualInjuryPlayers() {
   const owner = document.getElementById('manualInjOwner').value;
   const nextGame = getNextGameNumber();
-  const available = CONFIG.OWNERS[owner].roster.filter(p => !isInjured(p, owner, nextGame));
+  // The select can be empty for a beat (new season, options not yet rebuilt) —
+  // an unknown owner just means no roster to offer, not a crash.
+  const available = (CONFIG.OWNERS[owner]?.roster || []).filter(p => !isInjured(p, owner, nextGame));
   document.getElementById('manualInjPlayer').innerHTML = available.map(p => `<option value="${p}">${p}</option>`).join('');
 }
 
