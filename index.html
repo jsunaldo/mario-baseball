@@ -1029,6 +1029,75 @@ tr:hover .col-notes .note-more { display: inline; }
   .record-badge { padding: 5px 16px; }
   .header-center { gap: 6px; }
 }
+/* Header: centre stack flanked by art, next-game card in the otherwise empty right side */
+.header-spacer { flex: 1; display: none; }
+.header-next-slot { flex: 0 0 100%; display: flex; justify-content: center; }
+.record-line { display: inline-flex; align-items: baseline; gap: 10px; padding: 4px 18px; border-radius: 980px;
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); font-size: 1rem; }
+.record-line .rl-name { font-weight: 600; }
+.record-line .rl-n { font-size: 1.35em; font-weight: 800; }
+.record-line .rl-dash { color: #6e6e73; font-weight: 400; }
+@media (min-width: 900px) {
+  .header { flex-wrap: nowrap; justify-content: center; gap: 16px; }
+  .header-spacer { display: block; }
+  .header-next-slot { flex: 1; justify-content: flex-start; padding-left: 20px; }
+  .header-next { flex-direction: column; align-items: flex-start; gap: 8px; margin: 0; padding: 12px;
+    border-radius: 18px; background: rgba(41,151,255,0.08); min-width: 250px; max-width: 320px; }
+  .stadium-img-hn { width: 100%; height: 118px; border-radius: 12px; }
+  .header-next .hn-text { display: flex; flex-direction: column; gap: 2px; font-size: 1.12rem; line-height: 1.2; padding: 0 2px 2px; }
+  .header-next .hn-label { font-size: 0.72rem; }
+  .header-next .hn-sep, .header-next .hn-br { display: none; }
+  .record-line { font-size: 1.15rem; padding: 5px 22px; }
+}
+@media (max-width: 899px) { .header { flex-wrap: wrap; } }
+body.picking .header-next-slot { display: none; }
+/* Game log view toggle */
+.seg { display: inline-flex; background: rgba(255,255,255,0.08); border-radius: 980px; padding: 3px; }
+.seg button { border: 0; background: transparent; color: #a1a1a6; font: inherit; font-size: 0.82rem; font-weight: 600;
+  padding: 5px 14px; border-radius: 980px; cursor: pointer; }
+.seg button.on { background: #f5f5f7; color: #000; }
+#gameLogTable.grouped .col-stadium { display: none; }
+/* Series cards */
+.series-card { border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; background: #16161a; overflow: hidden; margin-bottom: 14px; }
+.series-card-head { position: relative; display: flex; align-items: flex-end; justify-content: space-between; gap: 16px;
+  min-height: 118px; padding: 12px 18px; background-size: cover; background-position: center 60%; }
+.series-card-head::before { content: ''; position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.5) 55%, rgba(22,22,26,0.96) 100%); }
+.series-card-head > * { position: relative; }
+.series-card-head.ws { background: linear-gradient(135deg, rgba(247,183,49,0.25), rgba(247,183,49,0.05)); min-height: 74px; }
+.sc-tag { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #c7c7cc; text-shadow: 0 1px 2px #000; }
+.sc-park { font-size: 1.45rem; font-weight: 800; line-height: 1.15; text-shadow: 0 1px 3px rgba(0,0,0,0.8); }
+.sc-host { font-size: 0.92rem; color: #e5e5ea; text-shadow: 0 1px 2px #000; }
+.sc-result { font-size: 1.05rem; text-shadow: 0 1px 3px rgba(0,0,0,0.9); white-space: nowrap; }
+.series-games { display: flex; flex-direction: column; }
+.sg-row { display: grid; grid-template-columns: 44px 96px minmax(230px, 1.2fr) minmax(160px, 0.9fr) minmax(250px, 1.3fr) minmax(0, 1fr);
+  align-items: center; gap: 10px; padding: 12px 16px 12px 13px; border-top: 1px solid rgba(255,255,255,0.07);
+  border-left: 3px solid var(--wc, transparent); cursor: pointer; }
+.sg-row:hover { background: rgba(255,255,255,0.04); }
+.sg-row.ws { background: rgba(247,183,49,0.05); }
+.sg-num { font-weight: 800; font-size: 1.05rem; color: #f5f5f7; text-align: center; }
+.sg-row.ws .sg-num { color: #f7b731; }
+.sg-date { color: #86868b; font-size: 0.88rem; white-space: nowrap; }
+.sg-score { display: flex; align-items: baseline; gap: 8px; white-space: nowrap; }
+.sg-team { font-size: 0.95rem; font-weight: 600; opacity: 0.55; }
+.sg-team.won { opacity: 1; }
+.sg-n { font-size: 1.55rem; font-weight: 800; min-width: 1.3em; text-align: center; }
+.sg-dash { color: #6e6e73; }
+.sg-lbl { font-size: 0.66rem; font-weight: 700; letter-spacing: 0.08em; color: #6e6e73; margin-right: 6px; }
+.sg-mvp, .sg-sp { display: flex; align-items: center; gap: 2px; font-size: 0.95rem; white-space: nowrap; overflow: hidden; }
+.sg-vs { color: #6e6e73; font-size: 0.78rem; margin: 0 8px; }
+.sg-notes { font-size: 0.86rem; color: #a1a1a6; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sg-mvp .player-img-sm, .sg-sp .player-img-sm { width: 30px; height: 30px; }
+@media (max-width: 900px) {
+  .sg-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; }
+  .sg-num { flex: 0 0 auto; }
+  .sg-date { order: 5; flex: 1 0 auto; }
+  .sg-score { flex: 1 0 auto; }
+  .sg-mvp, .sg-sp { flex: 0 0 auto; }
+  .sg-notes { order: 6; flex: 1 0 100%; white-space: normal; }
+  .series-card-head { min-height: 96px; }
+  .sc-park { font-size: 1.2rem; }
+}
 /* Series banner in the game log */
 .series-banner td { background: rgba(255,255,255,0.045); border-top: 1px solid rgba(255,255,255,0.10);
   padding: 7px 12px !important; cursor: default; }
@@ -1137,6 +1206,7 @@ body.picking .container { padding-left: 8px; padding-right: 8px; }
 
 <!-- ========== HEADER ========== -->
 <header class="header">
+  <div class="header-spacer"></div>
   <img src="images/Extra Sprites/105px-MSB_Mario_Batting_Artwork.png" alt="Mario" class="header-character header-character-left" onerror="this.style.display='none'">
   <div class="header-center">
     <img src="images/Game/250px-MSBingamelogo.png" alt="Mario Superstar Baseball" class="header-logo" onerror="this.style.display='none'">
@@ -1145,11 +1215,11 @@ body.picking .container { padding-left: 8px; padding-right: 8px; }
       <span class="record-badge jason" id="headerJasonRecord">Jason: 0-0</span>
       <span class="record-badge dan" id="headerDanRecord">Dan: 0-0</span>
     </div>
-    <div class="header-next" id="headerMeta">Game 1 of 162</div>
     <div class="sync-status" id="syncStatusMain" onclick="Sync.chipClick()" title="Click to sync now"></div>
     <button class="back-to-seasons" onclick="showSeasonSelect()">&#8592; Back to Seasons</button>
   </div>
   <img src="images/Extra Sprites/107px-MSBBowser.png" alt="Bowser" class="header-character header-character-right" onerror="this.style.display='none'">
+  <div class="header-next-slot"><div class="header-next" id="headerMeta">Game 1 of 162</div></div>
 </header>
 
 <!-- ========== TAB BAR ========== -->
@@ -1173,6 +1243,10 @@ body.picking .container { padding-left: 8px; padding-right: 8px; }
       <button class="btn btn-primary" id="btnAddGame">+ Add Game Result</button>
       <button class="btn btn-secondary" id="btnToggleSchedule">View Full Schedule</button>
       <button class="btn btn-secondary" onclick="openSeasonSummary()">Season Summary</button>
+      <div class="seg" id="logViewSeg" style="display:none;margin-left:auto;">
+        <button type="button" data-view="series" onclick="setLogView('series')">Series</button>
+        <button type="button" data-view="table" onclick="setLogView('table')">Table</button>
+      </div>
     </div>
 
     <!-- World Series panel (appears when the regular season is complete) -->
@@ -1180,8 +1254,9 @@ body.picking .container { padding-left: 8px; padding-right: 8px; }
 
     <!-- Add Game Wizard (lineup builder + game result entry) -->
 
-    <!-- Game Log Table -->
-    <div class="table-wrap">
+    <!-- Game Log: series cards (default for a 2-owner league) or the sortable table -->
+    <div id="gameLogCards"></div>
+    <div class="table-wrap" id="gameLogTableWrap">
       <table id="gameLogTable">
         <thead>
           <tr>
@@ -4231,10 +4306,23 @@ function parseIP(v) {
 function renderHeader() {
   // Update header records dynamically for all owners
   const recDiv = document.getElementById('headerRecords');
-  recDiv.innerHTML = Object.keys(CONFIG.OWNERS).map(k => {
-    const r = getRecord(k);
-    return `<span class="record-badge" style="background:${getOwnerBgColor(k)};color:${getOwnerColor(k)}">${CONFIG.OWNERS[k].name}: ${r.w}-${r.l}</span>`;
-  }).join('');
+  const ownerKeys = Object.keys(CONFIG.OWNERS);
+  if (ownerKeys.length === 2) {
+    // Head-to-head: "Jason 17-4" and "Dan 4-17" are the same fact twice, so
+    // show it once as a scoreline.
+    const [a, b] = ownerKeys;
+    const ra = getRecord(a);
+    recDiv.innerHTML = `<span class="record-line">
+      <span class="rl-name" style="color:${getOwnerColor(a)}">${CONFIG.OWNERS[a].name}</span>
+      <b class="rl-n" style="color:${getOwnerColor(a)}">${ra.w}</b><span class="rl-dash">&ndash;</span><b class="rl-n" style="color:${getOwnerColor(b)}">${ra.l}</b>
+      <span class="rl-name" style="color:${getOwnerColor(b)}">${CONFIG.OWNERS[b].name}</span>
+    </span>`;
+  } else {
+    recDiv.innerHTML = ownerKeys.map(k => {
+      const r = getRecord(k);
+      return `<span class="record-badge" style="background:${getOwnerBgColor(k)};color:${getOwnerColor(k)}">${CONFIG.OWNERS[k].name}: ${r.w}-${r.l}</span>`;
+    }).join('');
+  }
   document.getElementById('headerSeasonBadge').textContent = CONFIG.SEASON_NAME || 'Season';
   const rulesName = document.getElementById('rulesSeasonName');
   if (rulesName) rulesName.textContent = CONFIG.SEASON_NAME || 'this season';
@@ -4245,7 +4333,8 @@ function renderHeader() {
     // not just a counter.
     const s = getSchedule(next);
     const host = CONFIG.OWNERS[s.home]?.name || s.home;
-    meta = `${sImg(s.stadium, 'stadium-img-hn')}<span class="hn-text">`
+    const src = sImgLg(s.stadium);
+    meta = `${src ? `<img src="${src}" alt="${escapeHtml(s.stadium)}" class="stadium-img-hn" onerror="this.style.display='none'">` : ''}<span class="hn-text">`
          + `<span class="hn-label">Up next &middot; Game ${next} of ${CONFIG.TOTAL_GAMES}</span>`
          + `<span class="hn-sep"> &middot; </span><br class="hn-br">`
          + `${escapeHtml(s.stadium)} &middot; ${escapeHtml(host)} hosts</span>`;
@@ -4578,17 +4667,15 @@ function renderInjuryHistory() {
     </table></div>`;
 }
 
-function seriesBannerRow(seriesIdx, colCount) {
+function seriesInfo(seriesIdx) {
   const keys = getOwnerKeys();
   const nums = [1, 2, 3].map(n => seriesIdx * 3 + n).filter(n => n <= CONFIG.TOTAL_GAMES);
   const played = nums.map(n => State.data.games.find(g => g.gameNumber === n)).filter(Boolean);
   const first = played[0] || null;
   const sched = first ? { stadium: first.stadium, home: first.home } : getSchedule(nums[0]);
-
   const wins = {};
   keys.forEach(k => wins[k] = 0);
   played.forEach(g => { if (wins[g.winner] !== undefined) wins[g.winner]++; });
-
   let result = '';
   if (played.length === 0) {
     result = `<span style="color:#6e6e73;">upcoming</span>`;
@@ -4604,18 +4691,21 @@ function seriesBannerRow(seriesIdx, colCount) {
     }
     if (!done) result += `<span style="color:#6e6e73;"> &middot; ${nums.length - played.length} to play</span>`;
   }
+  // Games 16-20 were played under the old scheduler, which swapped the host
+  // mid-series — say so rather than quietly reporting whoever hosted first.
+  const hosts = [...new Set(played.map(g => g.home))];
+  const host = hosts.length > 1
+    ? `hosts split (${hosts.map(h => CONFIG.OWNERS[h]?.name || h).join(' / ')})`
+    : `${CONFIG.OWNERS[sched.home]?.name || sched.home} hosts`;
+  return { nums, played, sched, result, host };
+}
 
+function seriesBannerRow(seriesIdx, colCount) {
+  const { sched, result, host } = seriesInfo(seriesIdx);
   return `<tr class="series-banner"><td colspan="${colCount}">
     <span class="series-tag">Series ${seriesIdx + 1}</span>
     <span class="series-venue">${sImg(sched.stadium, 'stadium-img-xs')}${sched.stadium}</span>
-    <span class="series-host">${(() => {
-      // Games 16-20 were played under the old scheduler, which swapped the host
-      // mid-series — say so rather than quietly reporting whoever hosted first.
-      const hosts = [...new Set(played.map(g => g.home))];
-      return hosts.length > 1
-        ? `hosts split (${hosts.map(h => CONFIG.OWNERS[h]?.name || h).join(' / ')})`
-        : `${CONFIG.OWNERS[sched.home]?.name || sched.home} hosts`;
-    })()}</span>
+    <span class="series-host">${host}</span>
     <span class="series-result">${result}</span>
   </td></tr>`;
 }
@@ -4667,6 +4757,21 @@ function renderGameLog() {
   // sort scatters the series, so they're dropped.
   const grouped = gameLogSort.col === 'gameNumber' && gameLogSort.dir === 'asc' && keys.length === 2;
   const colCount = 7 + keys.length * 2;
+
+  // A 2-owner league reads as series cards by default; the table stays behind a
+  // toggle for anyone who wants to sort a column.
+  const seg = document.getElementById('logViewSeg');
+  const cards = document.getElementById('gameLogCards');
+  const wrap = document.getElementById('gameLogTableWrap');
+  const useCards = keys.length === 2 && logView === 'series';
+  if (seg) {
+    seg.style.display = keys.length === 2 ? '' : 'none';
+    seg.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.view === logView));
+  }
+  if (cards) cards.style.display = useCards ? '' : 'none';
+  if (wrap) wrap.style.display = useCards ? 'none' : '';
+  if (useCards) { renderSeriesCards(); return; }
+  document.getElementById('gameLogTable').classList.toggle('grouped', grouped);
   tbody.innerHTML = games.map(g => {
     const winnerColor = getOwnerColor(g.winner);
     let banner = '';
@@ -4697,6 +4802,78 @@ function renderGameLog() {
       th.classList.add(gameLogSort.dir === 'asc' ? 'sorted-asc' : 'sorted-desc');
     }
   });
+}
+
+let logView = localStorage.getItem('msb_logView') || 'series';
+function setLogView(v) {
+  logView = v;
+  try { localStorage.setItem('msb_logView', v); } catch (e) {}
+  renderGameLog();
+}
+
+// One card per 3-game series: the park is named once in the banner instead of
+// on every row, and each game is a scoreline rather than a spreadsheet row.
+function renderSeriesCards() {
+  const box = document.getElementById('gameLogCards');
+  const keys = getOwnerKeys();
+  const [a, b] = keys;
+  const games = [...State.data.games].sort((x, y) => x.gameNumber - y.gameNumber);
+  if (!games.length) {
+    box.innerHTML = `<div class="card" style="text-align:center;color:#86868b;padding:28px;">No games played yet — click <strong style="color:#e94560">+ Add Game Result</strong> above to record your first game.</div>`;
+    return;
+  }
+  const gameRow = g => {
+    const wc = getOwnerColor(g.winner);
+    const isWS = g.gameNumber > CONFIG.TOTAL_GAMES;
+    const label = isWS ? 'WS' + (g.gameNumber - CONFIG.TOTAL_GAMES) : g.gameNumber;
+    const side = k => {
+      const inGame = isInGame(g, k);
+      const won = g.winner === k;
+      return { name: CONFIG.OWNERS[k]?.name || k, score: inGame ? getGameScore(g, k) : '-', won, color: getOwnerColor(k) };
+    };
+    const A = side(a), B = side(b);
+    const sp = k => { const p = isInGame(g, k) ? getGameSP(g, k) : ''; return p ? `${pImg(p, 'player-img-sm')}${escapeHtml(p)}` : '<span style="color:#6e6e73">-</span>'; };
+    return `<div class="sg-row${isWS ? ' ws' : ''}" style="--wc:${wc}" onclick="showGameDetail(${g.gameNumber})">
+      <div class="sg-num">${label}</div>
+      <div class="sg-date">${formatDate(g.date)}</div>
+      <div class="sg-score">
+        <span class="sg-team${A.won ? ' won' : ''}" style="color:${A.color}">${escapeHtml(A.name)}</span>
+        <b class="sg-n${A.won ? ' won' : ''}" style="color:${A.won ? A.color : '#8e8e93'}">${A.score}</b>
+        <span class="sg-dash">&ndash;</span>
+        <b class="sg-n${B.won ? ' won' : ''}" style="color:${B.won ? B.color : '#8e8e93'}">${B.score}</b>
+        <span class="sg-team${B.won ? ' won' : ''}" style="color:${B.color}">${escapeHtml(B.name)}</span>
+      </div>
+      <div class="sg-mvp"><span class="sg-lbl">MVP</span>${pImg(g.mvp, 'player-img-sm')}${escapeHtml(g.mvp || '')}</div>
+      <div class="sg-sp"><span class="sg-lbl">SP</span>${sp(a)}<span class="sg-vs">vs</span>${sp(b)}</div>
+      <div class="sg-notes">${g.notes ? `<span class="note-text" title="${escapeHtml(g.notes)}">${escapeHtml(g.notes)}</span>` : ''}</div>
+    </div>`;
+  };
+  const reg = games.filter(g => g.gameNumber <= CONFIG.TOTAL_GAMES);
+  const ws = games.filter(g => g.gameNumber > CONFIG.TOTAL_GAMES);
+  const seriesIdxs = [...new Set(reg.map(g => Math.floor((g.gameNumber - 1) / 3)))];
+  let html = seriesIdxs.map(si => {
+    const info = seriesInfo(si);
+    const mine = reg.filter(g => Math.floor((g.gameNumber - 1) / 3) === si);
+    const bg = sImgLg(info.sched.stadium);
+    return `<div class="series-card">
+      <div class="series-card-head"${bg ? ` style="background-image:url('${bg}')"` : ''}>
+        <div class="sc-left">
+          <div class="sc-tag">Series ${si + 1}</div>
+          <div class="sc-park">${escapeHtml(info.sched.stadium)}</div>
+          <div class="sc-host">${info.host}</div>
+        </div>
+        <div class="sc-result">${info.result}</div>
+      </div>
+      <div class="series-games">${mine.map(gameRow).join('')}</div>
+    </div>`;
+  }).join('');
+  if (ws.length) {
+    html += `<div class="series-card ws">
+      <div class="series-card-head ws"><div class="sc-left"><div class="sc-tag">Postseason</div><div class="sc-park">World Series</div></div></div>
+      <div class="series-games">${ws.map(gameRow).join('')}</div>
+    </div>`;
+  }
+  box.innerHTML = html;
 }
 
 function showGameDetail(gameNum) {
