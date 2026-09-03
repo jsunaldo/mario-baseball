@@ -1239,6 +1239,26 @@ body.picking .header-next-slot { display: none; }
   .series-card-head { min-height: 240px; }
   .lineup-card-head { min-height: 300px; }
 }
+/* Landing page: leagues, each with its seasons and its own history */
+.league-block { margin-bottom: 36px; }
+.league-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  padding: 16px 20px; margin-bottom: 14px; border-radius: 18px; background: #111114; border: 1px solid rgba(255,255,255,0.08); }
+.league-tag { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #6e6e73; }
+.league-name { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; color: #f5f5f7; line-height: 1.15; }
+.league-owners { font-size: 0.95rem; font-weight: 600; margin-top: 2px; }
+.league-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.season-card-new.league-new { margin-top: 8px; }
+.season-card-new .sub { font-size: 0.8rem; color: #6e6e73; margin-top: 4px; }
+.ns-owner-name[readonly] { opacity: 0.75; cursor: default; }
+/* Known item counts get explicit columns — a 5+1 orphan row is never OK. */
+@media (min-width: 900px) {
+  .park-grid { grid-template-columns: repeat(var(--cols, 3), minmax(0, 1fr)); }
+  .pace-grid.cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .pace-grid.cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+@media (min-width: 600px) and (max-width: 899px) {
+  .park-grid, .pace-grid.cols-3, .pace-grid.cols-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
 /* Series banner in the game log */
 .series-banner td { background: rgba(255,255,255,0.045); border-top: 1px solid rgba(255,255,255,0.10);
   padding: 7px 12px !important; cursor: default; }
@@ -1326,7 +1346,7 @@ body.picking .container { padding-left: 8px; padding-right: 8px; }
       <img src="images/Extra Sprites/107px-MSBBowser.png" alt="Bowser" class="landing-art landing-art-right" onerror="this.style.display='none'">
       <img src="images/Game/250px-MSBingamelogo.png" alt="Mario Superstar Baseball" class="landing-logo" onerror="this.style.display='none'">
       <h1 style="font-size:1.7rem;color:#f5f5f7;letter-spacing:-0.02em;margin:0;">Season Tracker</h1>
-      <p style="color:#86868b;font-size:0.9rem;margin-top:4px;">Select a season or create a new one &bull; <a href="league/">About the league</a></p>
+      <p style="color:#86868b;font-size:0.95rem;margin-top:4px;">Pick a league and season, or start a new one &bull; <a href="league/">About the league</a></p>
       <div class="sync-status" id="syncStatusLanding" onclick="Sync.chipClick()" title="Click to sync now"></div>
     </div>
     <div class="landing-sprite-row">
@@ -1337,8 +1357,7 @@ body.picking .container { padding-left: 8px; padding-right: 8px; }
       <img src="images/Extra Sprites/120px-MSB_Diddy_Kong_Artwork.png" alt="Diddy Kong" onerror="this.style.display='none'">
       <img src="images/Extra Sprites/200px-Waluigi_SuperStar_Base_Sprite.png" alt="Waluigi" onerror="this.style.display='none'">
     </div>
-    <div class="season-grid" id="seasonGrid"></div>
-    <div id="leagueHistory"></div>
+    <div id="leaguesArea"></div>
   </div>
 </div>
 
@@ -2028,18 +2047,29 @@ body.picking .container { padding-left: 8px; padding-right: 8px; }
     <!-- Step 1: Season Info -->
     <div class="ns-step" id="nsStep1">
       <div class="card">
-        <div class="card-title">Step 1: Season Info</div>
+        <div class="card-title">Step 1: League &amp; Season</div>
+        <div class="form-group">
+          <label>League</label>
+          <select id="nsLeague" class="ns-input" style="max-width:360px;" onchange="nsOnLeagueChange()"></select>
+        </div>
+        <div id="nsNewLeagueFields" style="display:none;">
+          <div class="form-group">
+            <label>League Name</label>
+            <input type="text" id="nsLeagueName" class="ns-input" placeholder="e.g. Jason & Dan">
+          </div>
+          <div class="form-group">
+            <label>Number of Owners</label>
+            <select id="nsOwnerCount" class="ns-input" style="width:120px;">
+              <option value="2" selected>2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+            </select>
+          </div>
+        </div>
+        <div class="card-sub" id="nsLeagueNote" style="display:none;margin:0 0 12px;"></div>
         <div class="form-group">
           <label>Season Name</label>
           <input type="text" id="nsName" class="ns-input" placeholder="e.g. Season 3">
-        </div>
-        <div class="form-group">
-          <label>Number of Owners</label>
-          <select id="nsOwnerCount" class="ns-input" style="width:120px;">
-            <option value="2" selected>2</option>
-            <option value="3">3</option>
-            <option value="4">4</option>
-          </select>
         </div>
         <div class="btn-group" style="margin-top:16px;">
           <button class="btn btn-primary" onclick="nsGoStep(2)">Next: Owner Names &#8594;</button>
@@ -2328,6 +2358,64 @@ const SeasonManager = {
 };
 
 // ========================================================================
+// LEAGUES — a league is a fixed group of owners; seasons belong to a league.
+// Owner count/names are decided when the league is created, so every season
+// in it is set up for the same people. Rosters stay per season (each draft).
+// ========================================================================
+const LEAGUES_KEY = 'marioBaseballLeagues';
+
+const LeagueManager = {
+  list() {
+    try { return JSON.parse(localStorage.getItem(LEAGUES_KEY)) || []; }
+    catch { return []; }
+  },
+  save(leagues) { localStorage.setItem(LEAGUES_KEY, JSON.stringify(leagues)); },
+  get(id) { return this.list().find(l => l.id === id); },
+  create(meta) {
+    // meta: { id, name, owners:{key:{name}}, createdAt }
+    const leagues = this.list();
+    leagues.push(meta);
+    this.save(leagues);
+    Sync.markDirty();
+    return meta;
+  },
+  remove(id) {
+    // Only an empty league can go — seasons are deleted one at a time on purpose.
+    if (SeasonManager.list().some(s => s.leagueId === id)) return false;
+    this.save(this.list().filter(l => l.id !== id));
+    Sync.markDirty();
+    return true;
+  },
+  seasonsOf(id) { return SeasonManager.list().filter(s => s.leagueId === id); },
+  ownerCount(league) { return Object.keys(league.owners || {}).length; },
+  // Deterministic, so every device derives the same leagues from the same
+  // seasons and no sync push is needed just for the migration: seasons with no
+  // leagueId are grouped by their owner keys; the first group becomes L1.
+  migrate() {
+    const seasons = SeasonManager.list();
+    const leagues = this.list();
+    let changed = false;
+    seasons.filter(s => !s.leagueId).forEach(s => {
+      const keys = Object.keys(s.owners || {});
+      let lg = leagues.find(l => {
+        const lk = Object.keys(l.owners || {});
+        return lk.length === keys.length && lk.every(k => keys.includes(k));
+      });
+      if (!lg) {
+        const owners = {};
+        keys.forEach(k => { owners[k] = { name: s.owners[k].name }; });
+        lg = { id: 'L' + (leagues.length + 1), name: keys.map(k => s.owners[k].name).join(' & '),
+               owners, createdAt: s.createdAt || new Date().toISOString() };
+        leagues.push(lg);
+      }
+      s.leagueId = lg.id;
+      changed = true;
+    });
+    if (changed) { this.save(leagues); SeasonManager.save(seasons); }
+  }
+};
+
+// ========================================================================
 // CLOUD SYNC (Cloudflare Worker + KV — source in ../mario-baseball-sync/)
 // Last-write-wins snapshots of the whole league (seasons list + all data).
 // NOTE: KV reads are eventually consistent (~60s edge lag) — see the stale-
@@ -2364,6 +2452,7 @@ const Sync = {
     return {
       updatedAt: new Date().toISOString(),
       seasons,
+      leagues: LeagueManager.list(),
       tombstones: {
         S1: !!localStorage.getItem('marioBaseball_S1_deleted'),
         S2: !!localStorage.getItem('marioBaseball_S2_deleted')
@@ -2423,6 +2512,10 @@ const Sync = {
     // msb_lastSyncAt stays unset, so the next init retries cleanly.
     const oldIds = SeasonManager.list().map(s => s.id);
     localStorage.setItem(SEASONS_KEY, JSON.stringify(cloud.seasons || []));
+    // An older snapshot has no leagues; drop ours so migrate() rebuilds them
+    // from the seasons deterministically instead of keeping a stale list.
+    if (Array.isArray(cloud.leagues)) localStorage.setItem(LEAGUES_KEY, JSON.stringify(cloud.leagues));
+    else localStorage.removeItem(LEAGUES_KEY);
     Object.keys(cloud.data || {}).forEach(id => {
       localStorage.setItem('marioBaseball_' + id, JSON.stringify(cloud.data[id]));
     });
@@ -4718,8 +4811,11 @@ function renderSeriesRecord() {
     if (s.winner) byStad[s.stadium][s.winner]++;
   });
 
+  // Column count from the park count: 6 parks -> 3x2, 4 -> 2x2. Never 5+1.
+  const parks = CONFIG.STADIUMS.filter(st => byStad[st] || State.data.games.some(g => g.stadium === st));
+  const parkCols = parks.length % 3 === 0 ? 3 : (parks.length % 2 === 0 ? 2 : 3);
   area.innerHTML = `
-    <div class="pace-grid">
+    <div class="pace-grid cols-4">
       ${keys.map(k => `<div class="pace-cell">
         <div class="pace-label">${CONFIG.OWNERS[k].name} series</div>
         <div class="pace-val" style="color:${getOwnerColor(k)}">${tally[k].won}&ndash;${series.length - tally[k].won - split}</div>
@@ -4735,7 +4831,7 @@ function renderSeriesRecord() {
         <div class="pace-val" style="color:${getOwnerColor(k)}">${tally[k].best}</div>
       </div>`).join('')}
     </div>
-    <div class="park-grid">${CONFIG.STADIUMS.filter(st => byStad[st] || State.data.games.some(g => g.stadium === st)).map(st => {
+    <div class="park-grid" style="--cols:${parkCols}">${parks.map(st => {
       const sw = byStad[st] || {};
       const rec = keys.map(k => getRecord(k, st, 'all'));
       const line = (vals, cls) => `<span class="park-score">
@@ -4772,7 +4868,7 @@ function renderInjuryHistory() {
   });
 
   area.innerHTML = `
-    <div class="pace-grid" style="margin-bottom:14px;">
+    <div class="pace-grid cols-4" style="margin-bottom:14px;">
       ${keys.map(k => `<div class="pace-cell">
         <div class="pace-label">${CONFIG.OWNERS[k].name} injuries</div>
         <div class="pace-val" style="color:${getOwnerColor(k)}">${cost[k].count}</div>
@@ -6993,7 +7089,7 @@ function renderSeasonPace() {
     `<div class="pace-cell"><div class="pace-label">${label}</div><div class="pace-val" style="${color?`color:${color}`:''}">${val}</div></div>`;
 
   el.innerHTML = `
-    <div class="pace-grid">
+    <div class="pace-grid cols-3">
       ${keys.map(k => row(`${CONFIG.OWNERS[k].name} now`, `${wins[k]}&ndash;${playedN - wins[k]}`, getOwnerColor(k))).join('')}
       ${keys.map(k => row(`${CONFIG.OWNERS[k].name} projected`, `${proj(k)}&ndash;${total - proj(k)}`, getOwnerColor(k))).join('')}
       ${row('Games played', `${playedN} of ${total}`)}
@@ -7178,12 +7274,11 @@ function showSeasonSelect() {
 }
 
 function renderSeasonGrid() {
-  const seasons = SeasonManager.list();
-  const grid = document.getElementById('seasonGrid');
-  let html = '';
-  seasons.forEach(s => {
+  LeagueManager.migrate();
+  const area = document.getElementById('leaguesArea');
+  const leagues = LeagueManager.list();
+  const seasonCard = s => {
     const rec = SeasonManager.getRecord(s.id);
-    const ownerNames = Object.values(s.owners).map(o => o.name).join(' vs ');
     let recordHtml = '<span style="color:#6e6e73">No games played</span>';
     if (rec && rec.gamesPlayed > 0) {
       const ks = Object.keys(rec.wins);
@@ -7202,20 +7297,47 @@ function renderSeasonGrid() {
     const metaLine = gamesPlayed >= total
       ? `&#127942; Season complete (${gamesPlayed} games incl. postseason)`
       : `${gamesPlayed} / ${total} games played`;
-    html += `<div class="season-card" onclick="selectSeason('${s.id}')">
+    return `<div class="season-card" onclick="selectSeason('${s.id}')">
       <button class="season-card-delete" onclick="event.stopPropagation();deleteSeason('${s.id}')" title="Delete Season">&times;</button>
       <div class="season-card-title">${escapeHtml(s.name)}</div>
-      <div class="season-card-owners">${escapeHtml(ownerNames)}</div>
       <div class="season-card-record">${recordHtml}</div>
       <div class="season-card-meta">${metaLine}</div>
     </div>`;
-  });
-  html += `<div class="season-card season-card-new" onclick="openNewSeasonModal()">
+  };
+  area.innerHTML = leagues.map(lg => {
+    const seasons = LeagueManager.seasonsOf(lg.id);
+    const names = Object.values(lg.owners).map(o => o.name);
+    const n = names.length;
+    return `<section class="league-block" id="league_${lg.id}">
+      <div class="league-head">
+        <div class="league-id">
+          <div class="league-tag">League &middot; ${n} owners</div>
+          <div class="league-name">${escapeHtml(lg.name)}</div>
+          <div class="league-owners">${names.map((nm, i) => `<span style="color:${OWNER_COLORS[i] || '#8b5cf6'}">${escapeHtml(nm)}</span>`).join(' <span style="color:#6e6e73">vs</span> ')}</div>
+        </div>
+        <div class="league-actions">
+          <button class="btn btn-primary" onclick="openNewSeasonModal('${lg.id}')">+ New Season</button>
+          ${seasons.length ? '' : `<button class="btn btn-secondary" onclick="deleteLeague('${lg.id}')">Delete league</button>`}
+        </div>
+      </div>
+      <div class="season-grid">${seasons.map(seasonCard).join('') || '<div class="season-card season-card-new" onclick="openNewSeasonModal(\'' + lg.id + '\')"><div class="plus">+</div><div class="label">First season</div></div>'}</div>
+      <div id="leagueHistory_${lg.id}"></div>
+    </section>`;
+  }).join('') + `<div class="season-card season-card-new league-new" onclick="openNewSeasonModal('new')">
     <div class="plus">+</div>
-    <div class="label">New Season</div>
+    <div class="label">New League</div>
+    <div class="sub">Different owners or a different number of players</div>
   </div>`;
-  grid.innerHTML = html;
-  renderLeagueHistory();
+  leagues.forEach(lg => renderLeagueHistory(lg));
+}
+
+function deleteLeague(id) {
+  const lg = LeagueManager.get(id);
+  if (!lg) return;
+  if (!confirm('Delete the league "' + lg.name + '"?')) return;
+  if (!LeagueManager.remove(id)) { showToast('Delete its seasons first', true); return; }
+  renderSeasonGrid();
+  showToast(lg.name + ' deleted');
 }
 
 // ========================================================================
@@ -7238,10 +7360,10 @@ function gameScoresOf(g, ownerKeys) {
   return s;
 }
 
-function renderLeagueHistory() {
-  const el = document.getElementById('leagueHistory');
+function renderLeagueHistory(league) {
+  const el = document.getElementById('leagueHistory_' + league.id);
   if (!el) return;
-  const played = loadAllSeasons().filter(s => s.data.games.length > 0);
+  const played = loadAllSeasons().filter(s => s.meta.leagueId === league.id && s.data.games.length > 0);
   if (!played.length) { el.innerHTML = ''; return; }
 
   // ---- all-time head-to-head (by owner name) + per-season lines ----
@@ -7335,8 +7457,8 @@ function renderLeagueHistory() {
 
   const names = Object.keys(alltime);
   el.innerHTML = `
-    <div style="margin-top:44px;">
-      <h2 style="font-size:1.4rem;letter-spacing:-0.02em;color:#f5f5f7;margin-bottom:16px;text-align:center;">League History</h2>
+    <div style="margin-top:22px;">
+      <h2 style="font-size:1.25rem;letter-spacing:-0.02em;color:#f5f5f7;margin-bottom:14px;">${escapeHtml(league.name)} &middot; All-time</h2>
       <div class="lh-grid">
         <div class="lh-card">
           <div class="lh-title">All-Time Series</div>
@@ -7427,13 +7549,22 @@ const nsWizard = {
 
 const STEP_LABELS = ['Info','Owners','Rules','Draft Order','Draft','Review'];
 
-function openNewSeasonModal() {
+function openNewSeasonModal(leagueId) {
   // Reset wizard state
   nsWizard.step = 1;
   nsWizard.name = '';
   nsWizard.ownerCount = 2;
   nsWizard.ownerNames = [];
   nsWizard.ownerKeys = [];
+  nsWizard.leagueId = null;
+  nsWizard.newLeagueName = '';
+  // League picker: existing leagues + "new league"
+  const sel = document.getElementById('nsLeague');
+  const leagues = LeagueManager.list();
+  sel.innerHTML = leagues.map(l => `<option value="${l.id}">${escapeHtml(l.name)} (${LeagueManager.ownerCount(l)} owners)</option>`).join('')
+    + '<option value="__new">New league&hellip;</option>';
+  sel.value = (leagueId && leagueId !== 'new' && LeagueManager.get(leagueId)) ? leagueId : (leagueId === 'new' || !leagues.length ? '__new' : leagues[0].id);
+  document.getElementById('nsLeagueName').value = '';
   nsWizard.draftOrder = [];
   nsWizard.rosters = {};
   nsWizard.currentPick = 0;
@@ -7449,10 +7580,27 @@ function openNewSeasonModal() {
   document.getElementById('nsInjuryMin').value = '1';
   document.getElementById('nsInjuryMax').value = '30';
   nsWizard.selectedStadiums = new Set(Object.keys(STADIUM_IMGS));
+  nsOnLeagueChange();
   // Show wizard
   document.getElementById('seasonSelect').style.display = 'none';
   document.getElementById('newSeasonWizard').style.display = 'block';
   nsShowStep(1);
+}
+
+// Picking a league fixes the owners; picking "new league" asks for them.
+function nsOnLeagueChange() {
+  const v = document.getElementById('nsLeague').value;
+  const isNew = v === '__new';
+  document.getElementById('nsNewLeagueFields').style.display = isNew ? '' : 'none';
+  const note = document.getElementById('nsLeagueNote');
+  const nameEl = document.getElementById('nsName');
+  if (isNew) { note.style.display = 'none'; return; }
+  const lg = LeagueManager.get(v);
+  if (!lg) return;
+  const names = Object.values(lg.owners).map(o => o.name);
+  note.style.display = '';
+  note.innerHTML = `Owners come from the league: <strong>${names.map(escapeHtml).join(', ')}</strong>. Rosters are drafted fresh for this season.`;
+  if (!nameEl.value.trim()) nameEl.value = 'Season ' + (LeagueManager.seasonsOf(lg.id).length + 1);
 }
 
 function cancelNewSeason() {
@@ -7482,7 +7630,19 @@ function nsGoStep(n) {
       const name = document.getElementById('nsName').value.trim();
       if (!name) { showToast('Please enter a season name'); return; }
       nsWizard.name = name;
-      nsWizard.ownerCount = parseInt(document.getElementById('nsOwnerCount').value) || 2;
+      const lv = document.getElementById('nsLeague').value;
+      if (lv === '__new') {
+        const ln = document.getElementById('nsLeagueName').value.trim().replace(/[<>"'&]/g, '').slice(0, 40);
+        if (!ln) { showToast('Please name the new league'); return; }
+        nsWizard.leagueId = null;
+        nsWizard.newLeagueName = ln;
+        nsWizard.ownerCount = parseInt(document.getElementById('nsOwnerCount').value) || 2;
+      } else {
+        const lg = LeagueManager.get(lv);
+        nsWizard.leagueId = lg.id;
+        nsWizard.ownerCount = LeagueManager.ownerCount(lg);
+        nsWizard.ownerNames = Object.values(lg.owners).map(o => o.name);
+      }
       // Render owner name inputs
       nsRenderOwnerInputs();
     }
@@ -7502,6 +7662,11 @@ function nsGoStep(n) {
       if (!valid) { showToast('Please fill in all owner names'); return; }
       // Check for duplicate keys
       if (new Set(keys).size !== keys.length) { showToast('Owner names must be unique'); return; }
+      if (nsWizard.leagueId) {
+        // Existing league: its owner keys, in its order, so history lines up across seasons
+        const lg = LeagueManager.get(nsWizard.leagueId);
+        keys.length = 0; Object.keys(lg.owners).forEach(k => keys.push(k));
+      }
       nsWizard.ownerNames = names;
       nsWizard.ownerKeys = keys;
       nsRenderStadiums();
@@ -7534,12 +7699,13 @@ function nsGoStep(n) {
 
 function nsRenderOwnerInputs() {
   const area = document.getElementById('nsOwnersArea');
-  let html = '';
+  const locked = !!nsWizard.leagueId;
+  let html = locked ? `<div class="card-sub" style="margin:0 0 12px;">These owners belong to the league &mdash; change them by starting a new league.</div>` : '';
   for (let i = 0; i < nsWizard.ownerCount; i++) {
     const existing = nsWizard.ownerNames[i] || '';
     html += `<div class="ns-owner-block">
       <label>Owner ${i+1} Name</label>
-      <input type="text" class="ns-owner-name" placeholder="e.g. ${['Jason','Dan','Player 3','Player 4'][i]}" value="${existing}">
+      <input type="text" class="ns-owner-name" placeholder="e.g. ${['Jason','Dan','Player 3','Player 4'][i]}" value="${escapeHtml(existing)}"${locked ? ' readonly' : ''}>
     </div>`;
   }
   area.innerHTML = html;
@@ -7790,9 +7956,17 @@ function finalizeNewSeason() {
   nsWizard.ownerKeys.forEach((key, i) => {
     owners[key] = { name: nsWizard.ownerNames[i], roster: nsWizard.rosters[key] };
   });
+  let leagueId = nsWizard.leagueId;
+  if (!leagueId) {
+    const lo = {};
+    nsWizard.ownerKeys.forEach((key, i) => { lo[key] = { name: nsWizard.ownerNames[i] }; });
+    leagueId = 'L' + Date.now();
+    LeagueManager.create({ id: leagueId, name: nsWizard.newLeagueName || nsWizard.ownerNames.join(' & '), owners: lo, createdAt: new Date().toISOString() });
+  }
   const id = 'S' + Date.now();
   SeasonManager.create({
     id,
+    leagueId,
     name: nsWizard.name,
     totalGames: r.totalGames,
     wsGames: r.wsGames,
@@ -7820,6 +7994,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Register/migrate hardcoded seasons, then show season select
   SeasonManager.migrateS2();
   SeasonManager.migrateS1();
+  LeagueManager.migrate();
 
   // Cloud sync: pull/push in the background (skip re-pull right after applying one)
   if (sessionStorage.getItem('msb_pulled')) {

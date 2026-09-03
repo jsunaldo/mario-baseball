@@ -164,6 +164,19 @@ const s1bad = T(`(() => { const bad=[]; for (let si=0; si<33; si++){ const t=[1,
 check('every S1 series was one stadium with one host', s1bad.length === 0, s1bad);
 check('no makeup/override leaks into S1', T(`getSchedule(1).home`) === T(`State.data.games.find(g=>g.gameNumber===1).home`));
 
+section('Leagues');
+T(`LeagueManager.migrate()`);
+const lgs = T(`LeagueManager.list()`);
+check('migration files the Jason/Dan seasons under exactly one league, L1', lgs.length === 1 && lgs[0].id === 'L1', lgs);
+check('L1 is a 2-owner league (jason, dan)', T(`Object.keys(LeagueManager.get('L1').owners).join()`) === 'jason,dan');
+check('every season carries leagueId L1', T(`SeasonManager.list().every(s => s.leagueId === 'L1')`));
+check('migration is idempotent', T(`LeagueManager.migrate(); LeagueManager.list().length`) === 1);
+check('cloud snapshot carries the leagues list', T(`Sync.snapshot().leagues.length`) === 1);
+check('a league with seasons cannot be deleted', T(`LeagueManager.remove('L1')`) === false);
+T(`renderSeasonGrid()`);
+const landing = T(`document.getElementById('leaguesArea').innerHTML`);
+check('landing renders the league block with both seasons', /Jason &amp; Dan/.test(landing) && (landing.match(/class="season-card"/g) || []).length === 2);
+
 // =============================================================================
 console.log(`\n${pass} passed, ${fail} failed`);
 if (fail) { console.log('failed: ' + failures.join(' | ')); process.exit(1); }
