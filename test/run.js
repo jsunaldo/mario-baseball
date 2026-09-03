@@ -139,8 +139,8 @@ check('game-20 starters (Petey, Waluigi) cannot pitch game 21; a rested arm can'
 section('Season pace');
 T(`renderSeasonPace()`);
 const pace = T(`document.getElementById('trendPace').innerHTML`).replace(/<[^>]+>/g, ' ').replace(/&ndash;/g, '-').replace(/\s+/g, ' ');
-check('records 16-4 and 4-16', /16-4/.test(pace) && /4-16/.test(pace), pace.slice(0, 120));
-check('projects 130-32', /130-32/.test(pace));
+check('record now reads Jason 16 - 4 Dan (one head-to-head tile, not two mirrored ones)', /Jason 16 - 4 Dan/.test(pace), pace.slice(0, 120));
+check('projects Jason 130 - 32 Dan', /Jason 130 - 32 Dan/.test(pace));
 check('clinch number is 66 (head-to-head: a win is also the trailer\'s loss)', /66 more wins/.test(pace), pace.match(/\d+ more wins?/)?.[0]);
 check('trailer must go 77-65 to draw level', /77-65/.test(pace));
 

@@ -1250,6 +1250,55 @@ tr:hover .col-notes .note-more { display: inline; }
 .next-strip .ns-cta { flex: none; box-shadow: 0 6px 20px rgba(0,0,0,0.45); }
 @media (min-width: 900px) { .next-strip { min-height: 210px; padding: 22px 28px; } .next-strip .ns-park { font-size: 2.3rem; } }
 @media (max-width: 600px) { .next-strip { min-height: 120px; padding: 14px 16px; flex-wrap: wrap; } .next-strip .ns-park { font-size: 1.4rem; } .next-strip .ns-cta { width: 100%; } }
+/* Head-to-head tiles and rows (2-owner leagues) */
+.vs-line { display: inline-flex; align-items: baseline; gap: 7px; white-space: nowrap; }
+.vs-line b { font-weight: 800; }
+.vs-name { font-size: 0.55em; font-weight: 700; letter-spacing: 0.02em; }
+.vs-dash { color: #6e6e73; font-weight: 400; font-size: 0.8em; }
+.summary-card .value .vs-line { justify-content: center; }
+.pace-cell .vs-line b { font-size: 1.15em; }
+.pace-sub { font-size: 0.8rem; color: #6e6e73; margin-top: 2px; }
+.summary-row { grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr)); }
+@media (max-width: 899px) { .summary-row { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 900px) { .pace-grid.cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+/* Team Stats filters: park tiles + Home/Away segment */
+.team-filter { align-items: center; gap: 16px; }
+.park-picker { display: flex; gap: 8px; flex-wrap: wrap; }
+.park-tile { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 6px 6px 8px; border-radius: 12px; min-width: 104px;
+  border: 2px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.04); cursor: pointer; font: inherit; color: #d2d2d7; font-size: 0.8rem; font-weight: 600; }
+.park-tile img, .park-tile .pt-all { width: 96px; height: 62px; object-fit: cover; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.06); font-size: 1.6rem; }
+.park-tile.on { border-color: #2997ff; background: rgba(41,151,255,0.12); color: #fff; }
+.park-tile:hover { border-color: rgba(255,255,255,0.3); }
+/* Team batting / pitching comparison */
+.team-h2h-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 899px) { .team-h2h-grid { grid-template-columns: 1fr; } }
+.h2h-head { display: flex; justify-content: space-between; align-items: baseline; font-weight: 800; font-size: 1.05rem; margin-bottom: 2px; }
+.h2h-games { font-size: 0.78rem; font-weight: 500; color: #6e6e73; }
+.h2h-row { display: grid; grid-template-columns: 1fr minmax(120px, auto) 1fr; align-items: center; column-gap: 12px; row-gap: 4px; padding: 10px 0 8px; border-top: 1px solid rgba(255,255,255,0.06); }
+.h2h-a, .h2h-b { font-size: 1.55rem; font-weight: 800; opacity: 0.5; line-height: 1; }
+.h2h-a { text-align: right; } .h2h-b { text-align: left; }
+.h2h-a.lead, .h2h-b.lead { opacity: 1; }
+.h2h-lbl { text-align: center; font-size: 0.74rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #a1a1a6; }
+.h2h-lbl small { display: block; text-transform: none; letter-spacing: 0; font-weight: 500; color: #6e6e73; font-size: 0.74rem; margin-top: 2px; }
+.h2h-bar { grid-column: 1 / -1; height: 5px; border-radius: 3px; overflow: hidden; display: flex; gap: 2px; background: rgba(255,255,255,0.05); }
+.h2h-bar i { display: block; height: 100%; opacity: 0.85; }
+/* Injuries */
+.ic-who { min-width: 150px; }
+.injury-progress { flex: 1; max-width: none; min-width: 160px; }
+.ic-return { text-align: right; min-width: 110px; }
+.ic-return-lbl { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #86868b; }
+.ic-return-val { font-size: 1.5rem; font-weight: 800; color: #ff9f0a; line-height: 1.1; }
+.stats-table.tight th, .stats-table.tight td { width: 1%; white-space: nowrap; }
+.stats-table.tight .grow { width: auto; }
+.roller-row, .manual-row { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+.roller-row label, .roller-lbl { display: inline-flex; align-items: center; gap: 8px; font-size: 0.95rem; color: #a1a1a6; font-weight: 600; }
+.roller-row input, .manual-row input { width: 76px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: #f5f5f7; padding: 8px 10px; text-align: center; font-size: 1rem; }
+#manualInjOwnerSeg { margin-bottom: 10px; }
+.inj-picker { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 6px; margin: 4px 0 14px; }
+.inj-tile { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 4px 6px; border-radius: 10px; font: inherit; font-size: 0.78rem; font-weight: 600; color: #d2d2d7;
+  background: rgba(255,255,255,0.04); border: 2px solid rgba(255,255,255,0.1); cursor: pointer; }
+.inj-tile .inj-face { width: 40px; height: 40px; image-rendering: pixelated; border-radius: 6px; }
+.inj-tile.on { border-color: #ff9f0a; background: rgba(255,159,10,0.14); color: #fff; }
 /* Series banner in the game log */
 .series-tag { display: inline-block; font-size: 0.74rem; font-weight: 700; letter-spacing: 0.05em;
   text-transform: uppercase; color: #6e6e73; margin-right: 10px; }
@@ -1482,23 +1531,32 @@ body.picking .container { padding-left: 8px; padding-right: 8px; }
 
   <!-- ====== TAB 2: TEAM STATS ====== -->
   <div class="tab-content" id="tab-teamstats">
+    <div class="filter-bar team-filter" id="teamStatsFilterBar">
+      <div class="park-picker" id="teamParkPicker"></div>
+      <div class="seg" id="teamHASeg">
+        <button type="button" data-v="all" class="on" onclick="setTeamHA('all')">All</button>
+        <button type="button" data-v="home" onclick="setTeamHA('home')">Home</button>
+        <button type="button" data-v="away" onclick="setTeamHA('away')">Away</button>
+      </div>
+      <select id="teamFilterStadium" style="display:none"><option value="all">All Stadiums</option></select>
+      <select id="teamFilterHomeAway" style="display:none"><option value="all">All</option><option value="home">Home</option><option value="away">Away</option></select>
+    </div>
+    <div class="summary-row" id="summaryCards"></div>
+    <div class="team-h2h-grid">
+      <div class="card" id="teamBattingCard">
+        <div class="card-title">Team Batting</div>
+        <div id="teamBattingArea"></div>
+      </div>
+      <div class="card" id="teamPitchingCard">
+        <div class="card-title">Team Pitching</div>
+        <div id="teamPitchingArea"></div>
+      </div>
+    </div>
     <div class="card" id="seriesRecordCard">
       <div class="card-title">Series Record</div>
-      <div class="card-sub">Three games at one park is a series. Sweeps are 3&ndash;0.</div>
+      <div class="card-sub">Three games at one park is a series. Sweeps are 3&ndash;0. Series are season-wide (the park and home/away filters above don't apply here).</div>
       <div id="seriesRecordArea"></div>
     </div>
-    <div class="filter-bar" id="teamStatsFilterBar">
-      <div class="form-group">
-        <label>Stadium</label>
-        <select id="teamFilterStadium"><option value="all">All Stadiums</option></select>
-      </div>
-      <div class="form-group">
-        <label>Home/Away</label>
-        <select id="teamFilterHomeAway"><option value="all">All</option><option value="home">Home</option><option value="away">Away</option></select>
-      </div>
-    </div>
-    <div id="teamStatsHeader" style="display:none; text-align:center; margin:12px 0 4px;"></div>
-    <div class="summary-row" id="summaryCards"></div>
     <div class="card" id="mvpLeadersCard" style="display:none">
       <div class="card-title">MVP Leaders</div>
       <div id="mvpLeadersBody" class="mvp-tiles mvp-leaders"></div>
@@ -1653,21 +1711,12 @@ body.picking .container { padding-left: 8px; padding-right: 8px; }
 
     <div class="card">
       <div class="card-title">Injury Roller</div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Injury Chance %</label>
-          <input type="number" id="injuryChance" value="15" min="0" max="100" style="width:70px">
-        </div>
-        <div class="form-group">
-          <label>Min Games Out</label>
-          <input type="number" id="injuryMin" value="1" min="1" style="width:60px">
-        </div>
-        <div class="form-group">
-          <label>Max Games Out</label>
-          <input type="number" id="injuryMax" value="30" min="1" style="width:60px">
-        </div>
+      <div class="card-sub">Rolls automatically after every saved game. Roll here only for a manual check.</div>
+      <div class="roller-row">
+        <label>Chance <input type="number" id="injuryChance" value="15" min="0" max="100"> %</label>
+        <label>Out <input type="number" id="injuryMin" value="1" min="1"> to <input type="number" id="injuryMax" value="30" min="1"> games</label>
+        <button class="btn btn-warning btn-lg" id="btnRollInjury">Roll for Injury</button>
       </div>
-      <button class="btn btn-warning btn-lg" id="btnRollInjury">Roll for Injury</button>
       <div class="roller-result" id="rollerResult"></div>
       <div class="btn-group" id="injuryConfirmBtns" style="display:none; margin-top:8px;">
         <button class="btn btn-danger" id="btnConfirmInjury">Confirm Injury</button>
@@ -1677,22 +1726,13 @@ body.picking .container { padding-left: 8px; padding-right: 8px; }
 
     <div class="card">
       <div class="card-title">Add Manual Injury</div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Owner</label>
-          <select id="manualInjOwner"><option value="jason">Jason</option><option value="dan">Dan</option></select>
-        </div>
-        <div class="form-group">
-          <label>Player</label>
-          <select id="manualInjPlayer"></select>
-        </div>
-        <div class="form-group">
-          <label>Games Out</label>
-          <input type="number" id="manualInjGames" value="5" min="1" style="width:60px">
-        </div>
-        <div class="form-group" style="justify-content:flex-end">
-          <button class="btn btn-warning" id="btnAddManualInjury">Add Injury</button>
-        </div>
+      <div class="seg" id="manualInjOwnerSeg"></div>
+      <select id="manualInjOwner" style="display:none"><option value="jason">Jason</option><option value="dan">Dan</option></select>
+      <select id="manualInjPlayer" style="display:none"></select>
+      <div class="inj-picker" id="manualInjPicker"></div>
+      <div class="manual-row">
+        <label class="roller-lbl">Out <input type="number" id="manualInjGames" value="5" min="1"> games</label>
+        <button class="btn btn-warning" id="btnAddManualInjury">Add Injury</button>
       </div>
     </div>
 
@@ -4225,6 +4265,45 @@ function getOwnerBgColor(ownerKey) {
 }
 
 // Colored owner badge that works for any season's owners (not just jason/dan)
+// Head-to-head value for a 2-owner league: "Jason 17 – 4 Dan". Replaces pairs of
+// mirrored tiles (Jason 17-4 / Dan 4-17 say the same thing twice).
+function vsLine(a, b, valA, valB) {
+  const ca = getOwnerColor(a), cb = getOwnerColor(b);
+  return `<span class="vs-line"><span class="vs-name" style="color:${ca}">${escapeHtml(CONFIG.OWNERS[a].name)}</span>`
+       + `<b style="color:${ca}">${valA}</b><span class="vs-dash">&ndash;</span><b style="color:${cb}">${valB}</b>`
+       + `<span class="vs-name" style="color:${cb}">${escapeHtml(CONFIG.OWNERS[b].name)}</span></span>`;
+}
+// Rows that come out even: 14 tiles at 9 per row is 9+5, at 7 per row it's 7+7.
+function balancedCols(n, maxPerRow) {
+  if (n <= 0) return 1;
+  const rows = Math.ceil(n / Math.max(1, maxPerRow));
+  return Math.ceil(n / rows);
+}
+// Team totals from the box scores, under the same park/home-away filters the
+// Team Stats tab uses everywhere else.
+function teamTotals(owner, stadium, homeAway) {
+  stadium = stadium || 'all'; homeAway = homeAway || 'all';
+  const t = { games: 0, ab: 0, h: 0, hr: 0, rbi: 0, sb: 0, specials: 0, bigPlays: 0, ip: 0, ha: 0, k: 0, ra: 0, pitchSpecials: 0 };
+  State.data.games.forEach(g => {
+    if (!g.playerStats || !isInGame(g, owner)) return;
+    if (stadium !== 'all' && g.stadium !== stadium) return;
+    if (!matchesHomeAway(g, owner, homeAway)) return;
+    let any = false;
+    Object.entries(g.playerStats).forEach(([key, ps]) => {
+      if (!key.startsWith(owner + '_')) return;
+      any = true;
+      t.ab += ps.ab || 0; t.h += ps.hits || 0; t.hr += ps.hr || 0; t.rbi += ps.rbi || 0; t.sb += ps.sb || 0;
+      t.specials += ps.specials || 0; t.bigPlays += ps.bigPlays || 0;
+      if (ps.pitched) { t.ip += ps.ip || 0; t.ha += ps.hitsAllowed || 0; t.k += ps.strikeouts || 0; t.ra += ps.runsAllowed || 0; t.pitchSpecials += ps.pitchSpecials || 0; }
+    });
+    if (any) t.games++;
+  });
+  t.avg = t.ab ? t.h / t.ab : null;
+  t.era = t.ip ? t.ra / t.ip * 9 : null;
+  t.k9 = t.ip ? t.k / t.ip * 9 : null;
+  return t;
+}
+
 function ownerBadge(ownerKey, cls='owner-badge') {
   const name = CONFIG.OWNERS[ownerKey]?.name || ownerKey;
   return `<span class="${cls}" style="background:${getOwnerBgColor(ownerKey)};color:${getOwnerColor(ownerKey)}">${name}</span>`;
@@ -4560,10 +4639,84 @@ function renderHeader() {
     : `<div class="ns-text"><div class="ns-park">${meta}</div></div><button class="btn btn-primary btn-lg ns-cta" onclick="document.getElementById('btnAddGame').click()">+ Add Game Result</button>`;
 }
 
+function setTeamPark(v) { const sel = document.getElementById('teamFilterStadium'); if (sel) sel.value = v; renderSummary(); }
+function setTeamHA(v) { const sel = document.getElementById('teamFilterHomeAway'); if (sel) sel.value = v; renderSummary(); }
+
+// Park tiles + Home/Away segment mirror the hidden selects (which the rest of
+// the code, and the tests, still read).
+function renderTeamFilters(stadium, homeAway) {
+  const picker = document.getElementById('teamParkPicker');
+  if (picker) {
+    const tile = (val, label, img) => `<button type="button" class="park-tile${stadium === val ? ' on' : ''}${img ? '' : ' all-parks'}" onclick="setTeamPark('${val.replace(/'/g, "\\'")}')">
+      ${img ? `<img src="${img}" alt="">` : '<span class="pt-all">&#9918;</span>'}<span>${escapeHtml(label)}</span></button>`;
+    picker.innerHTML = tile('all', 'All parks', '') + CONFIG.STADIUMS.map(st => tile(st, st, STADIUM_IMGS[st] || '')).join('');
+  }
+  document.querySelectorAll('#teamHASeg button').forEach(b => b.classList.toggle('on', b.dataset.v === homeAway));
+}
+
+// Head-to-head comparison rows for two owners (the better side is bright).
+function h2hRows(rows, a, b) {
+  return rows.map(r => {
+    const va = r.a, vb = r.b;
+    const has = va !== null && vb !== null && va !== undefined && vb !== undefined;
+    const aLead = has && (r.lowerBetter ? va < vb : va > vb);
+    const bLead = has && (r.lowerBetter ? vb < va : vb > va);
+    const fa = has ? r.fmt(va) : '&mdash;', fb = has ? r.fmt(vb) : '&mdash;';
+    const tot = has ? Math.abs(va) + Math.abs(vb) : 0;
+    const pa = tot ? Math.abs(va) / tot * 100 : 50;
+    return `<div class="h2h-row">
+      <div class="h2h-a${aLead ? ' lead' : ''}" style="color:${getOwnerColor(a)}">${fa}</div>
+      <div class="h2h-lbl">${r.label}${r.sub ? `<small>${r.sub}</small>` : ''}</div>
+      <div class="h2h-b${bLead ? ' lead' : ''}" style="color:${getOwnerColor(b)}">${fb}</div>
+      <div class="h2h-bar"><i style="width:${pa}%;background:${getOwnerColor(a)}"></i><i style="width:${100 - pa}%;background:${getOwnerColor(b)}"></i></div>
+    </div>`;
+  }).join('');
+}
+
+function renderTeamH2H(stadium, homeAway) {
+  const batEl = document.getElementById('teamBattingArea'), pitEl = document.getElementById('teamPitchingArea');
+  if (!batEl || !pitEl) return;
+  const keys = getOwnerKeys();
+  const totals = {}; keys.forEach(k => totals[k] = teamTotals(k, stadium, homeAway));
+  const none = '<div style="color:#6e6e73;padding:6px 0;">No box scores under this filter yet.</div>';
+  const avg = v => v.toFixed(3).replace(/^0/, '');
+  if (keys.length === 2) {
+    const [a, b] = keys, A = totals[a], B = totals[b];
+    if (!A.games && !B.games) { batEl.innerHTML = none; pitEl.innerHTML = none; return; }
+    const head = `<div class="h2h-head"><span style="color:${getOwnerColor(a)}">${CONFIG.OWNERS[a].name}</span><span class="h2h-games">${A.games} / ${B.games} games with stats</span><span style="color:${getOwnerColor(b)}">${CONFIG.OWNERS[b].name}</span></div>`;
+    batEl.innerHTML = head + h2hRows([
+      { label: 'Average', sub: `${A.h}/${A.ab} &middot; ${B.h}/${B.ab}`, a: A.avg, b: B.avg, fmt: avg },
+      { label: 'Hits', a: A.h, b: B.h, fmt: v => v },
+      { label: 'Home runs', a: A.hr, b: B.hr, fmt: v => v },
+      { label: 'RBI', a: A.rbi, b: B.rbi, fmt: v => v },
+      { label: 'Stolen bases', a: A.sb, b: B.sb, fmt: v => v },
+      { label: 'Special hits', a: A.specials, b: B.specials, fmt: v => v },
+      { label: 'Big plays', a: A.bigPlays, b: B.bigPlays, fmt: v => v },
+    ], a, b);
+    pitEl.innerHTML = head + h2hRows([
+      { label: 'ERA', sub: 'runs per 9 innings', a: A.era, b: B.era, fmt: v => v.toFixed(2), lowerBetter: true },
+      { label: 'Innings', a: A.ip, b: B.ip, fmt: formatIP },
+      { label: 'Strikeouts', a: A.k, b: B.k, fmt: v => v },
+      { label: 'K / 9', a: A.k9, b: B.k9, fmt: v => v.toFixed(1) },
+      { label: 'Hits allowed', a: A.ha, b: B.ha, fmt: v => v, lowerBetter: true },
+      { label: 'Runs allowed', a: A.ra, b: B.ra, fmt: v => v, lowerBetter: true },
+      { label: 'Special pitches', a: A.pitchSpecials, b: B.pitchSpecials, fmt: v => v },
+    ], a, b);
+    return;
+  }
+  // 3+ owners: a compact table, one row per owner
+  const tbl = (cols) => `<div class="table-wrap"><table class="stats-table"><thead><tr><th>Team</th>${cols.map(c => `<th class="text-center">${c[0]}</th>`).join('')}</tr></thead>
+    <tbody>${keys.map(k => `<tr><td style="color:${getOwnerColor(k)};font-weight:700">${CONFIG.OWNERS[k].name}</td>${cols.map(c => `<td class="text-center">${c[1](totals[k])}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+  batEl.innerHTML = tbl([['AVG', t => t.avg === null ? '—' : avg(t.avg)], ['H', t => t.h], ['HR', t => t.hr], ['RBI', t => t.rbi], ['SB', t => t.sb], ['SPEC', t => t.specials]]);
+  pitEl.innerHTML = tbl([['ERA', t => t.era === null ? '—' : t.era.toFixed(2)], ['IP', t => formatIP(t.ip)], ['K', t => t.k], ['HA', t => t.ha], ['RA', t => t.ra]]);
+}
+
 function renderSummary() {
   const stadium = document.getElementById('teamFilterStadium')?.value || 'all';
   const homeAway = document.getElementById('teamFilterHomeAway')?.value || 'all';
   const keys = getOwnerKeys();
+  renderTeamFilters(stadium, homeAway);
+  renderTeamH2H(stadium, homeAway);
 
   const records = {};
   const runs = {};
@@ -4600,31 +4753,49 @@ function renderSummary() {
   }
 
   const cards = [];
-  keys.forEach(k => {
-    const r = records[k];
-    const color = getOwnerColor(k);
-    const own = gpOf(k);
-    cards.push({ label: CONFIG.OWNERS[k].name + ' Record', value: `${r.w}-${r.l}`, color, sub: own > 0 ? `${(r.w/own*100).toFixed(0)}%` : '' });
-  });
-  cards.push({ label: 'Games Played', value: gamesInFilter, color: '', sub: gpSub });
-  keys.forEach(k => {
-    const color = getOwnerColor(k);
-    cards.push({ label: CONFIG.OWNERS[k].name + ' Streak', value: getStreak(k, stadium, homeAway), color, sub: `Best: W${getLongestStreak(k, stadium, homeAway)}` });
-  });
-  keys.forEach(k => {
-    const r = runs[k];
-    const color = getOwnerColor(k);
-    const own = gpOf(k);
-    cards.push({ label: CONFIG.OWNERS[k].name + ' Runs', value: `${r.f}`, color, sub: `${own>0?(r.f/own).toFixed(1):0}/g scored, ${own>0?(r.a/own).toFixed(1):0}/g allowed` });
-  });
+  if (keys.length === 2) {
+    // One tile per fact — "Jason 17-4" and "Dan 4-17" are the same fact.
+    const [a, b] = keys;
+    const ra = records[a], own = gpOf(a);
+    const pct = own > 0 ? `${CONFIG.OWNERS[a].name} ${(ra.w / own * 100).toFixed(0)}%` : '';
+    cards.push({ label: 'Record', value: vsLine(a, b, ra.w, ra.l), sub: pct });
+    cards.push({ label: 'Games Played', value: gamesInFilter, sub: gpSub });
+    const sa = getStreak(a, stadium, homeAway), sb = getStreak(b, stadium, homeAway);
+    const hot = /^W/.test(String(sa)) ? a : /^W/.test(String(sb)) ? b : null;
+    cards.push({ label: 'Streak', value: hot ? `<span style="color:${getOwnerColor(hot)}">${CONFIG.OWNERS[hot].name}</span> ${hot === a ? sa : sb}` : (own ? String(sa) : '&mdash;'),
+                 sub: `Best runs: ${CONFIG.OWNERS[a].name} W${getLongestStreak(a, stadium, homeAway)} &middot; ${CONFIG.OWNERS[b].name} W${getLongestStreak(b, stadium, homeAway)}` });
+    const ga = gpOf(a), gb = gpOf(b);
+    cards.push({ label: 'Runs', value: vsLine(a, b, runs[a].f, runs[b].f),
+                 sub: `${ga ? (runs[a].f / ga).toFixed(1) : 0} &middot; ${gb ? (runs[b].f / gb).toFixed(1) : 0} per game` });
+  } else {
+    keys.forEach(k => {
+      const r = records[k];
+      const color = getOwnerColor(k);
+      const own = gpOf(k);
+      cards.push({ label: CONFIG.OWNERS[k].name + ' Record', value: `${r.w}-${r.l}`, color, sub: own > 0 ? `${(r.w/own*100).toFixed(0)}%` : '' });
+    });
+    cards.push({ label: 'Games Played', value: gamesInFilter, color: '', sub: gpSub });
+    keys.forEach(k => {
+      const color = getOwnerColor(k);
+      cards.push({ label: CONFIG.OWNERS[k].name + ' Streak', value: getStreak(k, stadium, homeAway), color, sub: `Best: W${getLongestStreak(k, stadium, homeAway)}` });
+    });
+    keys.forEach(k => {
+      const r = runs[k];
+      const color = getOwnerColor(k);
+      const own = gpOf(k);
+      cards.push({ label: CONFIG.OWNERS[k].name + ' Runs', value: `${r.f}`, color, sub: `${own>0?(r.f/own).toFixed(1):0}/g scored, ${own>0?(r.a/own).toFixed(1):0}/g allowed` });
+    });
+  }
 
-  document.getElementById('summaryCards').innerHTML = cards.map(c => `
+  const sc = document.getElementById('summaryCards');
+  sc.innerHTML = cards.map(c => `
     <div class="summary-card">
       <div class="label">${c.label}</div>
       <div class="value" style="${c.color ? 'color:'+c.color : ''}">${c.value}</div>
-      <div class="sub">${c.sub}</div>
+      <div class="sub">${c.sub || ''}</div>
     </div>
   `).join('');
+  if (sc.style.setProperty) sc.style.setProperty('--cols', String(Math.min(4, cards.length)));
 
   // MVP leaders (computed from the game log, respects the filters above)
   const mvpCounts = {};
@@ -4650,6 +4821,9 @@ function renderSummary() {
           ${owner ? `<span class="mvp-owner" style="color:${getOwnerColor(owner)}">${CONFIG.OWNERS[owner].name}</span>` : ''}
         </div>`;
       }).join('');
+      // Balanced rows: 14 tiles at 9 per row would be 9+5; at 7 per row it's 7+7.
+      const w = mvpBody.clientWidth || Math.min(1100, (window.innerWidth || 1100) - 80);
+      mvpBody.style.gridTemplateColumns = `repeat(${balancedCols(mvpRows.length, Math.floor(w / 128))}, minmax(0, 1fr))`;
     }
   }
 }
@@ -4810,26 +4984,20 @@ function renderSeriesRecord() {
   // Column count from the park count: 6 parks -> 3x2, 4 -> 2x2. Never 5+1.
   const parks = CONFIG.STADIUMS.filter(st => byStad[st] || State.data.games.some(g => g.stadium === st));
   const parkCols = parks.length % 3 === 0 ? 3 : (parks.length % 2 === 0 ? 2 : 3);
+  const [oa, ob] = keys;
   area.innerHTML = `
     <div class="pace-grid cols-4">
-      ${keys.map(k => `<div class="pace-cell">
-        <div class="pace-label">${CONFIG.OWNERS[k].name} series</div>
-        <div class="pace-val" style="color:${getOwnerColor(k)}">${tally[k].won}&ndash;${series.length - tally[k].won - split}</div>
-      </div>`).join('')}
-      ${keys.map(k => `<div class="pace-cell">
-        <div class="pace-label">${CONFIG.OWNERS[k].name} sweeps</div>
-        <div class="pace-val" style="color:${getOwnerColor(k)}">${tally[k].sweeps}</div>
-      </div>`).join('')}
-      <div class="pace-cell"><div class="pace-label">Series split 2&ndash;1 each way</div><div class="pace-val">${split}</div></div>
-      <div class="pace-cell"><div class="pace-label">Completed series</div><div class="pace-val">${series.length}</div></div>
-      ${keys.map(k => `<div class="pace-cell">
-        <div class="pace-label">${CONFIG.OWNERS[k].name} best run</div>
-        <div class="pace-val" style="color:${getOwnerColor(k)}">${tally[k].best}</div>
-      </div>`).join('')}
+      <div class="pace-cell"><div class="pace-label">Series won</div><div class="pace-val">${vsLine(oa, ob, tally[oa].won, tally[ob].won)}</div></div>
+      <div class="pace-cell"><div class="pace-label">Sweeps</div><div class="pace-val">${vsLine(oa, ob, tally[oa].sweeps, tally[ob].sweeps)}</div></div>
+      <div class="pace-cell"><div class="pace-label">Best run of series wins</div><div class="pace-val">${vsLine(oa, ob, tally[oa].best, tally[ob].best)}</div></div>
+      <div class="pace-cell"><div class="pace-label">Completed series</div><div class="pace-val">${series.length}</div><div class="pace-sub">${Math.floor(CONFIG.TOTAL_GAMES / 3) - series.length} to play</div></div>
     </div>
     <div class="park-grid" style="--cols:${parkCols}">${parks.map(st => {
       const sw = byStad[st] || {};
       const rec = keys.map(k => getRecord(k, st, 'all'));
+      const tt = keys.map(k => teamTotals(k, st, 'all'));
+      const fAvg = t => t.avg === null ? '&mdash;' : t.avg.toFixed(3).replace(/^0/, '');
+      const fEra = t => t.era === null ? '&mdash;' : t.era.toFixed(2);
       const line = (vals, cls) => `<span class="park-score">
         <span style="color:${getOwnerColor(keys[0])}">${CONFIG.OWNERS[keys[0]].name}</span>
         <b style="color:${getOwnerColor(keys[0])}">${vals[0]}</b><span class="sg-dash">&ndash;</span><b style="color:${getOwnerColor(keys[1])}">${vals[1]}</b>
@@ -4840,6 +5008,9 @@ function renderSeriesRecord() {
         <div class="park-card-body">
           <div class="park-line"><span class="lbl">Series</span>${line([sw[keys[0]] || 0, sw[keys[1]] || 0])}</div>
           <div class="park-line"><span class="lbl">Games</span>${line([rec[0].w, rec[1].w])}</div>
+          <div class="park-line"><span class="lbl">AVG</span>${line([fAvg(tt[0]), fAvg(tt[1])])}</div>
+          <div class="park-line"><span class="lbl">HR</span>${line([tt[0].hr, tt[1].hr])}</div>
+          <div class="park-line"><span class="lbl">ERA</span>${line([fEra(tt[0]), fEra(tt[1])])}</div>
         </div>
       </div>`;
     }).join('')}</div>`;
@@ -4864,7 +5035,10 @@ function renderInjuryHistory() {
   });
 
   area.innerHTML = `
-    <div class="pace-grid cols-4" style="margin-bottom:14px;">
+    ${keys.length === 2 ? `<div class="pace-grid cols-2" style="margin-bottom:14px;">
+      <div class="pace-cell"><div class="pace-label">Injuries</div><div class="pace-val">${vsLine(keys[0], keys[1], cost[keys[0]].count, cost[keys[1]].count)}</div></div>
+      <div class="pace-cell"><div class="pace-label">Games lost to injury</div><div class="pace-val">${vsLine(keys[0], keys[1], cost[keys[0]].games, cost[keys[1]].games)}</div></div>
+    </div>` : `<div class="pace-grid cols-4" style="margin-bottom:14px;">
       ${keys.map(k => `<div class="pace-cell">
         <div class="pace-label">${CONFIG.OWNERS[k].name} injuries</div>
         <div class="pace-val" style="color:${getOwnerColor(k)}">${cost[k].count}</div>
@@ -4873,9 +5047,9 @@ function renderInjuryHistory() {
         <div class="pace-label">${CONFIG.OWNERS[k].name} games lost</div>
         <div class="pace-val" style="color:${getOwnerColor(k)}">${cost[k].games}</div>
       </div>`).join('')}
-    </div>
-    <div class="table-wrap"><table class="stats-table">
-      <thead><tr><th>Player</th><th>Owner</th><th class="text-center">Hurt in</th><th class="text-center">Out</th><th class="text-center">Returns</th><th>Status</th><th></th></tr></thead>
+    </div>`}
+    <div class="table-wrap"><table class="stats-table tight">
+      <thead><tr><th>Player</th><th>Owner</th><th class="text-center">Hurt in</th><th class="text-center">Out</th><th class="text-center">Returns</th><th class="grow">Status</th><th></th></tr></thead>
       <tbody>${inj.map(i => {
         const active = lastPlayed + 1 < i.returnGame;
         return `<tr>
@@ -4884,7 +5058,7 @@ function renderInjuryHistory() {
           <td class="text-center">Game ${i.injuredGame}</td>
           <td class="text-center">${i.gamesOut}</td>
           <td class="text-center">Game ${i.returnGame}</td>
-          <td>${active
+          <td class="grow">${active
             ? `<span style="color:#e94560;font-weight:700;">Out ${Math.max(0, i.returnGame - (lastPlayed + 1))} more</span>`
             : `<span style="color:#30d158;">Back</span>`}</td>
           <td class="text-right"><button class="btn btn-sm btn-secondary" style="color:#ff453a" onclick="removeInjury(${State.data.injuries.indexOf(i)})">Remove</button></td>
@@ -6320,17 +6494,16 @@ function renderInjuries() {
       const remaining = inj.returnGame - nextGame;
       return `<div class="injury-card">
         ${pImg(inj.player,'player-img-lg')}
-        <div>
+        <div class="ic-who">
           <div class="player-name">${inj.player}</div>
           ${ownerBadge(inj.owner)}
         </div>
-        <div class="injury-details">
-          Injured G${inj.injuredGame} &bull; ${inj.gamesOut} games &bull; Returns G${inj.returnGame}
-        </div>
+        <div class="injury-details">Hurt in Game ${inj.injuredGame}<br>${inj.gamesOut}-game injury</div>
         <div class="injury-progress">
           <div class="progress-bar"><div class="fill" style="width:${pct}%"></div></div>
-          <div class="progress-label">${remaining} games left</div>
+          <div class="progress-label">${gamesMissed} missed &middot; ${remaining} to go</div>
         </div>
+        <div class="ic-return"><div class="ic-return-lbl">Returns</div><div class="ic-return-val">Game ${inj.returnGame}</div></div>
       </div>`;
     }).join('');
   }
@@ -6352,7 +6525,16 @@ function updateManualInjuryPlayers() {
   // The select can be empty for a beat (new season, options not yet rebuilt) —
   // an unknown owner just means no roster to offer, not a crash.
   const available = (CONFIG.OWNERS[owner]?.roster || []).filter(p => !isInjured(p, owner, nextGame));
-  document.getElementById('manualInjPlayer').innerHTML = available.map(p => `<option value="${p}">${p}</option>`).join('');
+  const sel = document.getElementById('manualInjPlayer');
+  const prev = sel.value;
+  sel.innerHTML = available.map(p => `<option value="${p}">${p}</option>`).join('');
+  if (available.includes(prev)) sel.value = prev;
+  // Owner toggle + mugshot picker mirror the hidden selects
+  const seg = document.getElementById('manualInjOwnerSeg');
+  if (seg) seg.innerHTML = getOwnerKeys().map(k => `<button type="button" class="${k === owner ? 'on' : ''}" style="${k === owner ? '' : `color:${getOwnerColor(k)}`}" onclick="document.getElementById('manualInjOwner').value='${k}';updateManualInjuryPlayers()">${escapeHtml(CONFIG.OWNERS[k].name)}</button>`).join('');
+  const picker = document.getElementById('manualInjPicker');
+  if (picker) picker.innerHTML = available.map(p => `<button type="button" class="inj-tile${sel.value === p ? ' on' : ''}" onclick="document.getElementById('manualInjPlayer').value='${p.replace(/'/g, "\\'")}';updateManualInjuryPlayers()">${pImg(p, 'inj-face')}<span>${escapeHtml(p)}</span></button>`).join('')
+    || '<div style="color:#6e6e73;">Everyone on this roster is already hurt.</div>';
 }
 
 // Injury roller state
@@ -7071,9 +7253,9 @@ function renderSeasonPace() {
     `<div class="pace-cell"><div class="pace-label">${label}</div><div class="pace-val" style="${color?`color:${color}`:''}">${val}</div></div>`;
 
   el.innerHTML = `
-    <div class="pace-grid cols-3">
-      ${keys.map(k => row(`${CONFIG.OWNERS[k].name} now`, `${wins[k]}&ndash;${playedN - wins[k]}`, getOwnerColor(k))).join('')}
-      ${keys.map(k => row(`${CONFIG.OWNERS[k].name} projected`, `${proj(k)}&ndash;${total - proj(k)}`, getOwnerColor(k))).join('')}
+    <div class="pace-grid cols-4">
+      ${row('Record now', vsLine(a, b, wins[a], wins[b]))}
+      ${row('Projected finish', vsLine(a, b, proj(a), proj(b)))}
       ${row('Games played', `${playedN} of ${total}`)}
       ${row('Remaining', remaining)}
     </div>
