@@ -1005,7 +1005,21 @@ tr:hover .col-notes .note-more { display: inline; }
 .lineup-card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 4px 12px; }
 .lineup-card-player { display: flex; align-items: center; gap: 6px; padding: 3px 0; font-size: 0.95rem; white-space: nowrap; }
 /* Step 5: form + MVP picker */
-.form-group-narrow { flex: 0 0 110px; min-width: 0; }
+.result-grid { display: grid; grid-template-columns: 110px minmax(0, 1.3fr) minmax(0, 1fr) 200px;
+  grid-template-areas: "num date sa mvp" "home stad sb mvp"; gap: 12px 14px; margin-bottom: 14px; }
+.result-grid .form-group { min-width: 0; flex: none; margin: 0; display: flex; flex-direction: column; }
+.result-grid .form-group > input, .result-grid .form-group > select { flex: 1; }
+.rg-num { grid-area: num; } .rg-date { grid-area: date; } .rg-sa { grid-area: sa; } .rg-sb { grid-area: sb; }
+.rg-home { grid-area: home; } .rg-stad { grid-area: stad; } .rg-mvp { grid-area: mvp; }
+.mvp-slot { flex: 1; display: flex; }
+.mvp-slot .mvp-tile { width: 100%; justify-content: center; }
+.mvp-slot-empty { flex: 1; display: flex; align-items: center; justify-content: center; text-align: center; padding: 12px;
+  border: 2px dashed rgba(255,255,255,0.18); border-radius: 12px; color: #86868b; font-size: 0.84rem; }
+@media (max-width: 700px) {
+  .result-grid { grid-template-columns: 1fr 1fr; grid-template-areas: "num date" "home stad" "sa sb" "mvp mvp"; }
+  .mvp-slot .mvp-tile { max-width: 160px; margin: 0 auto; }
+}
+@media (min-width: 900px) { .lineup-card-head { min-height: 240px; background-position: center 45%; } }
 #wizStep5 input[id^="score_"] { width: 100%; font-size: 2.3rem; font-weight: 800; text-align: center; padding: 8px 10px; }
 .mvp-change { margin-left: 10px; font-size: 0.78rem; font-weight: 600; color: #2997ff; background: none; border: 1px solid rgba(41,151,255,0.4); border-radius: 980px; padding: 3px 10px; cursor: pointer; font-family: inherit; }
 .mvp-hint { font-weight: 400; color: #86868b; text-transform: none; letter-spacing: 0; margin-left: 6px; }
@@ -5335,15 +5349,17 @@ function renderMvpPicker() {
     : 'enter the score first — the MVP comes from the winning team';
   // Once the MVP is set the other eight tiles are noise: show the pick alone
   // with a Change button, and only fan the full side back out on request.
+  const slot = document.getElementById('mvpSlot');
   if (hidden.value && !mvpExpanded) {
     const owner = keys.find(k => byOwner[k].includes(hidden.value)) || keys[0];
-    box.innerHTML = `<div class="mvp-tiles" style="grid-template-columns:118px;align-items:start;">
-      <button type="button" class="mvp-tile picked" style="--oc:${getOwnerColor(owner)}" onclick="mvpExpanded=true;renderMvpPicker()">
+    if (slot) slot.innerHTML = `<button type="button" class="mvp-tile picked" style="--oc:${getOwnerColor(owner)}" onclick="mvpExpanded=true;renderMvpPicker()">
         ${pImg(hidden.value, 'mvp-face')}<span>${escapeHtml(hidden.value)}</span>
-      </button></div>`;
+      </button>`;
     if (hint) hint.innerHTML += `<button type="button" class="mvp-change" onclick="mvpExpanded=true;renderMvpPicker()">Change</button>`;
+    box.innerHTML = '';
     return;
   }
+  if (slot) slot.innerHTML = `<div class="mvp-slot-empty">${decided ? 'Tap a player below' : 'Enter the score, then tap a player below'}</div>`;
   box.innerHTML = show.map(k => `
     <div class="mvp-team">
       ${decided ? '' : `<div class="mvp-team-name" style="color:${getOwnerColor(k)}">${CONFIG.OWNERS[k].name}</div>`}
@@ -5372,37 +5388,28 @@ function populateResultsStep() {
   resultsArea.innerHTML = `
     <div class="wiz-subtitle">${isEdit ? `Editing <strong>Game ${gn}</strong> &mdash; update the result and save.` : 'Lineup set. Now enter the game result.'}</div>
     <div id="wizLineupSummary" style="margin-bottom:16px;"></div>
-    <div class="form-row">
-      <div class="form-group form-group-narrow">
-        <label>Game #</label>
-        <input type="number" id="gameNum" readonly>
-      </div>
-      <div class="form-group">
-        <label>Date</label>
-        <input type="date" id="gameDate">
-      </div>
-      <div class="form-group">
-        <label>Stadium</label>
-        <select id="gameStadium"></select>
-      </div>
-      <div class="form-group">
-        <label>Home Team</label>
-        <select id="gameHome">${keys.map(k => `<option value="${k}">${CONFIG.OWNERS[k].name}</option>`).join('')}</select>
-      </div>
-    </div>
-    <div class="form-row">
-      ${keys.map(k => `<div class="form-group">
+    ${(() => {
+      // User-drawn layout (2026-09-03): two rows, the MVP tile standing in the
+      // right column across both, so nothing on this form leaves a dead strip.
+      const score = (k, area) => `<div class="form-group ${area}">
         <label style="color:${getOwnerColor(k)}">${CONFIG.OWNERS[k].name} Score</label>
         <input type="number" id="score_${k}" min="0" inputmode="numeric" value="0" onfocus="this.select()" oninput="renderMvpPicker()">
-      </div>`).join('')}
-    </div>
-    <div class="form-row">
-      <div class="form-group" style="flex:1 1 100%;">
+      </div>`;
+      return `<div class="result-grid">
+      <div class="form-group rg-num"><label>Game #</label><input type="number" id="gameNum" readonly></div>
+      <div class="form-group rg-date"><label>Date</label><input type="date" id="gameDate"></div>
+      ${score(keys[0], 'rg-sa')}
+      <div class="form-group rg-mvp">
         <label>MVP <span id="mvpHint" class="mvp-hint"></span></label>
         <input type="hidden" id="gameMVP" value="">
-        <div id="mvpPicker" class="mvp-picker"></div>
+        <div id="mvpSlot" class="mvp-slot"></div>
       </div>
+      <div class="form-group rg-home"><label>Home Team</label><select id="gameHome">${keys.map(k => `<option value="${k}">${CONFIG.OWNERS[k].name}</option>`).join('')}</select></div>
+      <div class="form-group rg-stad"><label>Stadium</label><select id="gameStadium"></select></div>
+      ${keys[1] ? score(keys[1], 'rg-sb') : ''}
     </div>
+    <div id="mvpPicker" class="mvp-picker"></div>`;
+    })()}
     <div class="form-row">
       <div class="form-group" style="flex:2">
         <label>Notes</label>
