@@ -988,17 +988,26 @@ tr:hover .col-notes .note-more { display: inline; }
 .sp-grid .player-chip .player-cell { display: flex; align-items: center; gap: 6px; font-size: 0.95rem; }
 /* Step 5: lineup summary card */
 .lineup-card { border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; padding: 14px 16px; margin: 8px 0 14px; background: rgba(255,255,255,0.02); }
-.lineup-card-head { display: flex; align-items: center; gap: 16px; margin-bottom: 12px; }
-.lineup-card-title { display: flex; flex-direction: column; gap: 2px; flex: 1; }
-.lineup-card-title strong { font-size: 1.35rem; }
-.lineup-card-title span { color: #a1a1a6; font-size: 0.95rem; }
+.lineup-card-head { position: relative; display: flex; align-items: flex-end; gap: 16px; min-height: 150px; margin: -14px -16px 14px; padding: 14px 18px;
+  border-radius: 14px 14px 0 0; background-size: cover; background-position: center; image-rendering: auto; }
+.lineup-card-head::before { content: ''; position: absolute; inset: 0; border-radius: inherit;
+  background: linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.55) 60%, rgba(22,22,26,0.95) 100%); }
+.lineup-card-head > * { position: relative; }
+.lineup-card-title { display: flex; flex-direction: column; gap: 2px; flex: 1; text-shadow: 0 1px 3px rgba(0,0,0,0.8); }
+.lineup-card-title strong { font-size: 1.7rem; }
+.lineup-card-title span { color: #e5e5ea; font-size: 1.05rem; }
 .lineup-card-teams { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; }
+@media (min-width: 700px) {
+  .lineup-card-team + .lineup-card-team { border-left: 1px solid rgba(255,255,255,0.14); padding-left: 20px; }
+}
+.wiz-subtitle { margin-bottom: 14px; font-size: 1.05rem; color: #d2d2d7; }
 .lineup-card-owner { font-size: 0.86rem; font-weight: 700; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.04em; }
 .lineup-card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 4px 12px; }
 .lineup-card-player { display: flex; align-items: center; gap: 6px; padding: 3px 0; font-size: 0.95rem; white-space: nowrap; }
 /* Step 5: form + MVP picker */
 .form-group-narrow { flex: 0 0 110px; min-width: 0; }
-#wizStep5 input[id^="score_"] { width: 130px; font-size: 1.7rem; font-weight: 700; text-align: center; padding: 8px 10px; }
+#wizStep5 input[id^="score_"] { width: 100%; font-size: 2.3rem; font-weight: 800; text-align: center; padding: 8px 10px; }
+.mvp-change { margin-left: 10px; font-size: 0.78rem; font-weight: 600; color: #2997ff; background: none; border: 1px solid rgba(41,151,255,0.4); border-radius: 980px; padding: 3px 10px; cursor: pointer; font-family: inherit; }
 .mvp-hint { font-weight: 400; color: #86868b; text-transform: none; letter-spacing: 0; margin-left: 6px; }
 .mvp-picker { display: flex; flex-direction: column; gap: 10px; }
 .mvp-team-name { font-size: 0.8rem; font-weight: 700; margin-bottom: 4px; }
@@ -2398,6 +2407,16 @@ const STADIUM_IMGS = {
 // rows): lazy loading defers them while fitPickGrids() is measuring oversized
 // rows, and they never come back once the layout settles.
 function pImg(name, cls='player-img', loading='lazy') { return MUGSHOTS[name] ? `<img src="${MUGSHOTS[name]}" alt="${name}" class="${cls}" loading="${loading}" onerror="this.style.display='none'">` : ''; }
+const STADIUM_IMGS_LG = {
+  'Mario Stadium':`${IMG_BASE}/Stadiums/lg-Mario_Stadium_Mario_Superstar_Baseball.jpg`,
+  'Peach Stadium':`${IMG_BASE}/Stadiums/lg-Peach_Garden_Mario_Superstar_Baseball.jpg`,
+  'Wario Palace':`${IMG_BASE}/Stadiums/lg-Wario_Palace.jpg`,
+  'Yoshi Park':`${IMG_BASE}/Stadiums/lg-Yoshi_Park.jpg`,
+  'DK Jungle':`${IMG_BASE}/Stadiums/lg-Donkey_Kong_Jungle_1.jpg`,
+  'Bowser Castle':`${IMG_BASE}/Stadiums/lg-Bowser_Castle_MSB.jpg`,
+};
+// Large art for the hero/banner spots; falls back to the thumbnail.
+function sImgLg(name) { return STADIUM_IMGS_LG[name] || STADIUM_IMGS[name] || ''; }
 function sImg(name, cls='stadium-img') { return STADIUM_IMGS[name] ? `<img src="${STADIUM_IMGS[name]}" alt="${name}" class="${cls}" loading="lazy" onerror="this.style.display='none'">` : ''; }
 function escapeHtml(s) {
   return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -5092,7 +5111,8 @@ function closeWizard() {
 // MVP is chosen from mugshot tiles rather than a bare <select>, and only from
 // the side that won: the score fields drive which team is offered, so the
 // picker re-renders on every score keystroke.
-function populateMVPDropdown() { renderMvpPicker(); }
+let mvpExpanded = false;
+function populateMVPDropdown() { mvpExpanded = false; renderMvpPicker(); }
 
 function mvpCandidates() {
   const gn = wizardState.gameInfo.num;
@@ -5136,6 +5156,17 @@ function renderMvpPicker() {
   if (hint) hint.textContent = decided
     ? `from ${CONFIG.OWNERS[leaders[0]].name}'s side`
     : 'enter the score first — the MVP comes from the winning team';
+  // Once the MVP is set the other eight tiles are noise: show the pick alone
+  // with a Change button, and only fan the full side back out on request.
+  if (hidden.value && !mvpExpanded) {
+    const owner = keys.find(k => byOwner[k].includes(hidden.value)) || keys[0];
+    box.innerHTML = `<div class="mvp-tiles" style="grid-template-columns:118px;align-items:start;">
+      <button type="button" class="mvp-tile picked" style="--oc:${getOwnerColor(owner)}" onclick="mvpExpanded=true;renderMvpPicker()">
+        ${pImg(hidden.value, 'mvp-face')}<span>${escapeHtml(hidden.value)}</span>
+      </button></div>`;
+    if (hint) hint.innerHTML += `<button type="button" class="mvp-change" onclick="mvpExpanded=true;renderMvpPicker()">Change</button>`;
+    return;
+  }
   box.innerHTML = show.map(k => `
     <div class="mvp-team">
       ${decided ? '' : `<div class="mvp-team-name" style="color:${getOwnerColor(k)}">${CONFIG.OWNERS[k].name}</div>`}
@@ -5149,6 +5180,7 @@ function renderMvpPicker() {
 function pickMvp(name) {
   const hidden = document.getElementById('gameMVP');
   hidden.value = hidden.value === name ? '' : name; // tap again to clear
+  mvpExpanded = false;
   renderMvpPicker();
 }
 
@@ -5161,7 +5193,7 @@ function populateResultsStep() {
   const isEdit = wizardState.mode === 'editGame';
   const resultsArea = document.getElementById('wizStep5Content');
   resultsArea.innerHTML = `
-    <div style="margin-bottom:12px; font-size:0.85rem; color:#86868b;">${isEdit ? `Editing Game ${gn} — update the result and save.` : 'Lineup set. Now enter the game result.'}</div>
+    <div class="wiz-subtitle">${isEdit ? `Editing <strong>Game ${gn}</strong> &mdash; update the result and save.` : 'Lineup set. Now enter the game result.'}</div>
     <div id="wizLineupSummary" style="margin-bottom:16px;"></div>
     <div class="form-row">
       <div class="form-group form-group-narrow">
@@ -6115,7 +6147,8 @@ function getGameOwnerKeys() {
 function nextGameHero(label, sched) {
   const home = CONFIG.OWNERS[sched.home]?.name || sched.home;
   const away = CONFIG.OWNERS[sched.away]?.name || sched.away;
-  return `${sImg(sched.stadium, 'stadium-img-hero')}
+  const src = sImgLg(sched.stadium);
+  return `${src ? `<img src="${src}" alt="${escapeHtml(sched.stadium)}" class="stadium-img-hero" onerror="this.style.display='none'">` : ''}
     <div class="next-hero-text">
       <div class="next-hero-label">Next game</div>
       <div class="next-hero-game">${escapeHtml(label)}</div>
@@ -6146,9 +6179,9 @@ function renderLineupCard(lineup, showDelete) {
   const keys = CONFIG.OWNERS[sched.home]
     ? [sched.home, sched.away]
     : (lineup.players ? Object.keys(lineup.players) : getOwnerKeys());
+  const bg = sImgLg(sched.stadium) ? ` style="background-image:url('${sImgLg(sched.stadium)}')"` : '';
   return `<div class="lineup-card">
-    <div class="lineup-card-head">
-      ${sImg(sched.stadium, 'stadium-img-lg')}
+    <div class="lineup-card-head"${bg}>
       <div class="lineup-card-title"><strong>Game ${lineup.gameNumber}</strong><span>${escapeHtml(sched.stadium)}${CONFIG.OWNERS[sched.home] ? ` &middot; ${escapeHtml(CONFIG.OWNERS[sched.home].name)} hosts` : ''}</span></div>
       ${deleteBtn}
     </div>
