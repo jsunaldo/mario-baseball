@@ -914,12 +914,6 @@ tr.draft-dan:hover { background: rgba(78,205,196,0.1); }
 }
 /* Qualifier explainer under the batting filter bar */
 .qualifier-note { font-size: 0.76rem; color: #6e6e73; margin: 0 0 8px 2px; }
-/* Next game up — the reason you opened the app */
-.header-next { display: inline-flex; align-items: center; gap: 10px; margin-top: 4px; padding: 6px 16px 6px 8px;
-  border-radius: 980px; background: rgba(41,151,255,0.10); border: 1px solid rgba(41,151,255,0.35);
-  font-size: 1.02rem; font-weight: 700; color: #f5f5f7; letter-spacing: 0.01em; text-align: left; }
-.header-next .hn-label { color: #86868b; font-weight: 500; font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.06em; }
-.stadium-img-hn { width: 44px; height: 30px; object-fit: cover; border-radius: 6px; flex: none; }
 /* Notes: show there is more rather than clipping silently */
 .col-notes { max-width: 220px; }
 .col-notes .note-text { display: inline-block; max-width: 100%; overflow: hidden;
@@ -944,8 +938,6 @@ tr:hover .col-notes .note-more { display: inline; }
   .header-season-badge { display: none; }
   .header-records { gap: 6px; }
   .record-badge { font-size: 0.8rem; padding: 2px 10px; }
-  .header-next { font-size: 0.82rem; padding: 4px 12px 4px 6px; gap: 8px; }
-  .stadium-img-hn { width: 34px; height: 23px; }
   .next-hero { gap: 14px; }
   .next-hero-game { font-size: 1.4rem; }
   .stadium-img-hero { max-width: 38%; }
@@ -1024,9 +1016,6 @@ tr:hover .col-notes .note-more { display: inline; }
   .record-badge { padding: 5px 16px; }
   .header-center { gap: 6px; }
 }
-/* Header: centre stack flanked by art, next-game card in the otherwise empty right side */
-.header-spacer { flex: 1; display: none; }
-.header-next-slot { flex: 0 0 100%; display: flex; justify-content: center; }
 .record-line { display: inline-flex; align-items: baseline; gap: 10px; padding: 4px 18px; border-radius: 980px;
   background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); font-size: 1rem; }
 .record-line .rl-name { font-weight: 600; }
@@ -1034,24 +1023,14 @@ tr:hover .col-notes .note-more { display: inline; }
 .record-line .rl-dash { color: #6e6e73; font-weight: 400; }
 @media (min-width: 900px) {
   .header { flex-wrap: nowrap; justify-content: center; gap: 16px; }
-  .header-spacer { display: block; }
-  .header-next-slot { flex: 1; justify-content: flex-start; padding-left: 20px; }
-  .header-next { flex-direction: column; align-items: flex-start; gap: 8px; margin: 0; padding: 12px;
-    border-radius: 18px; background: rgba(41,151,255,0.08); min-width: 250px; max-width: 320px; }
-  .stadium-img-hn { width: 100%; height: 118px; border-radius: 12px; }
-  .header-next .hn-text { display: flex; flex-direction: column; gap: 2px; font-size: 1.12rem; line-height: 1.2; padding: 0 2px 2px; }
-  .header-next .hn-label { font-size: 0.72rem; }
-  .header-next .hn-sep, .header-next .hn-br { display: none; }
   .record-line { font-size: 1.15rem; padding: 5px 22px; }
 }
 @media (max-width: 899px) { .header { flex-wrap: wrap; } }
-body.picking .header-next-slot { display: none; }
 /* Game log view toggle */
 .seg { display: inline-flex; background: rgba(255,255,255,0.08); border-radius: 980px; padding: 3px; }
 .seg button { border: 0; background: transparent; color: #a1a1a6; font: inherit; font-size: 0.82rem; font-weight: 600;
   padding: 5px 14px; border-radius: 980px; cursor: pointer; }
 .seg button.on { background: #f5f5f7; color: #000; }
-#gameLogTable.grouped .col-stadium { display: none; }
 /* Series cards */
 .series-card { border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; background: #16161a; overflow: hidden; margin-bottom: 14px; }
 .series-card-head { position: relative; display: flex; align-items: flex-end; justify-content: space-between; gap: 16px;
@@ -1232,7 +1211,6 @@ body.picking .header-next-slot { display: none; }
   .series-card-head { min-height: 200px; background-position: center 42%; }
   .park-banner { min-height: 240px; background-position: center 42%; }
   .park-card-img { height: 170px; background-position: center 42%; }
-  .stadium-img-hn { height: 160px; object-position: center 42%; }
   .lineup-card-head { min-height: 260px; background-position: center 42%; }
 }
 @media (min-width: 1300px) {
@@ -1259,10 +1237,20 @@ body.picking .header-next-slot { display: none; }
 @media (min-width: 600px) and (max-width: 899px) {
   .park-grid, .pace-grid.cols-3, .pace-grid.cols-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+/* Next-game strip at the top of the game log: full-bleed park, text left, CTA right */
+.next-strip { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  min-height: 150px; padding: 18px 22px; margin-bottom: 14px; border-radius: 18px; overflow: hidden;
+  background: #16161a center 42% / cover no-repeat; border: 1px solid rgba(255,255,255,0.1); }
+.next-strip::before { content: ''; position: absolute; inset: 0;
+  background: linear-gradient(90deg, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.35) 55%, rgba(0,0,0,0.55) 100%); }
+.next-strip > * { position: relative; }
+.next-strip .hn-label { font-size: 0.78rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #c7c7cc; text-shadow: 0 1px 2px #000; }
+.next-strip .ns-park { font-size: 1.9rem; font-weight: 800; line-height: 1.1; margin-top: 2px; text-shadow: 0 1px 3px rgba(0,0,0,0.85); }
+.next-strip .ns-host { font-size: 1.05rem; font-weight: 600; color: #e5e5ea; margin-top: 3px; text-shadow: 0 1px 2px #000; }
+.next-strip .ns-cta { flex: none; box-shadow: 0 6px 20px rgba(0,0,0,0.45); }
+@media (min-width: 900px) { .next-strip { min-height: 210px; padding: 22px 28px; } .next-strip .ns-park { font-size: 2.3rem; } }
+@media (max-width: 600px) { .next-strip { min-height: 120px; padding: 14px 16px; flex-wrap: wrap; } .next-strip .ns-park { font-size: 1.4rem; } .next-strip .ns-cta { width: 100%; } }
 /* Series banner in the game log */
-.series-banner td { background: rgba(255,255,255,0.045); border-top: 1px solid rgba(255,255,255,0.10);
-  padding: 7px 12px !important; cursor: default; }
-.series-banner:hover td { background: rgba(255,255,255,0.045); }
 .series-tag { display: inline-block; font-size: 0.74rem; font-weight: 700; letter-spacing: 0.05em;
   text-transform: uppercase; color: #6e6e73; margin-right: 10px; }
 .series-venue { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; font-size: 0.98rem; margin-right: 14px; }
@@ -1366,7 +1354,6 @@ body.picking .container { padding-left: 8px; padding-right: 8px; }
 
 <!-- ========== HEADER ========== -->
 <header class="header">
-  <div class="header-spacer"></div>
   <img src="images/Extra Sprites/105px-MSB_Mario_Batting_Artwork.png" alt="Mario" class="header-character header-character-left" onerror="this.style.display='none'">
   <div class="header-center">
     <img src="images/Game/250px-MSBingamelogo.png" alt="Mario Superstar Baseball" class="header-logo" onerror="this.style.display='none'">
@@ -1379,7 +1366,6 @@ body.picking .container { padding-left: 8px; padding-right: 8px; }
     <button class="back-to-seasons" onclick="showSeasonSelect()">&#8592; Back to Seasons</button>
   </div>
   <img src="images/Extra Sprites/107px-MSBBowser.png" alt="Bowser" class="header-character header-character-right" onerror="this.style.display='none'">
-  <div class="header-next-slot"><div class="header-next" id="headerMeta">Game 1 of 162</div></div>
 </header>
 
 <!-- ========== TAB BAR ========== -->
@@ -1399,8 +1385,10 @@ body.picking .container { padding-left: 8px; padding-right: 8px; }
 
   <!-- ====== TAB 1: GAME LOG ====== -->
   <div class="tab-content active" id="tab-gamelog">
+    <!-- Next game up: the reason you opened the app. Lives here, not in the header. -->
+    <div class="next-strip" id="headerMeta">Game 1 of 162</div>
     <div class="btn-group">
-      <button class="btn btn-primary" id="btnAddGame">+ Add Game Result</button>
+      <button class="btn btn-primary" id="btnAddGame" style="display:none">+ Add Game Result</button>
       <button class="btn btn-secondary" id="btnToggleSchedule">View Full Schedule</button>
       <button class="btn btn-secondary" onclick="openSeasonSummary()">Season Summary</button>
       <div class="seg" id="logViewSeg" style="display:none;margin-left:auto;">
@@ -4551,17 +4539,25 @@ function renderHeader() {
     const s = getSchedule(next);
     const host = CONFIG.OWNERS[s.home]?.name || s.home;
     const src = sImgLg(s.stadium);
-    meta = `${src ? `<img src="${src}" alt="${escapeHtml(s.stadium)}" class="stadium-img-hn" onerror="this.style.display='none'">` : ''}<span class="hn-text">`
-         + `<span class="hn-label">Up next &middot; Game ${next} of ${CONFIG.TOTAL_GAMES}</span>`
-         + `<span class="hn-sep"> &middot; </span><br class="hn-br">`
-         + `${escapeHtml(s.stadium)} &middot; ${escapeHtml(host)} hosts</span>`;
+    const strip = document.getElementById('headerMeta');
+    if (strip) strip.style.backgroundImage = src ? `url('${src}')` : '';
+    meta = `<div class="ns-text">
+        <div class="hn-label">Up next &middot; Game ${next} of ${CONFIG.TOTAL_GAMES}</div>
+        <div class="ns-park">${escapeHtml(s.stadium)}</div>
+        <div class="ns-host"><span style="color:${getOwnerColor(s.home)}">${escapeHtml(host)}</span> hosts</div>
+      </div>
+      <button class="btn btn-primary btn-lg ns-cta" onclick="document.getElementById('btnAddGame').click()">+ Add Game Result</button>`;
   } else {
+    const strip = document.getElementById('headerMeta');
+    if (strip) strip.style.backgroundImage = '';
     const champ = getWsChampion();
     if (champ) meta = `&#127942; ${escapeHtml(CONFIG.OWNERS[champ]?.name || champ)} &mdash; World Series Champion`;
     else if (State.data.worldSeries || getWsGames().length) meta = `World Series &mdash; Game ${next - CONFIG.TOTAL_GAMES}`;
     else meta = 'Regular Season Complete';
   }
-  document.getElementById('headerMeta').innerHTML = meta;
+  const stripEl = document.getElementById('headerMeta');
+  stripEl.innerHTML = next <= CONFIG.TOTAL_GAMES ? meta
+    : `<div class="ns-text"><div class="ns-park">${meta}</div></div><button class="btn btn-primary btn-lg ns-cta" onclick="document.getElementById('btnAddGame').click()">+ Add Game Result</button>`;
 }
 
 function renderSummary() {
@@ -4930,16 +4926,6 @@ function seriesInfo(seriesIdx) {
   return { nums, played, sched, result, host };
 }
 
-function seriesBannerRow(seriesIdx, colCount) {
-  const { sched, result, host } = seriesInfo(seriesIdx);
-  return `<tr class="series-banner"><td colspan="${colCount}">
-    <span class="series-tag">Series ${seriesIdx + 1}</span>
-    <span class="series-venue">${sImg(sched.stadium, 'stadium-img-xs')}${sched.stadium}</span>
-    <span class="series-host">${host}</span>
-    <span class="series-result">${result}</span>
-  </td></tr>`;
-}
-
 function renderGameLog() {
   let games = [...State.data.games];
   const keys = getOwnerKeys();
@@ -4985,7 +4971,8 @@ function renderGameLog() {
   const tbody = document.getElementById('gameLogBody');
   // Series banners only make sense while the log is in game order — any other
   // sort scatters the series, so they're dropped.
-  const grouped = gameLogSort.col === 'gameNumber' && gameLogSort.dir === 'asc' && keys.length === 2;
+  // The table is the un-grouped view: no series banners, stadium column kept.
+  // Series structure lives in the cards (user, 2026-09-03).
   const colCount = 7 + keys.length * 2;
 
   // A 2-owner league reads as series cards by default; the table stays behind a
@@ -5001,15 +4988,10 @@ function renderGameLog() {
   if (cards) cards.style.display = useCards ? '' : 'none';
   if (wrap) wrap.style.display = useCards ? 'none' : '';
   if (useCards) { renderSeriesCards(); return; }
-  document.getElementById('gameLogTable').classList.toggle('grouped', grouped);
   tbody.innerHTML = games.map(g => {
     const winnerColor = getOwnerColor(g.winner);
-    let banner = '';
-    if (grouped && g.gameNumber <= CONFIG.TOTAL_GAMES && (g.gameNumber - 1) % 3 === 0) {
-      banner = seriesBannerRow(Math.floor((g.gameNumber - 1) / 3), colCount);
-    }
     const isWS = g.gameNumber > CONFIG.TOTAL_GAMES;
-    return banner + `<tr style="border-left: 3px solid ${winnerColor}${isWS ? ';background:rgba(247,183,49,0.06)' : ''}" onclick="showGameDetail(${g.gameNumber})">
+    return `<tr style="border-left: 3px solid ${winnerColor}${isWS ? ';background:rgba(247,183,49,0.06)' : ''}" onclick="showGameDetail(${g.gameNumber})">
       <td class="text-center" style="font-weight:700;${isWS ? 'color:#f7b731' : ''}">${isWS ? 'WS' + (g.gameNumber - CONFIG.TOTAL_GAMES) : g.gameNumber}</td>
       <td class="col-date">${formatDate(g.date)}</td>
       <td class="col-stadium"><div class="stadium-cell">${sImg(g.stadium)}${g.stadium}</div></td>

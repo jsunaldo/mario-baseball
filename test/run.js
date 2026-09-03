@@ -104,7 +104,8 @@ check('makeup series 12 (games 37-39) is Dan-hosted at Mario Stadium', [37, 38, 
 check('stadiums rotate in order each lap', ['Mario Stadium', 'Peach Stadium', 'Wario Palace', 'Yoshi Park', 'DK Jungle', 'Bowser Castle'].every((s, i) => sched[i * 3].stadium === s));
 check('override & makeup tables are keyed by season', T(`HOME_MAKEUP_SERIES.S2 === 12 && HOME_OVERRIDE_GAMES.S2[21] === 'jason' && !HOME_MAKEUP_SERIES.S1 && !HOME_OVERRIDE_GAMES.S1`));
 check('getNextGameNumber() is 21', T(`getNextGameNumber()`) === 21);
-check('header names the next game, park and host', /Game 21 of 162/.test(T(`renderHeader(); document.getElementById('headerMeta').innerHTML`)) && /Mario Stadium/.test(T(`document.getElementById('headerMeta').innerHTML`)) && /Jason hosts/.test(T(`document.getElementById('headerMeta').innerHTML`)));
+const nextText = T(`renderHeader(); document.getElementById('headerMeta').innerHTML`).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+check('next-game strip names the next game, park and host', /Game 21 of 162/.test(nextText) && /Mario Stadium/.test(nextText) && /Jason hosts/.test(nextText), nextText);
 
 section('Season 2 — series & records');
 const sr = T(`computeSeriesResults()`);
