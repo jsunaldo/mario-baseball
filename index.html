@@ -1372,6 +1372,23 @@ img.player-img, img.player-img-sm, img.player-img-md, img.player-img-lg, img.mvp
 .moment-text { flex: 1; }
 .moment-x { background: none; border: 0; color: #86868b; font-size: 1.2rem; cursor: pointer; padding: 0 2px; }
 #btnUndo { color: #ff9f0a; }
+/* Phone: cards wrap, scorelines shrink (caught by CI layout checks) */
+@media (max-width: 700px) {
+  .injury-card { flex-wrap: wrap; gap: 10px 14px; }
+  .injury-progress { flex: 1 0 100%; min-width: 0; order: 5; }
+  .ic-return { text-align: left; min-width: 0; margin-left: auto; }
+  .ic-who { min-width: 0; }
+}
+@media (max-width: 600px) {
+  .summary-card { padding: 14px 10px; }
+  .summary-card .value { font-size: 1.35rem; }
+  .summary-card .value .vs-line { gap: 5px; }
+  .vs-line .vs-name { font-size: 0.6em; }
+  .pace-val .vs-line { font-size: 1.05rem; }
+  .h2h-a, .h2h-b { font-size: 1.2rem; }
+  .h2h-lbl { min-width: 90px; }
+  .park-tile { min-width: 84px; } .park-tile img, .park-tile .pt-all { width: 76px; height: 50px; }
+}
 /* Series banner in the game log */
 .series-tag { display: inline-block; font-size: 0.74rem; font-weight: 700; letter-spacing: 0.05em;
   text-transform: uppercase; color: #6e6e73; margin-right: 10px; }
