@@ -165,6 +165,26 @@ const s1bad = T(`(() => { const bad=[]; for (let si=0; si<33; si++){ const t=[1,
 check('every S1 series was one stadium with one host', s1bad.length === 0, s1bad);
 check('no makeup/override leaks into S1', T(`getSchedule(1).home`) === T(`State.data.games.find(g=>g.gameNumber===1).home`));
 
+section('Player page');
+T(`selectSeason('S2')`);
+let ppThrew = false; try { T(`showPlayerPage('Mario')`); } catch (e) { ppThrew = e.message; }
+const pp = T(`document.getElementById('modalBody').innerHTML`) + T(`document.getElementById('modalTitle').innerHTML`);
+check('player page renders for Mario without throwing', ppThrew === false, ppThrew);
+check('player page shows the season line, splits and ratings', /Average/.test(pp) && /Splits/.test(pp) && /BAT/.test(pp), pp.slice(0, 80));
+let ppThrew2 = false; try { T(`showPlayerPage('Yellow Pianta', 'dan')`); } catch (e) { ppThrew2 = e.message; }
+check('player page renders for a pitcher with starts', ppThrew2 === false && /As starter/.test(T(`document.getElementById('modalBody').innerHTML`)), ppThrew2);
+T(`closeGameDetail()`);
+
+section('Matchup intelligence');
+const elo = T(`(() => { const e = computeElo(State.data.games, getOwnerKeys()); return { j: Math.round(e.ratings.jason), d: Math.round(e.ratings.dan), n: e.hist.jason.length }; })()`);
+check('Elo is zero-sum around 1500 and tracks every game', Math.abs(elo.j + elo.d - 3000) <= 1 && elo.n === 21, elo);
+check('the 16-4 side is rated higher', elo.j > elo.d, elo);
+const wp = T(`winProbability('jason', 'dan')`);
+check('win probability is a sane favourite for the leader (55-95%)', wp > 0.55 && wp < 0.95, wp);
+check('probabilities sum to one across home/away', Math.abs(T(`winProbability('jason','dan') + winProbability('dan','jason')`) - 1) < 0.2);
+const mu = T(`matchupCard(getSchedule(21))`);
+check('matchup card renders rating, form, park and win probability', /Rating/.test(mu) && /Last 10/.test(mu) && /Mario Stadium/.test(mu) && /win probability/.test(mu));
+
 section('Leagues');
 T(`LeagueManager.migrate()`);
 const lgs = T(`LeagueManager.list()`);
