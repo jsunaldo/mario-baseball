@@ -1345,6 +1345,33 @@ img.player-img, img.player-img-sm, img.player-img-md, img.player-img-lg, img.mvp
 .spm-hitter { display: inline-flex; align-items: center; gap: 2px; font-size: 0.88rem; color: #d2d2d7; }
 .spm-hitter b { margin-left: 4px; }
 .spm-none { font-size: 0.86rem; color: #6e6e73; }
+/* Awards, records, moments */
+.two-col { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 899px) { .two-col { grid-template-columns: 1fr; } }
+.award-grid { display: grid; grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 899px) { .award-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.award { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px 10px; border-radius: 14px; text-align: center;
+  background: linear-gradient(180deg, rgba(247,183,49,0.10), rgba(255,255,255,0.03)); border: 1px solid rgba(247,183,49,0.3); }
+.award-name { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #f7b731; }
+.award-face { width: 56px; height: 56px; image-rendering: pixelated; border-radius: 10px; }
+.award-player { font-weight: 800; font-size: 1.05rem; }
+.award-val { font-size: 0.9rem; color: #d2d2d7; }
+.rec-list { display: flex; flex-direction: column; }
+.rec-row { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 12px; padding: 9px 0; border-top: 1px solid rgba(255,255,255,0.06); }
+.rec-row:first-child { border-top: 0; }
+.rec-label { font-size: 0.76rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #a1a1a6; }
+.rec-val { font-size: 1.05rem; font-weight: 800; white-space: nowrap; }
+.rec-who { display: inline-flex; align-items: center; gap: 4px; font-size: 0.9rem; color: #d2d2d7; white-space: nowrap; min-width: 120px; justify-content: flex-end; }
+.rec-game { font-size: 0.74rem; color: #6e6e73; margin-left: 8px; }
+#moments { position: fixed; right: 20px; bottom: 76px; display: flex; flex-direction: column; gap: 8px; z-index: 350; max-width: min(420px, 92vw); }
+.moment { display: flex; align-items: center; gap: 10px; padding: 10px 12px 10px 14px; border-radius: 14px; background: rgba(28,28,30,0.96); border: 1px solid rgba(255,255,255,0.12);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5); font-weight: 600; font-size: 0.95rem; animation: injury-pop 0.3s cubic-bezier(0.34,1.56,0.64,1); }
+.moment.record { border-color: rgba(247,183,49,0.6); }
+.moment.award { border-color: rgba(41,151,255,0.55); }
+.moment-icon { font-size: 1.2rem; }
+.moment-text { flex: 1; }
+.moment-x { background: none; border: 0; color: #86868b; font-size: 1.2rem; cursor: pointer; padding: 0 2px; }
+#btnUndo { color: #ff9f0a; }
 /* Series banner in the game log */
 .series-tag { display: inline-block; font-size: 0.74rem; font-weight: 700; letter-spacing: 0.05em;
   text-transform: uppercase; color: #6e6e73; margin-right: 10px; }
@@ -1486,6 +1513,7 @@ body.picking .container { padding-left: 8px; padding-right: 8px; }
       <button class="btn btn-primary" id="btnAddGame" style="display:none">+ Add Game Result</button>
       <button class="btn btn-secondary" id="btnToggleSchedule">View Full Schedule</button>
       <button class="btn btn-secondary" onclick="openSeasonSummary()">Season Summary</button>
+      <button class="btn btn-secondary" id="btnUndo" style="display:none" onclick="undoLast()">Undo</button>
       <div class="seg" id="logViewSeg" style="display:none;margin-left:auto;">
         <button type="button" data-view="series" onclick="setLogView('series')">Series</button>
         <button type="button" data-view="table" onclick="setLogView('table')">Table</button>
@@ -1546,6 +1574,22 @@ body.picking .container { padding-left: 8px; padding-right: 8px; }
     <div class="card" id="trendPaceCard">
       <div class="card-title">Season Pace</div>
       <div id="trendPace"></div>
+    </div>
+    <div class="card" id="trendAwardsCard">
+      <div class="card-title">Season Awards</div>
+      <div class="card-sub">Leaders right now. Batting awards use the fair-share qualifier; the ERA title needs innings.</div>
+      <div id="trendAwards"></div>
+    </div>
+    <div class="two-col">
+      <div class="card" id="trendRecordsCard">
+        <div class="card-title">Season Records</div>
+        <div id="trendRecords"></div>
+      </div>
+      <div class="card" id="trendMomentsCard">
+        <div class="card-title">Moments</div>
+        <div class="card-sub">Records broken, awards changing hands, milestones reached.</div>
+        <div id="trendMoments"></div>
+      </div>
     </div>
     <div class="card" id="trendHotCard">
       <div class="card-title">Who&rsquo;s Hot</div>
@@ -1658,6 +1702,7 @@ body.picking .container { padding-left: 8px; padding-right: 8px; }
               <th data-sort="ab" class="text-center">AB</th>
               <th data-sort="hits" class="text-center">H</th>
               <th data-sort="avg" class="text-center">AVG</th>
+              <th data-sort="obp" class="text-center" title="On-base % — needs walks entered">OBP</th>
               <th data-sort="rbi" class="text-center">RBI</th>
               <th data-sort="hr" class="text-center">HR</th>
               <th data-sort="sb" class="text-center">SB</th>
@@ -2651,15 +2696,16 @@ const Sync = {
       location.reload();
       return;
     }
-    // Both sides changed (or first sync on a device with existing data) -> ask
-    this.setStatus('conflict');
-    const useCloud = confirm(
-      'Cloud backup (updated ' + this.ago(cloud.updatedAt) + ' ago) differs from the data on this device.\n\n' +
-      'OK = load the cloud data (replaces this device)\n' +
-      'Cancel = keep this device’s data (overwrites the cloud backup)'
-    );
-    if (useCloud) { this.apply(cloud); location.reload(); }
-    else { await this.push(); }
+    // Both sides changed (two devices entered games in the same window, or a
+    // device that had been offline): merge game by game instead of making one
+    // side lose. Newer save wins per game; deletions carry tombstones.
+    this.setStatus('syncing');
+    const merged = mergeSnapshots(this.snapshot(), cloud);
+    this.apply(merged);
+    await this.push();
+    sessionStorage.setItem('msb_pulled', '1');
+    sessionStorage.setItem('msb_merged', '1');
+    location.reload();
   },
 
   ago(iso) {
@@ -2670,6 +2716,64 @@ const Sync = {
     return Math.round(mins / 1440) + 'd';
   }
 };
+
+// ---- Entity-level merge of two league snapshots (pure; unit-tested) ----------
+function pickNewer(a, b) {
+  if (a.savedAt && b.savedAt) return a.savedAt >= b.savedAt ? a : b;
+  if (a.savedAt) return a; if (b.savedAt) return b;
+  if (a.playerStats && !b.playerStats) return a;
+  if (b.playerStats && !a.playerStats) return b;
+  return a; // local
+}
+function mergeSeasonData(L, C) {
+  L = L || {}; C = C || {};
+  const m = Object.assign({}, C, L);
+  const tomb = Object.assign({}, C.deletedGames || {}, L.deletedGames || {});
+  const g = {};
+  (C.games || []).forEach(x => { g[x.gameNumber] = x; });
+  (L.games || []).forEach(x => { const c = g[x.gameNumber]; g[x.gameNumber] = c ? pickNewer(x, c) : x; });
+  Object.keys(tomb).forEach(num => {
+    const x = g[num];
+    if (x && (!x.savedAt || x.savedAt <= tomb[num])) delete g[num];
+  });
+  m.games = Object.values(g).sort((a, b) => a.gameNumber - b.gameNumber);
+  m.deletedGames = tomb;
+  const lu = Object.assign({}, C.lineups || {});
+  Object.entries(L.lineups || {}).forEach(([k, v]) => { lu[k] = lu[k] ? pickNewer(v, lu[k]) : v; });
+  Object.keys(tomb).forEach(num => { if (!g[num]) delete lu[num]; });
+  m.lineups = lu;
+  const itomb = Object.assign({}, C.deletedInjuries || {}, L.deletedInjuries || {});
+  const inj = {};
+  [...(C.injuries || []), ...(L.injuries || [])].forEach(i => { inj[injuryKey(i)] = i; });
+  Object.keys(itomb).forEach(k => delete inj[k]);
+  m.injuries = Object.values(inj).sort((a, b) => a.injuredGame - b.injuredGame);
+  m.deletedInjuries = itomb;
+  m.injuryRolls = Object.assign({}, C.injuryRolls || {}, L.injuryRolls || {});
+  m.pitchingLog = Object.assign({}, C.pitchingLog || {}, L.pitchingLog || {});
+  return m;
+}
+function mergeSnapshots(local, cloud) {
+  const byId = arr => Object.fromEntries((arr || []).map(x => [x.id, x]));
+  const ls = byId(local.seasons), cs = byId(cloud.seasons);
+  const ll = byId(local.leagues), cl = byId(cloud.leagues);
+  const tomb = {};
+  Object.keys(Object.assign({}, cloud.tombstones || {}, local.tombstones || {})).forEach(k => {
+    tomb[k] = !!((cloud.tombstones || {})[k] || (local.tombstones || {})[k]);
+  });
+  const seasonIds = [...new Set([...Object.keys(cs), ...Object.keys(ls)])].filter(id => !tomb[id]);
+  const out = {
+    updatedAt: new Date().toISOString(),
+    seasons: seasonIds.map(id => ls[id] || cs[id]),
+    leagues: [...new Set([...Object.keys(cl), ...Object.keys(ll)])].map(id => ll[id] || cl[id]),
+    tombstones: tomb,
+    data: {}
+  };
+  seasonIds.forEach(id => {
+    const L = (local.data || {})[id], C = (cloud.data || {})[id];
+    out.data[id] = (L && C) ? mergeSeasonData(L, C) : (L || C);
+  });
+  return out;
+}
 
 // ========================================================================
 // SEASON 2 HARDCODED CONFIG (template for S2)
@@ -4169,6 +4273,40 @@ const State = {
 };
 
 // ========================================================================
+// UNDO — a snapshot of the season before every mutation, five deep.
+// ========================================================================
+const UNDO_MAX = 5;
+function undoKey() { return 'msb_undo_' + CONFIG.SEASON_ID; }
+function undoStack() { try { return JSON.parse(localStorage.getItem(undoKey())) || []; } catch { return []; } }
+function pushUndo(label) {
+  try {
+    const st = undoStack();
+    st.push({ label, at: new Date().toISOString(), data: JSON.stringify(State.data) });
+    while (st.length > UNDO_MAX) st.shift();
+    localStorage.setItem(undoKey(), JSON.stringify(st));
+  } catch (e) { console.warn('undo snapshot skipped', e); }
+  renderUndoButton();
+}
+function undoLast() {
+  const st = undoStack();
+  const last = st.pop();
+  if (!last) return;
+  if (!confirm(`Undo "${last.label}"?\nThe season goes back to how it was just before that.`)) return;
+  State.data = JSON.parse(last.data);
+  localStorage.setItem(undoKey(), JSON.stringify(st));
+  State.save();
+  renderAll();
+  showToast('Undone: ' + last.label);
+}
+function renderUndoButton() {
+  const b = document.getElementById('btnUndo');
+  if (!b) return;
+  const st = undoStack();
+  b.style.display = st.length ? '' : 'none';
+  if (st.length) b.textContent = '\u21A9 Undo: ' + st[st.length - 1].label;
+}
+
+// ========================================================================
 // UTILITY FUNCTIONS
 // ========================================================================
 function getNextGameNumber() {
@@ -4567,7 +4705,7 @@ function computeBattingStats(filterOwner, minGames, filterStadium, filterHomeAwa
   filterHomeAway = filterHomeAway || 'all';
   const players = allPlayers().filter(p => filterOwner === 'all' || p.owner === filterOwner);
   return players.map(p => {
-    let games=0, ab=0, hits=0, rbi=0, hr=0, sb=0, specials=0, bigPlays=0;
+    let games=0, ab=0, hits=0, rbi=0, hr=0, sb=0, specials=0, bigPlays=0, bb=0;
     State.data.games.forEach(g => {
       if (!g.playerStats) return;
       if (filterStadium !== 'all' && g.stadium !== filterStadium) return;
@@ -4584,8 +4722,9 @@ function computeBattingStats(filterOwner, minGames, filterStadium, filterHomeAwa
       sb += ps.sb || 0;
       specials += ps.specials || 0;
       bigPlays += ps.bigPlays || 0;
+      bb += ps.bb || 0;
     });
-    return { name: p.name, owner: p.owner, games, ab, hits, rbi, hr, sb, specials, bigPlays, avg: ab > 0 ? hits/ab : 0 };
+    return { name: p.name, owner: p.owner, games, ab, hits, rbi, hr, sb, specials, bigPlays, bb, avg: ab > 0 ? hits/ab : 0, obp: (ab + bb) > 0 ? (hits + bb) / (ab + bb) : 0 };
   }).filter(p => p.games >= minGames);
 }
 
@@ -5546,7 +5685,10 @@ function deleteGame(gameNum) {
       return;
     }
   }
-  if (!confirm('Delete Game ' + gameNum + '? This cannot be undone.')) return;
+  if (!confirm('Delete Game ' + gameNum + '?')) return;
+  pushUndo(`delete Game ${gameNum}`);
+  State.data.deletedGames = State.data.deletedGames || {};
+  State.data.deletedGames[gameNum] = new Date().toISOString();
   State.data.games = State.data.games.filter(g => g.gameNumber !== gameNum);
   delete State.data.lineups[gameNum];
   // Clean up injuries that occurred in the deleted game
@@ -5606,6 +5748,169 @@ function showScheduledLineup(gameNum) {
   </div>`;
 
   modal.classList.add('show');
+}
+
+// ========================================================================
+// AWARDS, RECORDS, MILESTONES — the payoff for entering the data.
+// ========================================================================
+function seasonAwards() {
+  const keys = getOwnerKeys();
+  const out = [];
+  const bar = battingQualifierBar();
+  const bats = computeBattingStats('all', 1).filter(s => s.ab >= (bar[s.owner] || 0));
+  const top = (arr, f, fmt, award, lowerBetter) => {
+    if (!arr.length) return;
+    const sorted = [...arr].sort((a, b) => lowerBetter ? f(a) - f(b) : f(b) - f(a));
+    const w = sorted[0];
+    if (f(w) === 0 && !lowerBetter) return;
+    out.push({ award, player: w.name, owner: w.owner, value: fmt(f(w)) });
+  };
+  top(bats, s => s.avg, v => v.toFixed(3).replace(/^0/, ''), 'Batting title');
+  top(bats, s => s.hr, v => v + ' HR', 'Home run king');
+  top(bats, s => s.rbi, v => v + ' RBI', 'RBI leader');
+  top(bats, s => s.sb, v => v + ' SB', 'Stolen base leader');
+  const gamesWithStats = State.data.games.filter(g => g.playerStats && Object.keys(g.playerStats).length).length;
+  const minIP = Math.max(3, Math.round(gamesWithStats / 3));
+  const arms = computePitchingStats('all').filter(s => s.ip >= minIP);
+  top(arms, s => s.era, v => v.toFixed(2) + ' ERA', 'ERA title', true);
+  top(computePitchingStats('all'), s => s.strikeouts, v => v + ' K', 'Strikeout leader');
+  const mvps = {};
+  State.data.games.forEach(g => { if (g.mvp) mvps[g.mvp] = (mvps[g.mvp] || 0) + 1; });
+  const mvpTop = Object.entries(mvps).sort((a, b) => b[1] - a[1])[0];
+  if (mvpTop) out.push({ award: 'MVP leader', player: mvpTop[0], owner: getPlayerOwner(mvpTop[0]), value: mvpTop[1] + ' MVP' + (mvpTop[1] === 1 ? '' : 's') });
+  const wins = {};
+  State.data.games.forEach(g => { keys.forEach(k => { const sp = getGameSP(g, k); if (sp && g.winner === k) { wins[k + '_' + sp] = (wins[k + '_' + sp] || 0) + 1; } }); });
+  const wTop = Object.entries(wins).sort((a, b) => b[1] - a[1])[0];
+  if (wTop) { const i = wTop[0].indexOf('_'); out.push({ award: 'Winningest starter', player: wTop[0].slice(i + 1), owner: wTop[0].slice(0, i), value: wTop[1] + ' W' }); }
+  return out;
+}
+
+function seasonRecords() {
+  const keys = getOwnerKeys();
+  const R = [];
+  const set = (label, value, holder, game, fmt) => { if (value > 0) R.push({ label, value, holder, game, text: (fmt || (v => v))(value) }); };
+  let mostRuns = null, biggest = null, slug = null;
+  State.data.games.forEach(g => {
+    const parts = g.away ? [g.home, g.away] : keys;
+    const sc = gameScoresOf(g, keys);
+    parts.forEach(k => { if (!mostRuns || (sc[k] || 0) > mostRuns.value) mostRuns = { value: sc[k] || 0, holder: k, game: g.gameNumber }; });
+    const a = sc[parts[0]] || 0, b = sc[parts[1]] || 0;
+    if (!biggest || Math.abs(a - b) > biggest.value) biggest = { value: Math.abs(a - b), holder: g.winner, game: g.gameNumber };
+    if (!slug || a + b > slug.value) slug = { value: a + b, holder: null, game: g.gameNumber };
+  });
+  if (mostRuns) set('Most runs, one game', mostRuns.value, CONFIG.OWNERS[mostRuns.holder]?.name || mostRuns.holder, mostRuns.game, v => v + ' runs');
+  if (biggest) set('Biggest win', biggest.value, CONFIG.OWNERS[biggest.holder]?.name || biggest.holder, biggest.game, v => 'by ' + v);
+  if (slug) set('Highest-scoring game', slug.value, null, slug.game, v => v + ' total runs');
+  keys.forEach(k => set(`${CONFIG.OWNERS[k].name}'s longest win streak`, getLongestStreak(k, 'all', 'all'), CONFIG.OWNERS[k].name, null, v => v + ' straight'));
+  const single = { hits: null, hr: null, rbi: null, strikeouts: null, sb: null };
+  State.data.games.forEach(g => {
+    if (!g.playerStats) return;
+    Object.entries(g.playerStats).forEach(([key, ps]) => {
+      const name = key.slice(key.indexOf('_') + 1);
+      Object.keys(single).forEach(f => { const v = ps[f] || 0; if (v > 0 && (!single[f] || v > single[f].value)) single[f] = { value: v, holder: name, game: g.gameNumber }; });
+    });
+  });
+  const lbl = { hits: 'Most hits, one game', hr: 'Most home runs, one game', rbi: 'Most RBI, one game', strikeouts: 'Most strikeouts, one game', sb: 'Most steals, one game' };
+  Object.keys(single).forEach(f => { if (single[f]) set(lbl[f], single[f].value, single[f].holder, single[f].game); });
+  return R;
+}
+
+// Snapshot of everything a new game or stat line could change.
+const MILESTONES = { hits: [25, 50, 75, 100, 150, 200], hr: [5, 10, 15, 20, 25, 30, 40, 50], rbi: [25, 50, 75, 100, 150], strikeouts: [25, 50, 75, 100, 150, 200], sb: [10, 25, 50] };
+const WIN_MILESTONES = [10, 25, 50, 75, 100];
+function playerTotals() {
+  const t = {};
+  State.data.games.forEach(g => {
+    if (!g.playerStats) return;
+    Object.entries(g.playerStats).forEach(([key, ps]) => {
+      const x = t[key] = t[key] || { hits: 0, hr: 0, rbi: 0, strikeouts: 0, sb: 0 };
+      Object.keys(x).forEach(f => x[f] += ps[f] || 0);
+    });
+  });
+  return t;
+}
+function momentsBaseline() {
+  const wins = {}; getOwnerKeys().forEach(k => wins[k] = getRecord(k, 'all', 'all').w);
+  return { records: seasonRecords(), awards: seasonAwards(), totals: playerTotals(), wins };
+}
+function momentsDiff(before, gameNum) {
+  const out = [];
+  const after = momentsBaseline();
+  // records set or broken by THIS game
+  after.records.forEach(r => {
+    if (r.game !== gameNum && r.game !== null) return;
+    const prev = before.records.find(b => b.label === r.label);
+    if (!prev || r.value > prev.value) out.push({ kind: 'record', text: `${r.label}: ${r.text}${r.holder ? ` — ${r.holder}` : ''}${prev ? ` (was ${prev.text})` : ''}`, game: gameNum });
+  });
+  // award holders that changed hands
+  after.awards.forEach(a => {
+    const prev = before.awards.find(b => b.award === a.award);
+    if (prev && prev.player !== a.player) out.push({ kind: 'award', text: `${a.player} takes the ${a.award.toLowerCase()} (${a.value}) from ${prev.player}`, player: a.player, game: gameNum });
+  });
+  // player milestones crossed
+  Object.entries(after.totals).forEach(([key, t]) => {
+    const b = before.totals[key] || { hits: 0, hr: 0, rbi: 0, strikeouts: 0, sb: 0 };
+    const name = key.slice(key.indexOf('_') + 1);
+    const word = { hits: 'hit', hr: 'home run', rbi: 'RBI', strikeouts: 'strikeout', sb: 'stolen base' };
+    Object.entries(MILESTONES).forEach(([f, marks]) => {
+      marks.forEach(m => { if (b[f] < m && t[f] >= m) out.push({ kind: 'milestone', text: `${name}: ${ordinal(m)} ${word[f]} of the season`, player: name, game: gameNum }); });
+    });
+  });
+  // owner win milestones
+  Object.entries(after.wins).forEach(([k, w]) => {
+    WIN_MILESTONES.forEach(m => { if ((before.wins[k] || 0) < m && w >= m) out.push({ kind: 'milestone', text: `${CONFIG.OWNERS[k].name}'s ${ordinal(m)} win of the season`, game: gameNum }); });
+  });
+  return out;
+}
+function recordMoments(list) {
+  if (!list.length) return;
+  State.data.moments = State.data.moments || [];
+  list.forEach(m => State.data.moments.push({ ...m, at: new Date().toISOString() }));
+  while (State.data.moments.length > 200) State.data.moments.shift();
+  State.save();
+  showMoments(list);
+}
+// A stack of cards that stays until dismissed — a 3-second toast would be gone
+// before the injury roll finished.
+function showMoments(list) {
+  let box = document.getElementById('moments');
+  if (!box) { box = document.createElement('div'); box.id = 'moments'; document.body.appendChild(box); }
+  list.forEach(m => {
+    const el = document.createElement('div');
+    el.className = 'moment ' + m.kind;
+    el.innerHTML = `<span class="moment-icon">${m.kind === 'record' ? '&#127942;' : m.kind === 'award' ? '&#127941;' : '&#11088;'}</span>
+      ${m.player && MUGSHOTS[m.player] ? pImg(m.player, 'player-img-sm') : ''}<span class="moment-text">${escapeHtml(m.text)}</span>
+      <button class="moment-x" onclick="this.parentElement.remove()">&times;</button>`;
+    box.appendChild(el);
+  });
+}
+function renderAwards() {
+  const el = document.getElementById('trendAwards');
+  if (!el) return;
+  const aw = seasonAwards();
+  el.innerHTML = aw.length ? `<div class="award-grid" style="--cols:${balancedCols(aw.length, 4)}">${aw.map(a => `<div class="award">
+      <div class="award-name">${a.award}</div>
+      ${pImg(a.player, 'award-face')}
+      <div class="award-player" style="color:${a.owner ? getOwnerColor(a.owner) : '#f5f5f7'}">${escapeHtml(a.player)}</div>
+      <div class="award-val">${a.value}</div>
+    </div>`).join('')}</div>` : '<div class="pp-empty">Awards appear once box scores are entered.</div>';
+}
+function renderRecords() {
+  const el = document.getElementById('trendRecords');
+  if (!el) return;
+  const R = seasonRecords();
+  el.innerHTML = R.length ? `<div class="rec-list">${R.map(r => `<div class="rec-row"${r.game ? ` onclick="showGameDetail(${r.game})" style="cursor:pointer"` : ''}>
+      <span class="rec-label">${r.label}</span><b class="rec-val">${r.text}</b>
+      <span class="rec-who">${r.holder && MUGSHOTS[r.holder] ? pImg(r.holder, 'player-img-sm') : ''}${r.holder ? escapeHtml(r.holder) : ''}${r.game ? `<span class="rec-game">Game ${r.game}</span>` : ''}</span>
+    </div>`).join('')}</div>` : '<div class="pp-empty">No games yet.</div>';
+  const mo = document.getElementById('trendMoments');
+  if (mo) {
+    const list = [...(State.data.moments || [])].reverse().slice(0, 12);
+    mo.innerHTML = list.length ? list.map(m => `<div class="rec-row" onclick="showGameDetail(${m.game})" style="cursor:pointer">
+        <span class="moment-icon">${m.kind === 'record' ? '&#127942;' : m.kind === 'award' ? '&#127941;' : '&#11088;'}</span>
+        <span class="rec-label" style="text-transform:none;letter-spacing:0;color:#d2d2d7;font-weight:500">${escapeHtml(m.text)}</span><span class="rec-game">Game ${m.game}</span>
+      </div>`).join('') : '<div class="pp-empty">Milestones and broken records will show up here as you save games.</div>';
+  }
 }
 
 // ========================================================================
@@ -6092,7 +6397,11 @@ function saveGame() {
   let winner = homeKey;
   keys.forEach(k => { if (scores[k] > scores[winner]) winner = k; });
 
+  pushUndo(`${existing ? 'edit' : 'save'} Game ${num}`);
+  const before = existing ? null : momentsBaseline();
+
   const game = {
+    savedAt: new Date().toISOString(),
     gameNumber: num,
     date: document.getElementById('gameDate').value,
     stadium: document.getElementById('gameStadium').value,
@@ -6115,6 +6424,7 @@ function saveGame() {
   State.save();
   const scoreDisplay = keys.map(k => scores[k]).join('-');
   showToast(`Game ${num} ${existing ? 'updated' : 'saved'}! ${CONFIG.OWNERS[game.winner].name} wins ${scoreDisplay}`);
+  if (before) recordMoments(momentsDiff(before, num));
 
   // Proceed to injury roll step (never on edits, or if this game was already rolled)
   if (existing || State.data.injuryRolls[num]) {
@@ -6225,6 +6535,7 @@ function performInjuryRoll(gameNum) {
     gamesOut: gamesOut,
     returnGame: gameNum + gamesOut
   };
+  pushUndo(`injury: ${injury.player}`);
   State.data.injuryRolls[gameNum] = true;
   State.data.injuries.push(injury);
   State.save();
@@ -6307,13 +6618,14 @@ function renderBattingLeaderboard() {
       <td class="text-center">${s.ab}</td>
       <td class="text-center">${s.hits}</td>
       <td class="text-center" style="font-weight:700">${formatAvg(s.hits, s.ab)}</td>
+      <td class="text-center" style="color:${s.bb ? '#f5f5f7' : '#6e6e73'}">${s.bb ? s.obp.toFixed(3).replace(/^0/, '') : formatAvg(s.hits, s.ab)}</td>
       <td class="text-center">${s.rbi}</td>
       <td class="text-center">${s.hr}</td>
       <td class="text-center">${s.sb}</td>
       <td class="text-center">${s.specials}</td>
       <td class="text-center">${s.bigPlays}</td>
     </tr>
-  `).join('') || '<tr><td colspan="12" style="text-align:center;color:#6e6e73;padding:20px">No stats entered yet. Use "Enter Stats" to add player data for each game.</td></tr>';
+  `).join('') || '<tr><td colspan="13" style="text-align:center;color:#6e6e73;padding:20px">No stats entered yet. Use "Enter Stats" to add player data for each game.</td></tr>';
 
   document.querySelectorAll('#battingTable thead th').forEach(th => {
     th.classList.remove('sorted-asc','sorted-desc');
@@ -6504,6 +6816,7 @@ function renderStatsEntry(gameNum) {
       <td><input type="number" class="s-sb" min="0" value="${ps.sb||0}"></td>
       <td><input type="number" class="s-specials" min="0" value="${ps.specials||0}"></td>
       <td><input type="number" class="s-bigPlays" min="0" value="${ps.bigPlays||0}"></td>
+      <td><input type="number" class="s-bb" min="0" value="${ps.bb||0}" style="width:50px" title="Walks — the game doesn't show these; add them if you noticed one (unlocks on-base %)"></td>
       <td><input type="number" class="s-ip" min="0" step="0.1" value="${existingIP}" style="width:55px" title="Innings pitched — .1 = one out, .2 = two outs"></td>
       <td><input type="number" class="s-hitsAllowed" min="0" value="${ps.hitsAllowed||0}" style="width:50px"></td>
       <td><input type="number" class="s-strikeouts" min="0" value="${ps.strikeouts||0}" style="width:50px"></td>
@@ -6513,7 +6826,7 @@ function renderStatsEntry(gameNum) {
   }
 
   const thRow = `<tr>
-    <th>Player</th><th title="Hits">H</th><th title="Batting Avg. as shown on the game screen">AVG</th><th title="At-Bats — derived from H ÷ AVG">AB</th><th title="Runs Batted In">RBI</th><th title="Home Runs">HR</th><th title="Stolen Bases">SB</th><th title="Specials Used">SPEC</th><th title="Big Plays">BIG</th>
+    <th>Player</th><th title="Hits">H</th><th title="Batting Avg. as shown on the game screen">AVG</th><th title="At-Bats — derived from H ÷ AVG">AB</th><th title="Runs Batted In">RBI</th><th title="Home Runs">HR</th><th title="Stolen Bases">SB</th><th title="Specials Used">SPEC</th><th title="Big Plays">BIG</th><th title="Walks (optional — the game doesn't show them)">BB</th>
     <th title="Innings Pitched (.1 = 1 out, .2 = 2 outs)">IP</th><th title="Hits Allowed">HA</th><th title="Strikeouts">K</th><th title="Runs Allowed">RA</th><th title="Pitching Specials">PS</th>
   </tr>`;
 
@@ -6653,6 +6966,7 @@ function savePlayerStats(gameNum) {
       hits: hits, rbi: val('.s-rbi'), hr: val('.s-hr'),
       sb: val('.s-sb'), specials: val('.s-specials'), ab: ab,
       bigPlays: val('.s-bigPlays'),
+      bb: val('.s-bb'),
       pitched: pitched,
       hitsAllowed: pitched ? hitsAllowed : 0,
       strikeouts: pitched ? strikeouts : 0,
@@ -6671,7 +6985,10 @@ function savePlayerStats(gameNum) {
     return;
   }
 
+  pushUndo(`stats for Game ${gameNum}`);
+  const before = momentsBaseline();
   game.playerStats = stats;
+  game.savedAt = new Date().toISOString();
   // Save batting order from current row order in the DOM
   const battingOrder = {};
   document.querySelectorAll('#statsEntryArea tr[data-key]').forEach(row => {
@@ -6686,6 +7003,7 @@ function savePlayerStats(gameNum) {
   renderPitchingLeaderboard();
   renderStatsGameSelect();
   showToast(`Player stats saved for Game ${gameNum}`);
+  recordMoments(momentsDiff(before, gameNum));
 }
 
 // ========================================================================
@@ -6797,6 +7115,7 @@ function rollInjury() {
 function confirmInjury() {
   if (!pendingInjury) return;
   const nextGame = getNextGameNumber();
+  pushUndo(`injury: ${pendingInjury.player}`);
   State.data.injuries.push({
     player: pendingInjury.player,
     owner: pendingInjury.owner,
@@ -6818,6 +7137,7 @@ function addManualInjury() {
   const gamesOut = parseInt(document.getElementById('manualInjGames').value) || 5;
   if (!player) { showToast('Select a player', true); return; }
   const nextGame = getNextGameNumber();
+  pushUndo(`injury: ${player}`);
   State.data.injuries.push({
     player, owner,
     injuredGame: nextGame > 1 ? nextGame - 1 : 1,
@@ -6829,8 +7149,12 @@ function addManualInjury() {
   showToast(`${player} added to injury list`);
 }
 
+function injuryKey(i) { return `${i.owner}|${i.player}|${i.injuredGame}`; }
 function removeInjury(idx) {
   if (idx < 0) return;
+  const inj = State.data.injuries[idx];
+  pushUndo(`remove injury: ${inj ? inj.player : ''}`);
+  if (inj) { State.data.deletedInjuries = State.data.deletedInjuries || {}; State.data.deletedInjuries[injuryKey(inj)] = new Date().toISOString(); }
   State.data.injuries.splice(idx, 1);
   State.save();
   renderInjuries();
@@ -7377,7 +7701,7 @@ function confirmLineup() {
     players[k] = [...(wizardState.picks[k] || []), ...(wizardState.random[k] || [])];
     sps[k] = wizardState.sps[k];
   });
-  State.data.lineups[gn] = { gameNumber: gn, players, sps };
+  State.data.lineups[gn] = { gameNumber: gn, players, sps, savedAt: new Date().toISOString() };
   State.save();
   showToast('Lineup saved for Game ' + gn);
 
@@ -7606,7 +7930,7 @@ function renderTrends() {
   const empty = document.getElementById('trendsEmpty');
   if (!empty) return;
   const games = [...State.data.games].sort((a, b) => a.gameNumber - b.gameNumber);
-  const cards = ['trendPaceCard', 'trendHotCard', 'trendStripCard', 'trendRunDiffCard', 'trendMvpCard', 'trendAvgCard', 'trendEloCard', 'trendStadiumCard'];
+  const cards = ['trendPaceCard', 'trendAwardsCard', 'trendRecordsCard', 'trendMomentsCard', 'trendHotCard', 'trendStripCard', 'trendRunDiffCard', 'trendMvpCard', 'trendAvgCard', 'trendEloCard', 'trendStadiumCard'];
   if (!games.length) {
     empty.style.display = 'block';
     cards.forEach(id => document.getElementById(id).style.display = 'none');
@@ -7615,6 +7939,8 @@ function renderTrends() {
   empty.style.display = 'none';
   cards.forEach(id => document.getElementById(id).style.display = '');
   renderSeasonPace();
+  renderAwards();
+  renderRecords();
   renderWhosHot();
   const keys = getOwnerKeys();
 
@@ -7752,6 +8078,7 @@ function renderAll() {
   renderWorldSeries();
   renderSummary();
   renderGameLog();
+  renderUndoButton();
   renderSchedule();
   renderTrends();
   renderBattingLeaderboard();
@@ -8500,6 +8827,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (sessionStorage.getItem('msb_pulled')) {
     sessionStorage.removeItem('msb_pulled');
     Sync.setStatus('synced', 'just now');
+    if (sessionStorage.getItem('msb_merged')) { sessionStorage.removeItem('msb_merged'); setTimeout(() => showToast('Merged changes from another device — nothing was lost'), 600); }
   } else {
     Sync.init();
   }

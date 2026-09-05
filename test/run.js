@@ -185,6 +185,27 @@ check('probabilities sum to one across home/away', Math.abs(T(`winProbability('j
 const mu = T(`matchupCard(getSchedule(21))`);
 check('matchup card renders rating, form, park and win probability', /Rating/.test(mu) && /Last 10/.test(mu) && /Mario Stadium/.test(mu) && /win probability/.test(mu));
 
+section('Awards, records, merge, undo');
+T(`selectSeason('S2')`);
+const aw = T(`seasonAwards()`);
+check('season awards include a batting title and MVP leader', aw.some(a => a.award === 'Batting title') && aw.some(a => a.award === 'MVP leader'), aw.map(a => a.award));
+const rec = T(`seasonRecords()`);
+check('season records include most runs, biggest win and a single-game hits record', ['Most runs, one game', 'Biggest win', 'Most hits, one game'].every(l => rec.some(r => r.label === l)), rec.map(r => r.label));
+const mergeRes = T(`(() => {
+  const g = (n, savedAt, extra) => Object.assign({ gameNumber: n, home: 'jason', away: 'dan', scores: { jason: 3, dan: 1 }, winner: 'jason', mvp: 'Mario', savedAt }, extra || {});
+  const local = { updatedAt: 'a', seasons: [{ id: 'S9', leagueId: 'L1', owners: { jason: {}, dan: {} } }], leagues: [{ id: 'L1' }], tombstones: {},
+    data: { S9: { games: [g(1, '2026-01-01T00:00:00Z'), g(2, '2026-01-03T00:00:00Z', { notes: 'local edit' })], lineups: {}, injuries: [{ owner: 'jason', player: 'Mario', injuredGame: 1, gamesOut: 2, returnGame: 3 }], injuryRolls: { 1: true }, deletedGames: { 4: '2026-01-05T00:00:00Z' } } } };
+  const cloud = { updatedAt: 'b', seasons: [{ id: 'S9', leagueId: 'L1', owners: { jason: {}, dan: {} } }], leagues: [{ id: 'L1' }], tombstones: {},
+    data: { S9: { games: [g(1, '2026-01-01T00:00:00Z'), g(2, '2026-01-02T00:00:00Z', { notes: 'cloud edit' }), g(3, '2026-01-04T00:00:00Z'), g(4, '2026-01-04T00:00:00Z')], lineups: {}, injuries: [{ owner: 'jason', player: 'Mario', injuredGame: 1, gamesOut: 2, returnGame: 3 }, { owner: 'dan', player: 'Bowser', injuredGame: 2, gamesOut: 5, returnGame: 7 }], injuryRolls: { 2: true } } } };
+  const m = mergeSnapshots(local, cloud).data.S9;
+  return { nums: m.games.map(x => x.gameNumber), g2: m.games.find(x => x.gameNumber === 2).notes, inj: m.injuries.length, rolls: Object.keys(m.injuryRolls).length };
+})()`);
+check('merge keeps games from both devices and drops the deleted one', mergeRes.nums.join() === '1,2,3', mergeRes);
+check('merge: newer save of the same game wins', mergeRes.g2 === 'local edit', mergeRes);
+check('merge: injuries dedupe by key, rolls union', mergeRes.inj === 2 && mergeRes.rolls === 2, mergeRes);
+const undoRes = T(`(() => { localStorage.removeItem(undoKey()); const n = State.data.games.length; pushUndo('test'); State.data.games.push({ gameNumber: 999, home: 'jason', away: 'dan', scores: { jason: 1, dan: 0 }, winner: 'jason', mvp: 'Mario' }); const st = undoStack(); const last = st.pop(); State.data = JSON.parse(last.data); localStorage.setItem(undoKey(), JSON.stringify(st)); return { before: n, after: State.data.games.length, label: last.label }; })()`);
+check('undo snapshot restores the season exactly', undoRes.before === undoRes.after && undoRes.label === 'test', undoRes);
+
 section('Leagues');
 T(`LeagueManager.migrate()`);
 const lgs = T(`LeagueManager.list()`);
