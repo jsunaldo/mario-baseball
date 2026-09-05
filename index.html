@@ -5593,6 +5593,7 @@ function showGameDetail(gameNum) {
   const hasStats = !!game.playerStats;
   const actions = [];
   actions.push(`<button class="btn btn-secondary" style="font-size:0.8rem;" onclick="closeGameDetail();editGameResult(${game.gameNumber})">Edit Result</button>`);
+  actions.push(`<button class="btn btn-secondary" style="font-size:0.8rem;" onclick="shareGameCard(${game.gameNumber})">Share card</button>`);
   if (hasStats) {
     actions.push(`<button class="btn btn-secondary" style="font-size:0.8rem;" onclick="goToStatsEntry(${game.gameNumber})">Edit Player Stats</button>`);
   }
@@ -5630,6 +5631,76 @@ function showGameDetail(gameNum) {
 
   body.innerHTML = html;
   modal.classList.add('show');
+}
+
+// ---- Shareable game card: a 1200x630 PNG drawn on a canvas, handed to the
+// system share sheet where available (iPad), otherwise opened in a new tab.
+function loadImg(src) { return new Promise(res => { if (!src) return res(null); const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = src; }); }
+async function shareGameCard(gameNum) {
+  const game = State.data.games.find(g => g.gameNumber === gameNum);
+  if (!game) return;
+  const keys = game.away ? [game.home, game.away] : getOwnerKeys();
+  const W = 1200, H = 630;
+  const c = document.createElement('canvas'); c.width = W; c.height = H;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#0a0a0c'; ctx.fillRect(0, 0, W, H);
+  const bg = await loadImg(sImgLg(game.stadium));
+  if (bg) {
+    const sc = Math.max(W / bg.width, H / bg.height);
+    const w = bg.width * sc, h = bg.height * sc;
+    ctx.drawImage(bg, (W - w) / 2, (H - h) * 0.42, w, h);
+  }
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, 'rgba(0,0,0,0.35)'); grad.addColorStop(0.55, 'rgba(0,0,0,0.6)'); grad.addColorStop(1, 'rgba(10,10,12,0.96)');
+  ctx.fillStyle = grad; ctx.fillRect(0, 0, W, H);
+  const font = (px, weight = 700) => { ctx.font = `${weight} ${px}px -apple-system, Helvetica Neue, Helvetica, Arial, sans-serif`; };
+  ctx.textBaseline = 'alphabetic';
+  // header line
+  const label = game.gameNumber > CONFIG.TOTAL_GAMES ? `WORLD SERIES GAME ${game.gameNumber - CONFIG.TOTAL_GAMES}` : `GAME ${game.gameNumber}`;
+  font(26, 700); ctx.fillStyle = '#c7c7cc'; ctx.textAlign = 'left';
+  ctx.fillText(`${label}  ·  ${game.stadium.toUpperCase()}  ·  ${formatDate(game.date).toUpperCase()}`, 60, 80);
+  // scoreline
+  const [a, b] = keys;
+  const sa = getGameScore(game, a), sb = getGameScore(game, b);
+  const na = CONFIG.OWNERS[a]?.name || a, nb = CONFIG.OWNERS[b]?.name || b;
+  const ca = getOwnerColor(a), cb = getOwnerColor(b);
+  const mid = W / 2, y = 300;
+  font(150, 800); ctx.textAlign = 'right'; ctx.fillStyle = game.winner === a ? ca : 'rgba(255,255,255,0.45)'; ctx.fillText(String(sa), mid - 60, y);
+  ctx.textAlign = 'left'; ctx.fillStyle = game.winner === b ? cb : 'rgba(255,255,255,0.45)'; ctx.fillText(String(sb), mid + 60, y);
+  font(70, 400); ctx.textAlign = 'center'; ctx.fillStyle = '#6e6e73'; ctx.fillText('–', mid, y - 10);
+  font(44, 800); ctx.textAlign = 'right'; ctx.fillStyle = ca; ctx.fillText(na, mid - 60 - ctx.measureText(String(sa)).width * 3.4 - 30, y);
+  ctx.textAlign = 'left'; ctx.fillStyle = cb; ctx.fillText(nb, mid + 60 + (() => { font(150, 800); const w = ctx.measureText(String(sb)).width; font(44, 800); return w; })() + 30, y);
+  // winner + MVP
+  font(30, 700); ctx.textAlign = 'center'; ctx.fillStyle = '#f5f5f7';
+  ctx.fillText(`${CONFIG.OWNERS[game.winner]?.name || game.winner} wins`, mid, 372);
+  if (game.mvp) {
+    const face = await loadImg(MUGSHOTS[game.mvp]);
+    const fx = mid - 200, fy = 420;
+    ctx.fillStyle = 'rgba(247,183,49,0.14)'; ctx.strokeStyle = 'rgba(247,183,49,0.7)'; ctx.lineWidth = 3;
+    roundRect(ctx, fx, fy, 400, 120, 22); ctx.fill(); ctx.stroke();
+    if (face) { ctx.imageSmoothingEnabled = false; ctx.drawImage(face, fx + 16, fy + 12, 96, 96); ctx.imageSmoothingEnabled = true; }
+    font(20, 800); ctx.textAlign = 'left'; ctx.fillStyle = '#f7b731'; ctx.fillText('★ MVP', fx + 130, fy + 50);
+    font(34, 800); ctx.fillStyle = '#f5f5f7'; ctx.fillText(game.mvp, fx + 130, fy + 92);
+  }
+  // starters + footer
+  const spa = getGameSP(game, a), spb = getGameSP(game, b);
+  font(22, 600); ctx.textAlign = 'center'; ctx.fillStyle = '#a1a1a6';
+  if (spa || spb) ctx.fillText(`SP  ${spa || '—'}  vs  ${spb || '—'}`, mid, 585);
+  font(18, 600); ctx.fillStyle = '#6e6e73'; ctx.textAlign = 'right';
+  ctx.fillText(`Mario Superstar Baseball · ${CONFIG.SEASON_NAME || ''}`, W - 50, H - 24);
+  c.toBlob(async blob => {
+    if (!blob) { showToast('Could not build the card', true); return; }
+    const file = new File([blob], `game-${gameNum}.png`, { type: 'image/png' });
+    try {
+      if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: `Game ${gameNum}` }); return; }
+    } catch (e) { if (e && e.name === 'AbortError') return; }
+    const url = URL.createObjectURL(blob);
+    const w = window.open(url, '_blank');
+    if (!w) { const aEl = document.createElement('a'); aEl.href = url; aEl.download = file.name; document.body.appendChild(aEl); aEl.click(); aEl.remove(); }
+  }, 'image/png');
+}
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
 }
 
 function goToStatsEntry(gameNum) {
@@ -8187,6 +8258,24 @@ function gameScoresOf(g, ownerKeys) {
   return s;
 }
 
+// Series results for any season (landing page runs without CONFIG set)
+function seriesResultsPure(meta, data) {
+  const keys = Object.keys(meta.owners); if (keys.length !== 2) return [];
+  const total = meta.totalGames || 162; const out = [];
+  for (let si = 0; si * 3 < total; si++) {
+    const nums = [1, 2, 3].map(n => si * 3 + n).filter(n => n <= total);
+    if (nums.length < 3) continue;
+    const played = nums.map(n => (data.games || []).find(g => g.gameNumber === n)).filter(Boolean);
+    if (played.length !== nums.length) continue;
+    const wins = {}; keys.forEach(k => wins[k] = 0);
+    played.forEach(g => { if (wins[g.winner] !== undefined) wins[g.winner]++; });
+    const [a, b] = keys;
+    const winner = wins[a] === wins[b] ? null : (wins[a] > wins[b] ? a : b);
+    out.push({ stadium: played[0].stadium, winner, sweep: winner !== null && wins[winner] === 3 });
+  }
+  return out;
+}
+
 function renderLeagueHistory(league) {
   const el = document.getElementById('leagueHistory_' + league.id);
   if (!el) return;
@@ -8305,6 +8394,40 @@ function renderLeagueHistory(league) {
               <span style="color:#86868b;white-space:nowrap;">${label}</span><span style="text-align:right;">${r.text}</span>
             </div>`).join('')}
         </div>
+        ${(() => {
+          // ---- rivalry: all-time by park + series across every season (2-owner leagues)
+          if (names.length !== 2) return '';
+          const byPark = {}; const ser = { won: {}, sweeps: {}, best: {}, cur: {} };
+          names.forEach(nm => { ser.won[nm] = 0; ser.sweeps[nm] = 0; ser.best[nm] = 0; ser.cur[nm] = 0; });
+          played.forEach(({ meta, data }) => {
+            const keys = Object.keys(meta.owners);
+            data.games.forEach(g => {
+              const parts = g.away ? [g.home, g.away] : keys;
+              const p = byPark[g.stadium] = byPark[g.stadium] || {}; names.forEach(nm => p[nm] = p[nm] || 0);
+              parts.forEach(k => { if (g.winner === k && meta.owners[k]) p[meta.owners[k].name]++; });
+            });
+            seriesResultsPure(meta, data).forEach(sr => {
+              const wn = sr.winner ? meta.owners[sr.winner].name : null;
+              names.forEach(nm => { if (wn === nm) { ser.won[nm]++; if (sr.sweep) ser.sweeps[nm]++; ser.cur[nm]++; if (ser.cur[nm] > ser.best[nm]) ser.best[nm] = ser.cur[nm]; } else ser.cur[nm] = 0; });
+            });
+          });
+          const [A, B] = names; const cA = OWNER_COLORS[0], cB = OWNER_COLORS[1];
+          const vs = (x, y) => `<span class="vs-line"><span class="vs-name" style="color:${cA}">${escapeHtml(A)}</span><b style="color:${cA}">${x}</b><span class="vs-dash">&ndash;</span><b style="color:${cB}">${y}</b><span class="vs-name" style="color:${cB}">${escapeHtml(B)}</span></span>`;
+          const parks = Object.keys(byPark);
+          return `<div class="lh-card lh-wide">
+            <div class="lh-title">Rivalry</div>
+            <div class="pace-grid cols-3" style="margin-bottom:14px;">
+              <div class="pace-cell"><div class="pace-label">Series won, all-time</div><div class="pace-val">${vs(ser.won[A], ser.won[B])}</div></div>
+              <div class="pace-cell"><div class="pace-label">Sweeps</div><div class="pace-val">${vs(ser.sweeps[A], ser.sweeps[B])}</div></div>
+              <div class="pace-cell"><div class="pace-label">Longest run of series wins</div><div class="pace-val">${vs(ser.best[A], ser.best[B])}</div></div>
+            </div>
+            <div class="park-grid" style="--cols:${parks.length % 3 === 0 ? 3 : (parks.length % 2 === 0 ? 2 : 3)}">${parks.map(st => {
+              const bg = STADIUM_IMGS_LG[st] || STADIUM_IMGS[st] || '';
+              return `<div class="park-card"><div class="park-card-img"${bg ? ` style="background-image:url('${bg}')"` : ''}><span>${escapeHtml(st)}</span></div>
+                <div class="park-card-body"><div class="park-line"><span class="lbl">All-time</span><span class="park-score">${vs(byPark[st][A], byPark[st][B])}</span></div></div></div>`;
+            }).join('')}</div>
+          </div>`;
+        })()}
         <div class="lh-card lh-wide">
           <div class="lh-title">Career Leaders</div>
           <div style="display:flex;gap:24px;flex-wrap:wrap;">
