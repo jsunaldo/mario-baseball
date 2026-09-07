@@ -1422,6 +1422,26 @@ body.readonly .sync-status { pointer-events: none; }
 .ns-draft-card { position: relative; }
 .ns-rank { position: absolute; top: 6px; left: 8px; font-size: 0.68rem; font-weight: 800; color: #86868b; }
 .ns-career { font-size: 0.68rem; color: #a1a1a6; margin: 2px 0 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Screenshot scanner */
+.scan-card { margin: 12px 0 16px; border: 1px dashed rgba(255,255,255,0.18); border-radius: 14px; padding: 0 16px; }
+.scan-card summary { cursor: pointer; padding: 12px 0; font-weight: 700; font-size: 1rem; list-style: none; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.scan-card summary::-webkit-details-marker { display: none; }
+.scan-card summary::before { content: '\25B8'; color: #86868b; }
+.scan-card[open] summary::before { content: '\25BE'; }
+.scan-beta { font-size: 0.66rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #ff9f0a; border: 1px solid rgba(255,159,10,0.5); border-radius: 6px; padding: 1px 6px; }
+.scan-body { padding: 4px 0 16px; }
+.scan-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+.scan-cols { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+.scan-cols-lbl { font-size: 0.78rem; color: #86868b; margin-right: 6px; }
+.scan-cols select { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: #f5f5f7; border-radius: 8px; padding: 5px 8px; font-size: 0.85rem; }
+.scan-status { min-height: 1.4em; font-size: 0.92rem; color: #a1a1a6; margin: 6px 0 10px; }
+.scan-result { border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 12px 14px; margin-bottom: 12px; background: rgba(255,255,255,0.02); }
+.scan-result-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; font-size: 0.95rem; }
+.scan-debug canvas { max-width: 100%; height: auto; border-radius: 8px; margin: 6px 0 10px; }
+.scan-table input.scan-val { width: 64px; padding: 4px 6px; font-size: 0.9rem; text-align: center; }
+.scan-table input.scan-val:disabled { opacity: 0.3; }
+.scan-conf { font-size: 0.7rem; color: #6e6e73; margin-left: 4px; }
+.scan-extra { font-size: 0.78rem; color: #6e6e73; white-space: nowrap; }
 /* Series banner in the game log */
 .series-tag { display: inline-block; font-size: 0.74rem; font-weight: 700; letter-spacing: 0.05em;
   text-transform: uppercase; color: #6e6e73; margin-right: 10px; }
@@ -1838,7 +1858,26 @@ body.picking .container { padding-left: 8px; padding-right: 8px; }
           </div>
         </div>
 
-        <!-- Screenshot scanner: upload the game's stat screens, AI fills the grid -->
+        <!-- Screenshot scanner (free, in-browser): portraits are matched against the
+             app's own mugshots, digits are read with Tesseract.js, and the result is a
+             review table you confirm into the grid. Nothing leaves the device. -->
+        <details class="scan-card edit-only" id="scanCard">
+          <summary>Scan screenshots <span class="scan-beta">beta</span><span class="card-sub" style="display:inline;margin:0 0 0 10px;">upload the game's stat screens, review, then fill the grid</span></summary>
+          <div class="scan-body">
+            <div class="scan-row">
+              <span class="seg" id="scanKindSeg">
+                <button type="button" class="on" data-kind="bat" onclick="scanSetKind('bat')">Batting screen</button>
+                <button type="button" data-kind="pit" onclick="scanSetKind('pit')">Pitching screen</button>
+              </span>
+              <label class="btn btn-primary" for="scanFiles">Choose screenshot&hellip;</label>
+              <input type="file" id="scanFiles" accept="image/*" multiple style="display:none" onchange="scanFilesChosen(this.files)">
+              <button type="button" class="btn btn-secondary btn-sm" onclick="scanSelfTest()" title="Builds a fake stat screen from the lineup and scans it, to prove the pipeline works on this device">Self-test</button>
+            </div>
+            <div class="scan-cols" id="scanCols"></div>
+            <div class="scan-status" id="scanStatus"></div>
+            <div id="scanResults"></div>
+          </div>
+        </details>
 
         <div id="statsEntryArea"></div>
       </div>
@@ -6928,6 +6967,7 @@ function renderPitchingLeaderboard() {
 // PLAYER STATS ENTRY
 // ========================================================================
 function renderStatsGameSelect() {
+  renderScanCols();
   const sel = document.getElementById('statsGameSelect');
   sel.innerHTML = '<option value="">-- Select a Game --</option>' +
     State.data.games.map(g => {
@@ -7120,6 +7160,358 @@ function renderStatsEntry(gameNum) {
 // Reads an AVG field. The game prints ".303"; people type "303" as often as
 // ".303", so whole numbers up to 1000 are taken as thousandths. Anything else
 // over 1 is not an average and is ignored rather than producing a silent 0 AB.
+// ========================================================================
+// SCREENSHOT SCANNER — free, in-browser.
+//   1. Portraits: each player in this game's lineups is a template; normalised
+//      cross-correlation on a downscaled grayscale copy finds where (and how big)
+//      each face appears. Rows = matches that line up in one column.
+//   2. Digits: the strip to the right of each portrait is enlarged, thresholded
+//      and read by Tesseract.js (loaded from a CDN on first use).
+//   3. Review: a table you can correct, then "Fill grid" writes the inputs.
+// The column order of the game's screens is a setting (scanCols) — set it once.
+// ========================================================================
+const SCAN_STATS = {
+  bat: [['hits', 'H'], ['avg', 'AVG'], ['rbi', 'RBI'], ['hr', 'HR'], ['sb', 'SB'], ['specials', 'SPEC'], ['bigPlays', 'BIG'], ['bb', 'BB'], ['', '(skip)']],
+  pit: [['ip', 'IP'], ['hitsAllowed', 'HA'], ['strikeouts', 'K'], ['runsAllowed', 'RA'], ['pitchSpecials', 'PS'], ['', '(skip)']]
+};
+let scanKind = 'bat';
+function scanCols(kind) {
+  try { const v = JSON.parse(localStorage.getItem('msb_scanCols_' + kind)); if (Array.isArray(v) && v.length) return v; } catch {}
+  return kind === 'bat' ? ['hits', 'avg', 'rbi', 'hr', 'sb', 'specials', 'bigPlays'] : ['ip', 'hitsAllowed', 'strikeouts', 'runsAllowed', 'pitchSpecials'];
+}
+function scanSetKind(k) { scanKind = k; document.querySelectorAll('#scanKindSeg button').forEach(b => b.classList.toggle('on', b.dataset.kind === k)); renderScanCols(); }
+function renderScanCols() {
+  const el = document.getElementById('scanCols'); if (!el) return;
+  const cols = scanCols(scanKind);
+  el.innerHTML = `<span class="scan-cols-lbl">Columns on the screen, left to right</span>` + cols.map((c, i) => `<select onchange="scanColChange(${i}, this.value)">${SCAN_STATS[scanKind].map(([v, l]) => `<option value="${v}"${v === c ? ' selected' : ''}>${l}</option>`).join('')}</select>`).join('')
+    + `<button type="button" class="btn btn-sm btn-secondary" onclick="scanColAdd()">+ column</button>${cols.length > 1 ? `<button type="button" class="btn btn-sm btn-secondary" onclick="scanColRemove()">&minus;</button>` : ''}`;
+}
+function scanColChange(i, v) { const c = scanCols(scanKind); c[i] = v; localStorage.setItem('msb_scanCols_' + scanKind, JSON.stringify(c)); }
+function scanColAdd() { const c = scanCols(scanKind); c.push(''); localStorage.setItem('msb_scanCols_' + scanKind, JSON.stringify(c)); renderScanCols(); }
+function scanColRemove() { const c = scanCols(scanKind); c.pop(); localStorage.setItem('msb_scanCols_' + scanKind, JSON.stringify(c)); renderScanCols(); }
+function scanStatus(msg) { const el = document.getElementById('scanStatus'); if (el) el.innerHTML = msg; }
+
+function scanGamePlayers() {
+  const gn = parseInt(document.getElementById('statsGameSelect')?.value);
+  const game = State.data.games.find(g => g.gameNumber === gn);
+  if (!game) return null;
+  const rows = [...document.querySelectorAll('#statsEntryArea tr[data-key]')].map(r => ({ player: r.dataset.player, owner: r.dataset.owner }));
+  return { game, players: rows };
+}
+function loadImageFrom(src) { return new Promise((res, rej) => { const im = new Image(); im.crossOrigin = 'anonymous'; im.onload = () => res(im); im.onerror = rej; im.src = src; }); }
+function toGray(ctx, w, h) {
+  const d = ctx.getImageData(0, 0, w, h).data, g = new Float32Array(w * h);
+  for (let i = 0, j = 0; i < d.length; i += 4, j++) g[j] = (d[i] * 0.299 + d[i + 1] * 0.587 + d[i + 2] * 0.114);
+  return g;
+}
+// Normalised template (zero mean, unit norm) at a given pixel size.
+function makeTemplate(img, size) {
+  const c = document.createElement('canvas'); c.width = size; c.height = size;
+  const ctx = c.getContext('2d'); ctx.fillStyle = '#101014'; ctx.fillRect(0, 0, size, size);
+  ctx.imageSmoothingEnabled = true; ctx.drawImage(img, 0, 0, size, size);
+  const g = toGray(ctx, size, size);
+  let mean = 0; for (const v of g) mean += v; mean /= g.length;
+  let norm = 0; for (let i = 0; i < g.length; i++) { g[i] -= mean; norm += g[i] * g[i]; }
+  norm = Math.sqrt(norm) || 1; for (let i = 0; i < g.length; i++) g[i] /= norm;
+  return g;
+}
+// Score map of template t (size s) over grayscale image g (w x h), using
+// integral images for the window statistics. Returns Float32Array (w*h).
+function scoreMap(g, w, h, sum, sq, t, s) {
+  const out = new Float32Array(w * h).fill(-1);
+  const n = s * s, W = w + 1;
+  for (let y = 0; y + s <= h; y++) {
+    for (let x = 0; x + s <= w; x++) {
+      const S = sum[(y + s) * W + (x + s)] - sum[y * W + (x + s)] - sum[(y + s) * W + x] + sum[y * W + x];
+      const Q = sq[(y + s) * W + (x + s)] - sq[y * W + (x + s)] - sq[(y + s) * W + x] + sq[y * W + x];
+      const varN = Q - S * S / n; if (varN < 1e-3) continue;
+      let dot = 0, k = 0;
+      for (let j = 0; j < s; j++) { const row = (y + j) * w + x; for (let i = 0; i < s; i++) dot += g[row + i] * t[k++]; }
+      out[y * w + x] = dot / Math.sqrt(varN); // t is zero-mean: Σ(I·t) == Σ((I-Ī)·t)
+    }
+  }
+  return out;
+}
+// Top-K local maxima of a score map, at least `sep` px apart.
+function topPeaks(map, w, h, K, sep, minScore) {
+  const idx = [];
+  for (let i = 0; i < map.length; i++) if (map[i] >= minScore) idx.push(i);
+  idx.sort((a, b) => map[b] - map[a]);
+  const out = [];
+  for (const i of idx) {
+    const x = i % w, y = Math.floor(i / w);
+    if (out.some(o => Math.abs(o.x - x) < sep && Math.abs(o.y - y) < sep)) continue;
+    out.push({ x, y, score: map[i] });
+    if (out.length >= K) break;
+  }
+  return out;
+}
+function integrals(g, w, h) {
+  const W = w + 1, sum = new Float64Array(W * (h + 1)), sq = new Float64Array(W * (h + 1));
+  for (let y = 1; y <= h; y++) { let rs = 0, rq = 0; for (let x = 1; x <= w; x++) { const v = g[(y - 1) * w + (x - 1)]; rs += v; rq += v * v; sum[y * W + x] = sum[(y - 1) * W + x] + rs; sq[y * W + x] = sq[(y - 1) * W + x] + rq; } }
+  return { sum, sq };
+}
+// Colour template: three zero-mean unit-norm channels. Colour is what tells a
+// Red Toad from a Green Toad, which grayscale cannot.
+function makeTemplateRGB(img, size) {
+  const c = document.createElement('canvas'); c.width = size; c.height = size;
+  const ctx = c.getContext('2d'); ctx.fillStyle = '#101014'; ctx.fillRect(0, 0, size, size);
+  ctx.drawImage(img, 0, 0, size, size);
+  const d = ctx.getImageData(0, 0, size, size).data;
+  return [0, 1, 2].map(ch => {
+    const t = new Float32Array(size * size);
+    let mean = 0; for (let i = 0; i < t.length; i++) { t[i] = d[i * 4 + ch]; mean += t[i]; } mean /= t.length;
+    let norm = 0; for (let i = 0; i < t.length; i++) { t[i] -= mean; norm += t[i] * t[i]; }
+    norm = Math.sqrt(norm) || 1; for (let i = 0; i < t.length; i++) t[i] /= norm;
+    return t;
+  });
+}
+// NCC of a colour template at one position, averaged over channels.
+function nccAt(chans, w, h, x, y, s, tpl) {
+  if (x < 0 || y < 0 || x + s > w || y + s > h) return -1;
+  const n = s * s; let total = 0;
+  for (let ch = 0; ch < 3; ch++) {
+    const g = chans[ch], t = tpl[ch];
+    let S = 0, Q = 0, dot = 0, k = 0;
+    for (let j = 0; j < s; j++) { const row = (y + j) * w + x; for (let i = 0; i < s; i++) { const v = g[row + i]; S += v; Q += v * v; dot += v * t[k++]; } }
+    const varN = Q - S * S / n; if (varN < 1e-3) return -1;
+    total += dot / Math.sqrt(varN);
+  }
+  return total / 3;
+}
+const yieldUI = () => new Promise(r => setTimeout(r, 0));
+
+async function findPortraits(fullCanvas, players, onProgress) {
+  const list = players.filter(p => MUGSHOTS[p.player]);
+  const imgs = {};
+  for (const p of list) { try { imgs[p.player] = await loadImageFrom(MUGSHOTS[p.player]); } catch {} }
+  // ---- stage 1: coarse grayscale — where are faces, roughly?
+  const D1 = 4;
+  const w1 = Math.floor(fullCanvas.width / D1), h1 = Math.floor(fullCanvas.height / D1);
+  const c1 = document.createElement('canvas'); c1.width = w1; c1.height = h1;
+  const x1 = c1.getContext('2d'); x1.drawImage(fullCanvas, 0, 0, w1, h1);
+  const g1 = toGray(x1, w1, h1);
+  const { sum, sq } = integrals(g1, w1, h1);
+  const sizes = [8, 10, 12, 14, 16, 18, 20].filter(s => s <= w1 && s <= h1);
+  let cands = [];
+  const bests = []; // each player's single best match — these find the portrait column
+  let done = 0;
+  for (const p of list) {
+    const img = imgs[p.player]; if (!img) continue;
+    let best = { score: -1 };
+    for (const s of sizes) {
+      const t = makeTemplate(img, s);
+      const map = scoreMap(g1, w1, h1, sum, sq, t, s);
+      const peaks = topPeaks(map, w1, h1, 2, Math.max(3, s / 2), 0.45);
+      peaks.forEach(pk => cands.push({ x: pk.x, y: pk.y, s, score: pk.score }));
+      if (peaks[0] && peaks[0].score > best.score) best = { ...peaks[0], s };
+    }
+    if (best.score > 0) bests.push(best);
+    done++; if (onProgress) onProgress(done, list.length);
+    await yieldUI();
+  }
+  if (!cands.length) return [];
+  // The portrait column is where the players' best matches agree (digits and
+  // logos can score well against a tiny grayscale face, but not in one column).
+  const colSrc = (bests.length >= 3 ? bests : cands).slice().sort((a, b) => b.score - a.score).slice(0, Math.max(3, Math.ceil(list.length * 0.6)));
+  const xs = colSrc.map(b => b.x).sort((a, b) => a - b);
+  const medX = xs[Math.floor(xs.length / 2)];
+  const sizesNear = colSrc.map(b => b.s).sort((a, b) => a - b); const medS = sizesNear[Math.floor(sizesNear.length / 2)];
+  // merge overlapping candidates near that column into distinct row boxes
+  cands = cands.filter(c => Math.abs(c.x - medX) <= medS * 0.6 && Math.abs(c.s - medS) <= 4).sort((a, b) => b.score - a.score);
+  const boxes = [];
+  cands.forEach(c => { if (!boxes.some(b => Math.abs(b.y - c.y) < medS * 0.6)) boxes.push({ x: medX, y: c.y, s: medS, score: c.score }); });
+  const rows = boxes.slice(0, list.length + 2).sort((a, b) => a.y - b.y);
+  if (!rows.length) return [];
+  // ---- stage 2: fine colour match of every player against every candidate box
+  const D2 = 2;
+  const w2 = Math.floor(fullCanvas.width / D2), h2 = Math.floor(fullCanvas.height / D2);
+  const c2 = document.createElement('canvas'); c2.width = w2; c2.height = h2;
+  const x2 = c2.getContext('2d'); x2.drawImage(fullCanvas, 0, 0, w2, h2);
+  const d2 = x2.getImageData(0, 0, w2, h2).data;
+  const chans = [0, 1, 2].map(ch => { const a = new Float32Array(w2 * h2); for (let i = 0; i < a.length; i++) a[i] = d2[i * 4 + ch]; return a; });
+  const tplCache = {};
+  const tpl = (name, s) => (tplCache[name + '|' + s] = tplCache[name + '|' + s] || makeTemplateRGB(imgs[name], s));
+  const M = []; // [{player, owner, row, score, x, y, s}]
+  rows.forEach((r, ri) => {
+    const bx = r.x * D1 / D2, by = r.y * D1 / D2, bs = r.s * D1 / D2;
+    list.forEach(p => {
+      if (!imgs[p.player]) return;
+      let best = { score: -1 };
+      for (const s of [bs - 2, bs, bs + 2]) {
+        if (s < 6) continue;
+        const t = tpl(p.player, s);
+        for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) {
+          const sc = nccAt(chans, w2, h2, bx + dx, by + dy, s, t);
+          if (sc > best.score) best = { score: sc, x: (bx + dx) * D2, y: (by + dy) * D2, s: s * D2 };
+        }
+      }
+      M.push({ ...p, row: ri, ...best });
+    });
+  });
+  // greedy one-to-one assignment: best scores first, each player and each row once
+  M.sort((a, b) => b.score - a.score);
+  const usedP = new Set(), usedR = new Set(), out = [];
+  M.forEach(m => {
+    if (m.score < 0.4 || usedP.has(m.player) || usedR.has(m.row)) return;
+    usedP.add(m.player); usedR.add(m.row);
+    out.push({ player: m.player, owner: m.owner, x: m.x, y: m.y, size: m.s, score: m.score });
+  });
+  return out.sort((a, b) => a.y - b.y);
+}
+
+let _tess = null;
+async function getTesseract() {
+  if (_tess) return _tess;
+  if (!window.Tesseract) {
+    await new Promise((res, rej) => { const sc = document.createElement('script'); sc.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js'; sc.onload = res; sc.onerror = () => rej(new Error('Could not load the OCR library — are you online?')); document.head.appendChild(sc); });
+  }
+  scanStatus('Loading the digit reader (first time only)&hellip;');
+  const worker = await Tesseract.createWorker('eng', 1, { logger: () => {} });
+  await worker.setParameters({ tessedit_char_whitelist: '0123456789.', tessedit_pageseg_mode: '7' });
+  _tess = worker;
+  return worker;
+}
+// Crop the numbers strip for a row, enlarge and binarise it, read the digits.
+async function readRowNumbers(fullCanvas, row) {
+  const pad = Math.round(row.size * 0.15);
+  const sx = Math.min(fullCanvas.width - 1, row.x + row.size + pad), sy = Math.max(0, row.y - pad);
+  const sw = fullCanvas.width - sx, sh = Math.min(fullCanvas.height - sy, row.size + pad * 2);
+  if (sw < 10 || sh < 6) return [];
+  const scale = Math.max(2, Math.min(4, 96 / sh));
+  const c = document.createElement('canvas'); c.width = Math.round(sw * scale); c.height = Math.round(sh * scale);
+  const ctx = c.getContext('2d'); ctx.imageSmoothingEnabled = true;
+  ctx.drawImage(fullCanvas, sx, sy, sw, sh, 0, 0, c.width, c.height);
+  // Otsu threshold to black-on-white, which Tesseract prefers
+  const d = ctx.getImageData(0, 0, c.width, c.height); const px = d.data;
+  const hist = new Array(256).fill(0); const gray = new Uint8Array(px.length / 4);
+  for (let i = 0, j = 0; i < px.length; i += 4, j++) { const v = Math.round(px[i] * 0.299 + px[i + 1] * 0.587 + px[i + 2] * 0.114); gray[j] = v; hist[v]++; }
+  const total = gray.length; let sumAll = 0; for (let i = 0; i < 256; i++) sumAll += i * hist[i];
+  let sumB = 0, wB = 0, maxVar = 0, thr = 128;
+  for (let i = 0; i < 256; i++) { wB += hist[i]; if (!wB) continue; const wF = total - wB; if (!wF) break; sumB += i * hist[i]; const mB = sumB / wB, mF = (sumAll - sumB) / wF; const v = wB * wF * (mB - mF) * (mB - mF); if (v > maxVar) { maxVar = v; thr = i; } }
+  // light text on dark background -> invert so digits are dark
+  let lightCount = 0; for (const v of gray) if (v > thr) lightCount++;
+  const textIsLight = lightCount < total / 2;
+  for (let i = 0, j = 0; i < px.length; i += 4, j++) { const on = textIsLight ? gray[j] > thr : gray[j] <= thr; const v = on ? 0 : 255; px[i] = px[i + 1] = px[i + 2] = v; px[i + 3] = 255; }
+  ctx.putImageData(d, 0, 0);
+  const worker = await getTesseract();
+  const { data } = await worker.recognize(c);
+  const toks = (data.text || '').replace(/[^0-9.\s]/g, ' ').trim().split(/\s+/).filter(t => t && t !== '.');
+  return toks.map(t => t.startsWith('.') ? parseFloat('0' + t) : parseFloat(t)).filter(v => !isNaN(v));
+}
+
+async function scanImage(src, label) {
+  const ctxInfo = scanGamePlayers();
+  if (!ctxInfo) { scanStatus('<span style="color:#ff453a">Pick the game first — the scanner matches faces against that game\'s lineups.</span>'); return null; }
+  const img = await loadImageFrom(src);
+  const maxW = 1400, sc = Math.min(1, maxW / img.width);
+  const full = document.createElement('canvas'); full.width = Math.round(img.width * sc); full.height = Math.round(img.height * sc);
+  full.getContext('2d').drawImage(img, 0, 0, full.width, full.height);
+  scanStatus(`${label}: finding portraits&hellip;`);
+  const rows = await findPortraits(full, ctxInfo.players, (d, n) => scanStatus(`${label}: matching faces ${d}/${n}&hellip;`));
+  if (!rows.length) { scanStatus(`<span style="color:#ff9f0a">${label}: no lineup portraits found. Is this the right game, and is the screenshot uncropped?</span>`); return { rows: [], full }; }
+  const out = [];
+  for (let i = 0; i < rows.length; i++) {
+    scanStatus(`${label}: reading row ${i + 1}/${rows.length} (${rows[i].player})&hellip;`);
+    let nums = []; try { nums = await readRowNumbers(full, rows[i]); } catch (e) { console.warn(e); scanStatus(`<span style="color:#ff453a">${e.message}</span>`); return { rows: out, full }; }
+    // A batting average read without its leading dot ("200") is thousandths.
+    const cols = scanCols(scanKind);
+    nums = nums.map((v, ci) => cols[ci] === 'avg' && v >= 1 && v <= 1000 && Number.isInteger(v) ? v / 1000 : v);
+    out.push({ ...rows[i], nums });
+  }
+  scanStatus(`${label}: ${out.length} row${out.length === 1 ? '' : 's'} read. Check the numbers, then fill the grid.`);
+  return { rows: out, full };
+}
+
+async function scanFilesChosen(files) {
+  if (!files || !files.length) return;
+  const results = document.getElementById('scanResults');
+  for (const f of [...files]) {
+    const url = URL.createObjectURL(f);
+    try { const r = await scanImage(url, f.name); if (r) renderScanReview(r, f.name); }
+    catch (e) { console.warn(e); scanStatus(`<span style="color:#ff453a">${escapeHtml(e.message || String(e))}</span>`); }
+    finally { URL.revokeObjectURL(url); }
+  }
+  document.getElementById('scanFiles').value = '';
+}
+
+function renderScanReview(result, label) {
+  const box = document.getElementById('scanResults');
+  const cols = scanCols(scanKind);
+  const labels = Object.fromEntries(SCAN_STATS[scanKind]);
+  const id = 'scan_' + Date.now();
+  // debug overlay: where the faces were found
+  const ov = document.createElement('canvas'); ov.width = result.full.width; ov.height = result.full.height;
+  const c = ov.getContext('2d'); c.drawImage(result.full, 0, 0);
+  c.lineWidth = 4; result.rows.forEach(r => { c.strokeStyle = getOwnerColor(r.owner); c.strokeRect(r.x, r.y, r.size, r.size); });
+  const rowsHtml = result.rows.map((r, ri) => `<tr data-owner="${r.owner}" data-player="${escapeHtml(r.player)}">
+      <td><span class="player-cell">${pImg(r.player, 'player-img-sm')}${escapeHtml(r.player)} <span class="scan-conf" title="face match confidence">${Math.round(r.score * 100)}%</span></span></td>
+      ${cols.map((col, ci) => `<td><input type="text" class="scan-val" data-col="${ci}" value="${r.nums[ci] !== undefined ? (col === 'avg' && r.nums[ci] < 1 ? r.nums[ci].toFixed(3).replace(/^0/, '') : r.nums[ci]) : ''}"${col ? '' : ' disabled'}></td>`).join('')}
+      <td class="scan-extra">${r.nums.length > cols.length ? '+' + (r.nums.length - cols.length) + ' more read' : (r.nums.length < cols.filter(Boolean).length ? '<span style="color:#ff9f0a">short row</span>' : '')}</td>
+    </tr>`).join('');
+  const wrap = document.createElement('div'); wrap.className = 'scan-result'; wrap.id = id;
+  wrap.innerHTML = `<div class="scan-result-head"><b>${escapeHtml(label)}</b> &middot; ${scanKind === 'bat' ? 'batting' : 'pitching'} screen &middot; ${result.rows.length} players
+      <button type="button" class="btn btn-sm btn-secondary" onclick="this.closest('.scan-result').querySelector('.scan-debug').hidden ^= true">Show matches</button>
+      <button type="button" class="btn btn-sm btn-secondary" onclick="document.getElementById('${id}').remove()">Discard</button></div>
+    <div class="scan-debug" hidden></div>
+    ${result.rows.length ? `<div class="table-wrap"><table class="stats-table scan-table"><thead><tr><th>Player</th>${cols.map(col => `<th class="text-center">${labels[col] || '—'}</th>`).join('')}<th></th></tr></thead><tbody>${rowsHtml}</tbody></table></div>
+    <div class="btn-group" style="margin-top:10px;"><button type="button" class="btn btn-success" onclick="applyScan('${id}','${scanKind}')">Fill grid with these</button></div>` : ''}`;
+  wrap.querySelector('.scan-debug').appendChild(ov);
+  box.prepend(wrap);
+}
+function applyScan(id, kind) {
+  const wrap = document.getElementById(id); if (!wrap) return;
+  const cols = scanCols(kind);
+  const map = { hits: '.s-hits', avg: '.s-avg', rbi: '.s-rbi', hr: '.s-hr', sb: '.s-sb', specials: '.s-specials', bigPlays: '.s-bigPlays', bb: '.s-bb', ip: '.s-ip', hitsAllowed: '.s-hitsAllowed', strikeouts: '.s-strikeouts', runsAllowed: '.s-runsAllowed', pitchSpecials: '.s-pitchSpecials' };
+  let filled = 0;
+  wrap.querySelectorAll('tbody tr').forEach(tr => {
+    const gridRow = document.querySelector(`#statsEntryArea tr[data-owner="${tr.dataset.owner}"][data-player="${tr.dataset.player.replace(/"/g, '\\"')}"]`);
+    if (!gridRow) return;
+    tr.querySelectorAll('.scan-val').forEach(inp => {
+      const col = cols[parseInt(inp.dataset.col)]; if (!col || !map[col] || inp.value === '') return;
+      const target = gridRow.querySelector(map[col]); if (!target) return;
+      target.value = inp.value; filled++;
+      if (col === 'hits' || col === 'avg') onStatsHitsOrAvg(target);
+    });
+  });
+  showToast(filled ? `Filled ${filled} values — review the grid, then Save Player Stats` : 'Nothing to fill — check the column map', !filled);
+  document.getElementById('statsEntryArea').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+// Draws a fake stat screen from this game's lineup and scans it: proves the
+// face matching and digit reading work on this device, independent of the game.
+async function scanSelfTest() {
+  const info = scanGamePlayers();
+  if (!info) { scanStatus('<span style="color:#ff453a">Pick the game first.</span>'); return; }
+  const players = info.players.filter(p => p.owner === info.players[0].owner).slice(0, 9);
+  const W = 1280, rowH = 64, H = 120 + players.length * rowH;
+  const c = document.createElement('canvas'); c.width = W; c.height = H; const ctx = c.getContext('2d');
+  ctx.fillStyle = '#1b2a4a'; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = '#e8e8ec'; ctx.font = '700 34px Helvetica, Arial, sans-serif'; ctx.fillText('SELF-TEST  BATTING', 40, 70);
+  const expected = [];
+  for (let i = 0; i < players.length; i++) {
+    const img = await loadImageFrom(MUGSHOTS[players[i].player]);
+    const y = 110 + i * rowH;
+    ctx.fillStyle = i % 2 ? '#22345a' : '#1b2a4a'; ctx.fillRect(0, y - 6, W, rowH);
+    ctx.imageSmoothingEnabled = false; ctx.drawImage(img, 60, y, 52, 52); ctx.imageSmoothingEnabled = true;
+    const nums = [1 + (i % 4), (0.2 + i * 0.05).toFixed(3).replace(/^0/, ''), i % 3, i % 2, (i * 7) % 4, i % 2, (i + 1) % 3];
+    expected.push(nums);
+    ctx.fillStyle = '#ffffff'; ctx.font = '600 30px Helvetica, Arial, sans-serif';
+    nums.forEach((v, k) => ctx.fillText(String(v), 200 + k * 130, y + 40));
+  }
+  const url = c.toDataURL('image/png');
+  const r = await scanImage(url, 'Self-test');
+  if (!r) return;
+  const got = r.rows.length, wantN = players.length;
+  let faceOK = 0, numOK = 0, numTotal = 0;
+  r.rows.forEach((row, ri) => {
+    const idx = players.findIndex(p => p.player === row.player);
+    if (idx === ri) faceOK++;
+    if (idx >= 0) expected[idx].forEach((v, k) => { numTotal++; const g = row.nums[k]; if (g !== undefined && Math.abs(parseFloat(v) - g) < 0.0015) numOK++; });
+  });
+  renderScanReview(r, 'Self-test');
+  scanStatus(`Self-test: ${faceOK}/${wantN} faces placed correctly, ${numOK}/${numTotal} numbers read correctly. ${faceOK === wantN && numOK === numTotal ? '<span style="color:#30d158">Pipeline OK on this device.</span>' : 'Real screenshots will be harder than this; treat the review table as a draft.'}`);
+}
+
 function readAvgInput(el) {
   let v = parseFloat(el.value);
   if (!isFinite(v) || v <= 0) return 0;
