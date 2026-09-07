@@ -9,6 +9,30 @@
 'use strict';
 const fs = require('fs'), path = require('path'), http = require('http');
 const { chromium } = require('playwright');
+// Pixel diffs against committed baselines (test/baselines/*.png). Missing
+// baseline = no comparison (the screenshot is still uploaded). Run with
+// UPDATE_BASELINES=1 to rewrite them.
+let PNG, pixelmatch;
+try { PNG = require('pngjs').PNG; pixelmatch = require('pixelmatch'); pixelmatch = pixelmatch.default || pixelmatch; } catch { /* optional */ }
+const BASE = path.join(__dirname, 'baselines');
+const UPDATE = process.env.UPDATE_BASELINES === '1';
+const DIFF_TOLERANCE = 0.006; // 0.6% of pixels may differ (fonts, antialiasing)
+function compareToBaseline(name, file) {
+  if (!PNG || !pixelmatch) return;
+  const basePath = path.join(BASE, name + '.png');
+  if (UPDATE || !fs.existsSync(basePath)) { fs.mkdirSync(BASE, { recursive: true }); fs.copyFileSync(file, basePath); ok(`${name}: baseline ${UPDATE ? 'updated' : 'created'}`); return; }
+  const a = PNG.sync.read(fs.readFileSync(basePath)), b = PNG.sync.read(fs.readFileSync(file));
+  if (a.width !== b.width || a.height !== b.height) {
+    // Height changes are legitimate when content grows; only flag width changes and note the rest.
+    if (a.width !== b.width) fail(`${name}: screenshot width changed ${a.width} -> ${b.width}`); else ok(`${name}: height changed ${a.height} -> ${b.height} (content grew; not compared)`);
+    return;
+  }
+  const diff = new PNG({ width: a.width, height: a.height });
+  const n = pixelmatch(a.data, b.data, diff.data, a.width, a.height, { threshold: 0.2 });
+  const pct = n / (a.width * a.height);
+  if (pct > DIFF_TOLERANCE) { fs.writeFileSync(path.join(OUT, name + '.diff.png'), PNG.sync.write(diff)); fail(`${name}: ${(pct * 100).toFixed(2)}% of pixels differ from baseline (see ${name}.diff.png)`); }
+  else ok(`${name}: matches baseline (${(pct * 100).toFixed(2)}% diff)`);
+}
 
 const ROOT = path.join(__dirname, '..');
 const fixture = fs.readFileSync(path.join(__dirname, 'fixtures', 'league.json'), 'utf8');
@@ -69,6 +93,10 @@ const ok = (m) => console.log('  ok   ' + m);
       r.overflow ? fail(`${label}: page scrolls horizontally`) : ok(`${label}: no horizontal overflow`);
       r.orphans.length ? fail(`${label}: orphan grid row — ${r.orphans.join('; ')}`) : ok(`${label}: no orphan grid rows`);
       await page.screenshot({ path: path.join(OUT, `${vp.name}-${tab}.png`), fullPage: true });
+      const shot = path.join(OUT, `${vp.name}-${tab}.view.png`);
+      await page.evaluate(() => window.scrollTo(0, 0));
+      await page.screenshot({ path: shot });
+      compareToBaseline(`${vp.name}-${tab}`, shot);
     }
     // Game detail + player page open without errors
     await page.evaluate(() => { showGameDetail(3); });

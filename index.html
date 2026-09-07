@@ -1389,6 +1389,39 @@ img.player-img, img.player-img-sm, img.player-img-md, img.player-img-lg, img.mvp
   .h2h-lbl { min-width: 90px; }
   .park-tile { min-width: 84px; } .park-tile img, .park-tile .pt-all { width: 76px; height: 50px; }
 }
+/* Read-only view */
+body.readonly .edit-only, body.readonly #btnAddGame, body.readonly .next-strip .ns-cta, body.readonly #btnUndo, body.readonly .settings-section,
+body.readonly .sub-tab[data-subtab="enterStats"], body.readonly #subtab-enterStats, body.readonly .season-card-delete, body.readonly .league-actions,
+body.readonly .league-new, body.readonly .sr-action, body.readonly .stats-table.tight button, body.readonly .sr-status.set, body.readonly .pred-block { display: none !important; }
+body.readonly .sync-status { pointer-events: none; }
+/* Predictions */
+.pred-block { margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.08); }
+.pred-title { font-size: 0.78rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #a1a1a6; margin-bottom: 8px; }
+.pred-title span { text-transform: none; letter-spacing: 0; font-weight: 500; color: #6e6e73; margin-left: 6px; }
+.pred-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 5px 0; }
+.pred-who { font-weight: 700; min-width: 90px; }
+.pred-score { display: inline-flex; align-items: center; gap: 6px; }
+.pred-score input { width: 52px; text-align: center; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #f5f5f7; padding: 5px 6px; font-size: 0.95rem; }
+.award-emoji { display: flex; align-items: center; justify-content: center; font-size: 2rem; }
+/* Time machine */
+.tm-card { padding: 12px 20px; }
+.tm-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.tm-label { font-size: 0.95rem; color: #a1a1a6; min-width: 200px; }
+.tm-row input[type=range] { flex: 1; min-width: 160px; accent-color: #2997ff; }
+/* Season story */
+.summary-story { margin-bottom: 18px; }
+.summary-story h4 { margin: 0 0 6px; font-size: 0.85rem; }
+.story p { margin: 0 0 10px; line-height: 1.6; font-size: 1rem; color: #e5e5ea; }
+/* Data audit */
+.audit-list { display: flex; flex-direction: column; }
+.audit-row { display: flex; align-items: flex-start; gap: 10px; padding: 9px 4px; border-top: 1px solid rgba(255,255,255,0.06); cursor: pointer; font-size: 0.95rem; }
+.audit-row:hover { background: rgba(255,255,255,0.04); }
+.audit-dot { width: 10px; height: 10px; border-radius: 50%; margin-top: 6px; flex: none; background: #6e6e73; }
+.audit-row.error .audit-dot { background: #ff453a; } .audit-row.warn .audit-dot { background: #ff9f0a; }
+/* Draft board value rank + career line */
+.ns-draft-card { position: relative; }
+.ns-rank { position: absolute; top: 6px; left: 8px; font-size: 0.68rem; font-weight: 800; color: #86868b; }
+.ns-career { font-size: 0.68rem; color: #a1a1a6; margin: 2px 0 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 /* Series banner in the game log */
 .series-tag { display: inline-block; font-size: 0.74rem; font-weight: 700; letter-spacing: 0.05em;
   text-transform: uppercase; color: #6e6e73; margin-right: 10px; }
@@ -1475,6 +1508,7 @@ body.picking .container { padding-left: 8px; padding-right: 8px; }
       <h1 style="font-size:1.7rem;color:#f5f5f7;letter-spacing:-0.02em;margin:0;">Season Tracker</h1>
       <p style="color:#86868b;font-size:0.95rem;margin-top:4px;">Pick a league and season, or start a new one &bull; <a href="league/">About the league</a></p>
       <div class="sync-status" id="syncStatusLanding" onclick="Sync.chipClick()" title="Click to sync now"></div>
+      <button class="btn btn-sm btn-secondary edit-only" style="margin-top:8px;" onclick="copyViewLink()">Copy view-only link</button>
     </div>
     <div class="landing-sprite-row">
       <img src="images/Extra Sprites/200px-Luigi_SuperStar_Base_Sprite.png" alt="Luigi" onerror="this.style.display='none'">
@@ -1578,6 +1612,8 @@ body.picking .container { padding-left: 8px; padding-right: 8px; }
         <button class="btn btn-sm btn-secondary" id="btnExport">Export Data (JSON)</button>
         <button class="btn btn-sm btn-secondary" id="btnImport">Import Data</button>
         <button class="btn btn-sm btn-secondary" id="btnBackups">Cloud Backups&hellip;</button>
+        <button class="btn btn-sm btn-secondary" onclick="runDataAudit()">Data audit</button>
+        <button class="btn btn-sm btn-secondary" onclick="copyViewLink()">Copy view-only link</button>
         <button class="btn btn-sm btn-danger" id="btnReset">Reset to Default</button>
       </div>
       <div id="backupsArea"></div>
@@ -1588,6 +1624,7 @@ body.picking .container { padding-left: 8px; padding-right: 8px; }
   <!-- ====== TAB: TRENDS ====== -->
   <div class="tab-content" id="tab-trends">
     <div id="trendsEmpty" style="display:none;color:#6e6e73;padding:24px;text-align:center;">No games played yet — trends appear once the season starts.</div>
+    <div class="card tm-card" id="trendTimeMachine" style="display:none"></div>
     <div class="card" id="trendPaceCard">
       <div class="card-title">Season Pace</div>
       <div id="trendPace"></div>
@@ -1822,7 +1859,7 @@ body.picking .container { padding-left: 8px; padding-right: 8px; }
       <div id="injuryHistoryArea"></div>
     </div>
 
-    <div class="card">
+    <div class="card edit-only">
       <div class="card-title">Injury Roller</div>
       <div class="card-sub">Rolls automatically after every saved game. Roll here only for a manual check.</div>
       <div class="roller-row">
@@ -1837,7 +1874,7 @@ body.picking .container { padding-left: 8px; padding-right: 8px; }
       </div>
     </div>
 
-    <div class="card">
+    <div class="card edit-only">
       <div class="card-title">Add Manual Injury</div>
       <div class="seg" id="manualInjOwnerSeg"></div>
       <select id="manualInjOwner" style="display:none"><option value="jason">Jason</option><option value="dan">Dan</option></select>
@@ -2311,6 +2348,7 @@ body.picking .container { padding-left: 8px; padding-right: 8px; }
         <div style="display:flex;gap:16px;flex-wrap:wrap;">
           <div style="flex:1;min-width:300px;">
             <div class="draft-board-header">Available Players</div>
+            <div id="nsDraftSortBar" style="display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;"></div>
             <div class="ns-draft-board" id="nsDraftBoard"></div>
           </div>
           <div style="width:280px;flex-shrink:0;">
@@ -2573,7 +2611,7 @@ const Sync = {
     this.status = status;
     const labels = {
       idle: '', syncing: '☁ Syncing…',
-      synced: '☁ Synced' + (detail ? ' • ' + detail : ''),
+      synced: (READONLY ? '👁 View only • live' : '☁ Synced') + (detail ? ' • ' + detail : ''),
       offline: '☁ Offline — changes saved on this device',
       locked: '🔒 Locked — tap to enter the league passphrase',
       conflict: '⚠ Sync needs attention — tap to retry'
@@ -2605,6 +2643,7 @@ const Sync = {
 
   // Called on every local mutation; debounces a push to the cloud
   markDirty() {
+    if (READONLY) return; // a viewer never writes
     localStorage.setItem('msb_localRev', String(Date.now()));
     clearTimeout(this._timer);
     this._timer = setTimeout(() => this.push(), 2000);
@@ -2615,6 +2654,7 @@ const Sync = {
   // Sync chips route here: when writes are locked, ask for the passphrase and
   // retry the push; otherwise a plain re-sync.
   chipClick() {
+    if (READONLY) { this.init(); return; }
     if (this.status === 'locked') this.promptKey();
     else this.init();
   },
@@ -4217,6 +4257,16 @@ function getDefaultState() {
 // ========================================================================
 // STATE MANAGEMENT
 // ========================================================================
+// View-only mode: ?view=readonly hides every edit control and never pushes.
+// Cloud reads are public, so this is a shareable follow-along link.
+const READONLY = (() => { try { return new URLSearchParams(location.search || '').get('view') === 'readonly'; } catch { return false; } })();
+function viewOnlyLink() { return location.origin + location.pathname + '?view=readonly'; }
+async function copyViewLink() {
+  const url = viewOnlyLink();
+  try { await navigator.clipboard.writeText(url); showToast('View-only link copied — anyone can follow along, nobody can edit'); }
+  catch { prompt('Copy this view-only link:', url); }
+}
+
 const State = {
   data: null,
   _loading: false, // suppress dirty-marking for saves that happen during load/migration
@@ -5056,6 +5106,62 @@ function closeSeasonSummary() {
   document.getElementById('summaryOverlay').classList.remove('show');
 }
 
+// The season so far, written out from the numbers. Templates over facts — no
+// service, nothing invented; prints with the summary.
+function seasonStory() {
+  const keys = getOwnerKeys();
+  if (keys.length !== 2) return '';
+  const [a, b] = keys;
+  const N = k => CONFIG.OWNERS[k].name;
+  const reg = State.data.games.filter(g => g.gameNumber <= CONFIG.TOTAL_GAMES).sort((x, y) => x.gameNumber - y.gameNumber);
+  if (!reg.length) return '';
+  const w = {}; keys.forEach(k => w[k] = reg.filter(g => g.winner === k).length);
+  const lead = w[a] >= w[b] ? a : b, trail = lead === a ? b : a;
+  const gap = w[lead] - w[trail];
+  const series = computeSeriesResults();
+  const sw = {}; keys.forEach(k => sw[k] = series.filter(s => s.winner === k).length);
+  const sweeps = {}; keys.forEach(k => sweeps[k] = series.filter(s => s.winner === k && s.sweep).length);
+  const paras = [];
+  paras.push(gap === 0
+    ? `After ${reg.length} games it is dead level at ${w[a]}–${w[b]}.`
+    : `After ${reg.length} games ${N(lead)} leads ${N(trail)} ${w[lead]}–${w[trail]}${gap >= 8 ? ', a season that has belonged to one side' : gap >= 3 ? ', a clear edge without being a rout' : ', nearly nothing in it'}.`
+    + (series.length ? ` ${N(lead)} has taken ${sw[lead]} of the ${series.length} completed series${sweeps[lead] ? `, ${sweeps[lead]} of them sweeps` : ''}.` : ''));
+  const fa = lastNForm(a), fb = lastNForm(b);
+  const sa = getStreak(a, 'all', 'all'), sb = getStreak(b, 'all', 'all');
+  const hot = /^W/.test(String(sa)) ? a : /^W/.test(String(sb)) ? b : null;
+  const best = keys.map(k => ({ k, n: getLongestStreak(k, 'all', 'all') })).sort((x, y) => y.n - x.n)[0];
+  paras.push(`Over the last ${Math.max(fa.g, fb.g)} games it has gone ${fa.w}–${fb.w} in ${fa.w >= fb.w ? N(a) : N(b)}'s favour${hot ? `, and ${N(hot)} comes in on a ${hot === a ? sa : sb} run` : ''}. The longest streak of the season is ${N(best.k)}'s ${best.n} straight.`);
+  const parkLine = k => {
+    const bestP = CONFIG.STADIUMS.map(st => ({ st, r: getRecord(k, st, 'all') })).filter(x => x.r.w + x.r.l >= 3).sort((x, y) => (y.r.w / (y.r.w + y.r.l)) - (x.r.w / (x.r.w + x.r.l)))[0];
+    return bestP ? `${N(k)}'s happiest park is ${bestP.st} (${bestP.r.w}–${bestP.r.l})` : null;
+  };
+  const pl = keys.map(parkLine).filter(Boolean);
+  if (pl.length) paras.push(pl.join('; ') + '.');
+  const runs = {}; keys.forEach(k => runs[k] = reg.reduce((n, g) => n + (getGameScore(g, k) || 0), 0));
+  const big = reg.reduce((bst, g) => { const d = Math.abs((getGameScore(g, a) || 0) - (getGameScore(g, b) || 0)); return (!bst || d > bst.d) ? { g, d } : bst; }, null);
+  paras.push(`${N(a)} has scored ${runs[a]} runs to ${N(b)}'s ${runs[b]} (${(runs[a] / reg.length).toFixed(1)} and ${(runs[b] / reg.length).toFixed(1)} a game).${big ? ` The biggest win was Game ${big.g.gameNumber}, ${N(big.g.winner)} ${Math.max(getGameScore(big.g, a), getGameScore(big.g, b))}–${Math.min(getGameScore(big.g, a), getGameScore(big.g, b))} at ${big.g.stadium}.` : ''}`);
+  const aw = seasonAwards();
+  const pick = name => aw.find(x => x.award === name);
+  const bits = [];
+  const bt = pick('Batting title'); if (bt) bits.push(`${bt.player} leads the batting race at ${bt.value}`);
+  const hr = pick('Home run king'); if (hr) bits.push(`${hr.player} has the power lead with ${hr.value}`);
+  const er = pick('ERA title'); if (er) bits.push(`${er.player} owns the mound at ${er.value}`);
+  const mv = pick('MVP leader'); if (mv) bits.push(`${mv.player} has collected ${mv.value}`);
+  if (bits.length) paras.push(bits.join(', ') + '.');
+  if (reg.length < CONFIG.TOTAL_GAMES) {
+    const remaining = CONFIG.TOTAL_GAMES - reg.length;
+    const clinch = Math.max(0, Math.floor((remaining - gap) / 2) + 1);
+    paras.push(gap > remaining
+      ? `${N(lead)} has clinched the season: the lead of ${gap} is bigger than the ${remaining} games left.`
+      : gap === 0 ? `${remaining} games remain and nothing is decided.` : `${remaining} games remain. ${N(lead)} needs ${clinch} more win${clinch === 1 ? '' : 's'} to put it away; ${N(trail)} must go ${Math.ceil((remaining + gap) / 2)}–${remaining - Math.ceil((remaining + gap) / 2)} just to draw level.`);
+  } else {
+    paras.push(`The regular season is complete.`);
+  }
+  const mo = [...(State.data.moments || [])].reverse().slice(0, 3);
+  if (mo.length) paras.push('Lately: ' + mo.map(m => m.text).join('; ') + '.');
+  return `<div class="story">${paras.map(t => `<p>${t}</p>`).join('')}</div>`;
+}
+
 function renderSeasonSummary() {
   const el = document.getElementById('summaryContent');
   const keys = getOwnerKeys();
@@ -5097,6 +5203,7 @@ function renderSeasonSummary() {
         <div class="summary-team-meta">${runs[k]} runs${twoOwner ? ` &middot; ${seriesWon[k]} series won` : ''}</div>
       </div>`).join('')}
     </div>
+    ${twoOwner ? `<div class="summary-story"><h4>The season so far</h4>${seasonStory()}</div>` : ''}
     <div class="summary-cols">
       <div>
         <h4>Batting leaders <span>(min 10 AB)</span></h4>
@@ -5609,16 +5716,16 @@ function showGameDetail(gameNum) {
   const hasLineup = !!game.playerStats || !!State.data.lineups[game.gameNumber];
   const hasStats = !!game.playerStats;
   const actions = [];
-  actions.push(`<button class="btn btn-secondary" style="font-size:0.8rem;" onclick="closeGameDetail();editGameResult(${game.gameNumber})">Edit Result</button>`);
+  actions.push(`<button class="btn btn-secondary edit-only" style="font-size:0.8rem;" onclick="closeGameDetail();editGameResult(${game.gameNumber})">Edit Result</button>`);
   actions.push(`<button class="btn btn-secondary" style="font-size:0.8rem;" onclick="shareGameCard(${game.gameNumber})">Share card</button>`);
   if (hasStats) {
-    actions.push(`<button class="btn btn-secondary" style="font-size:0.8rem;" onclick="goToStatsEntry(${game.gameNumber})">Edit Player Stats</button>`);
+    actions.push(`<button class="btn btn-secondary edit-only" style="font-size:0.8rem;" onclick="goToStatsEntry(${game.gameNumber})">Edit Player Stats</button>`);
   }
   if (!hasLineup) {
-    actions.push(`<button class="btn btn-primary" style="font-size:0.8rem;" onclick="closeGameDetail();openSetLineup(${game.gameNumber})">Add Lineup</button>`);
+    actions.push(`<button class="btn btn-primary edit-only" style="font-size:0.8rem;" onclick="closeGameDetail();openSetLineup(${game.gameNumber})">Add Lineup</button>`);
   }
   if (!hasStats) {
-    actions.push(`<button class="btn btn-primary" style="font-size:0.8rem;" onclick="goToStatsEntry(${game.gameNumber})">Enter Player Stats</button>`);
+    actions.push(`<button class="btn btn-primary edit-only" style="font-size:0.8rem;" onclick="goToStatsEntry(${game.gameNumber})">Enter Player Stats</button>`);
   }
   if (actions.length) {
     html += `<div class="btn-group" style="margin-top:12px;">${actions.join('')}</div>`;
@@ -5642,7 +5749,7 @@ function showGameDetail(gameNum) {
     html += `<div class="game-detail-notes">${escapeHtml(game.notes)}</div>`;
   }
 
-  html += `<div style="margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.08);text-align:right;">
+  html += `<div class="edit-only" style="margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.08);text-align:right;">
     <button class="btn btn-secondary" style="font-size:0.78rem;color:#ff453a;" onclick="deleteGame(${game.gameNumber})">Delete Game ${game.gameNumber}</button>
   </div>`;
 
@@ -5870,6 +5977,9 @@ function seasonAwards() {
   State.data.games.forEach(g => { keys.forEach(k => { const sp = getGameSP(g, k); if (sp && g.winner === k) { wins[k + '_' + sp] = (wins[k + '_' + sp] || 0) + 1; } }); });
   const wTop = Object.entries(wins).sort((a, b) => b[1] - a[1])[0];
   if (wTop) { const i = wTop[0].indexOf('_'); out.push({ award: 'Winningest starter', player: wTop[0].slice(i + 1), owner: wTop[0].slice(0, i), value: wTop[1] + ' W' }); }
+  // Prophet: the owner who calls games best (min 5 graded calls)
+  const prophets = keys.map(k => ({ k, ...predictionRecord(k) })).filter(x => x.n >= 5).sort((a, b) => (b.c / b.n) - (a.c / a.n) || b.e - a.e);
+  if (prophets.length) { const p = prophets[0]; out.push({ award: 'Prophet', player: CONFIG.OWNERS[p.k].name, owner: p.k, value: `${p.c}/${p.n} calls (${Math.round(p.c / p.n * 100)}%)${p.e ? `, ${p.e} exact` : ''}`, noFace: true }); }
   return out;
 }
 
@@ -5978,7 +6088,7 @@ function renderAwards() {
   const aw = seasonAwards();
   el.innerHTML = aw.length ? `<div class="award-grid" style="--cols:${balancedCols(aw.length, 4)}">${aw.map(a => `<div class="award">
       <div class="award-name">${a.award}</div>
-      ${pImg(a.player, 'award-face')}
+      ${a.noFace ? '<div class="award-face award-emoji">&#128302;</div>' : pImg(a.player, 'award-face')}
       <div class="award-player" style="color:${a.owner ? getOwnerColor(a.owner) : '#f5f5f7'}">${escapeHtml(a.player)}</div>
       <div class="award-val">${a.value}</div>
     </div>`).join('')}</div>` : '<div class="pp-empty">Awards appear once box scores are entered.</div>';
@@ -5993,12 +6103,67 @@ function renderRecords() {
     </div>`).join('')}</div>` : '<div class="pp-empty">No games yet.</div>';
   const mo = document.getElementById('trendMoments');
   if (mo) {
-    const list = [...(State.data.moments || [])].reverse().slice(0, 12);
+    const list = [...(State.data.moments || [])].filter(m => !trendsAsOf || m.game <= trendsAsOf).reverse().slice(0, 12);
     mo.innerHTML = list.length ? list.map(m => `<div class="rec-row" onclick="showGameDetail(${m.game})" style="cursor:pointer">
         <span class="moment-icon">${m.kind === 'record' ? '&#127942;' : m.kind === 'award' ? '&#127941;' : '&#11088;'}</span>
         <span class="rec-label" style="text-transform:none;letter-spacing:0;color:#d2d2d7;font-weight:500">${escapeHtml(m.text)}</span><span class="rec-game">Game ${m.game}</span>
       </div>`).join('') : '<div class="pp-empty">Milestones and broken records will show up here as you save games.</div>';
   }
+}
+
+// ========================================================================
+// DATA AUDIT — the checks that used to be done by hand.
+// ========================================================================
+function dataAudit() {
+  const issues = [];
+  const keys = getOwnerKeys();
+  const games = [...State.data.games].sort((a, b) => a.gameNumber - b.gameNumber);
+  const seen = new Set();
+  games.forEach(g => {
+    const tag = `Game ${g.gameNumber > CONFIG.TOTAL_GAMES ? 'WS' + (g.gameNumber - CONFIG.TOTAL_GAMES) : g.gameNumber}`;
+    if (seen.has(g.gameNumber)) issues.push({ level: 'error', game: g.gameNumber, text: `${tag}: duplicate game number` });
+    seen.add(g.gameNumber);
+    const parts = g.away ? [g.home, g.away] : keys;
+    const sc = gameScoresOf(g, keys);
+    if (parts.length === 2 && sc[parts[0]] === sc[parts[1]]) issues.push({ level: 'error', game: g.gameNumber, text: `${tag}: scores are tied` });
+    const top = parts.slice().sort((x, y) => (sc[y] || 0) - (sc[x] || 0))[0];
+    if (top && g.winner !== top) issues.push({ level: 'error', game: g.gameNumber, text: `${tag}: winner is ${CONFIG.OWNERS[g.winner]?.name || g.winner} but ${CONFIG.OWNERS[top]?.name || top} scored more` });
+    if (!g.playerStats) { issues.push({ level: 'info', game: g.gameNumber, text: `${tag}: no player stats entered` }); return; }
+    if (g.mvp && !g.playerStats[Object.keys(g.playerStats).find(k => k.endsWith('_' + g.mvp))]) issues.push({ level: 'warn', game: g.gameNumber, text: `${tag}: MVP ${g.mvp} has no stat line in this game` });
+    parts.forEach(k => {
+      const mine = Object.entries(g.playerStats).filter(([key]) => key.startsWith(k + '_'));
+      const ab = mine.reduce((n, [, ps]) => n + (ps.ab || 0), 0);
+      const runs = sc[k] || 0, rbi = mine.reduce((n, [, ps]) => n + (ps.rbi || 0), 0);
+      if (mine.length && ab < 15) issues.push({ level: 'warn', game: g.gameNumber, text: `${tag}: ${CONFIG.OWNERS[k]?.name || k} has only ${ab} at-bats entered — box score looks incomplete` });
+      if (rbi > runs) issues.push({ level: 'warn', game: g.gameNumber, text: `${tag}: ${CONFIG.OWNERS[k]?.name || k} shows ${rbi} RBI but scored ${runs} runs` });
+      const sp = getGameSP(g, k);
+      const spLine = sp && g.playerStats[k + '_' + sp];
+      if (sp && spLine && spLine.pitched && !(spLine.ip > 0)) issues.push({ level: 'warn', game: g.gameNumber, text: `${tag}: starter ${sp} has no innings pitched` });
+    });
+    Object.entries(g.playerStats).forEach(([key, ps]) => { if ((ps.hits || 0) > (ps.ab || 0)) issues.push({ level: 'error', game: g.gameNumber, text: `${tag}: ${key.slice(key.indexOf('_') + 1)} has more hits than at-bats` }); });
+    if (!State.data.injuryRolls[g.gameNumber] && g.gameNumber <= CONFIG.TOTAL_GAMES) issues.push({ level: 'info', game: g.gameNumber, text: `${tag}: injury roll never happened` });
+  });
+  (State.data.injuries || []).forEach(i => { if (!(i.returnGame > i.injuredGame)) issues.push({ level: 'error', game: i.injuredGame, text: `Injury for ${i.player}: return game ${i.returnGame} is not after game ${i.injuredGame}` }); });
+  const order = { error: 0, warn: 1, info: 2 };
+  return issues.sort((x, y) => order[x.level] - order[y.level] || x.game - y.game);
+}
+function runDataAudit() {
+  const issues = dataAudit();
+  const modal = document.getElementById('modalOverlay'), box = document.getElementById('modalBox');
+  box.classList.add('modal-wide');
+  document.getElementById('modalButtons').style.display = 'none';
+  const counts = { error: 0, warn: 0, info: 0 }; issues.forEach(i => counts[i.level]++);
+  document.getElementById('modalTitle').innerHTML = `Data audit <span class="mvp-hint">${State.data.games.length} games checked</span>`;
+  document.getElementById('modalBody').innerHTML = `
+    <div class="pace-grid cols-3" style="margin-bottom:14px;">
+      <div class="pace-cell"><div class="pace-label">Problems</div><div class="pace-val" style="color:${counts.error ? '#ff453a' : '#30d158'}">${counts.error}</div></div>
+      <div class="pace-cell"><div class="pace-label">Worth a look</div><div class="pace-val" style="color:${counts.warn ? '#ff9f0a' : '#30d158'}">${counts.warn}</div></div>
+      <div class="pace-cell"><div class="pace-label">Notes</div><div class="pace-val">${counts.info}</div></div>
+    </div>
+    ${issues.length ? `<div class="audit-list">${issues.map(i => `<div class="audit-row ${i.level}" onclick="closeGameDetail();showGameDetail(${i.game})">
+        <span class="audit-dot"></span><span>${escapeHtml(i.text)}</span></div>`).join('')}</div>`
+      : '<div class="pp-empty">Everything reconciles.</div>'}`;
+  modal.classList.add('show');
 }
 
 // ========================================================================
@@ -6512,7 +6677,7 @@ function saveGame() {
   State.save();
   const scoreDisplay = keys.map(k => scores[k]).join('-');
   showToast(`Game ${num} ${existing ? 'updated' : 'saved'}! ${CONFIG.OWNERS[game.winner].name} wins ${scoreDisplay}`);
-  if (before) recordMoments(momentsDiff(before, num));
+  if (before) recordMoments([...gradePredictions(game), ...momentsDiff(before, num)]);
 
   // Proceed to injury roll step (never on edits, or if this game was already rolled)
   if (existing || State.data.injuryRolls[num]) {
@@ -7433,7 +7598,62 @@ function matchupCard(sched) {
       const la = lead === true ? Math.sign(a - b) : lead;
       return `<div class="mu-row"><span class="mu-a${la > 0 ? ' lead' : ''}" style="color:${ch}">${a}</span><span class="mu-lbl">${lbl}</span><span class="mu-b${la < 0 ? ' lead' : ''}" style="color:${ca}">${b}</span></div>`;
     }).join('')}
+    ${READONLY ? '' : predictionsBlock(wizardState.gameInfo && wizardState.gameInfo.num)}
   </div>`;
+}
+
+// ---- Predictions: each owner calls the game before it's played --------------
+function setPrediction(gameNum, owner, winner) {
+  State.data.predictions = State.data.predictions || {};
+  const p = State.data.predictions[gameNum] = State.data.predictions[gameNum] || {};
+  p[owner] = Object.assign({}, p[owner] || {}, { winner, at: new Date().toISOString() });
+  State.save();
+  const card = document.getElementById('predictionsBlock');
+  if (card) card.outerHTML = predictionsBlock(gameNum);
+}
+function setPredictionScore(gameNum, owner, side, val) {
+  State.data.predictions = State.data.predictions || {};
+  const p = State.data.predictions[gameNum] = State.data.predictions[gameNum] || {};
+  p[owner] = p[owner] || {};
+  p[owner].scores = p[owner].scores || {};
+  p[owner].scores[side] = parseInt(val) || 0;
+  State.save();
+}
+function predictionsBlock(gameNum) {
+  const keys = getGameOwnerKeys();
+  if (keys.length !== 2 || !gameNum) return '';
+  const preds = (State.data.predictions || {})[gameNum] || {};
+  return `<div class="pred-block" id="predictionsBlock">
+    <div class="pred-title">Call it <span>each owner picks the winner before the first pitch</span></div>
+    ${keys.map(o => {
+      const mine = preds[o] || {};
+      return `<div class="pred-row">
+        <span class="pred-who" style="color:${getOwnerColor(o)}">${escapeHtml(CONFIG.OWNERS[o].name)} says</span>
+        <span class="seg">${keys.map(w => `<button type="button" class="${mine.winner === w ? 'on' : ''}" onclick="setPrediction(${gameNum},'${o}','${w}')">${escapeHtml(CONFIG.OWNERS[w].name)}</button>`).join('')}</span>
+        <span class="pred-score">${keys.map(w => `<input type="number" min="0" inputmode="numeric" placeholder="${escapeHtml(CONFIG.OWNERS[w].name.slice(0, 1))}" value="${mine.scores && mine.scores[w] !== undefined ? mine.scores[w] : ''}" onchange="setPredictionScore(${gameNum},'${o}','${w}',this.value)" onfocus="this.select()">`).join('<span class="sg-dash">&ndash;</span>')}</span>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+// After a game is saved: grade the calls and hand back moments.
+function gradePredictions(game) {
+  const preds = (State.data.predictions || {})[game.gameNumber];
+  if (!preds) return [];
+  const out = [];
+  Object.entries(preds).forEach(([owner, p]) => {
+    if (!p.winner) return;
+    p.correct = p.winner === game.winner;
+    p.exact = !!(p.scores && Object.keys(p.scores).length === 2 && Object.entries(p.scores).every(([k, v]) => getGameScore(game, k) === v));
+    const name = CONFIG.OWNERS[owner]?.name || owner;
+    if (p.exact) out.push({ kind: 'award', text: `${name} called the exact score (${Object.entries(p.scores).map(([k, v]) => `${CONFIG.OWNERS[k]?.name || k} ${v}`).join(' – ')})`, game: game.gameNumber });
+    else if (p.correct) out.push({ kind: 'milestone', text: `${name} called it — ${CONFIG.OWNERS[game.winner]?.name || game.winner} to win`, game: game.gameNumber });
+  });
+  return out;
+}
+function predictionRecord(owner) {
+  let n = 0, c = 0, e = 0;
+  Object.values(State.data.predictions || {}).forEach(p => { const m = p[owner]; if (m && m.correct !== undefined) { n++; if (m.correct) c++; if (m.exact) e++; } });
+  return { n, c, e };
 }
 
 // Step-4 card once starters are picked: how the OTHER lineup has hit this
@@ -8014,7 +8234,36 @@ function renderSeasonPace() {
     </div>`;
 }
 
+// Time machine: render every Trends card as of game N by swapping in a
+// truncated game list for the duration of the render.
+let trendsAsOf = null;
+function setTrendsAsOf(v) {
+  const max = State.data.games.reduce((m, g) => Math.max(m, g.gameNumber), 0);
+  const n = parseInt(v);
+  trendsAsOf = (!n || n >= max) ? null : n;
+  renderTrends();
+}
 function renderTrends() {
+  const max = State.data.games.reduce((m, g) => Math.max(m, g.gameNumber), 0);
+  const tm = document.getElementById('trendTimeMachine');
+  if (tm) {
+    tm.style.display = max > 1 ? '' : 'none';
+    const cur = trendsAsOf || max;
+    tm.innerHTML = `<div class="tm-row">
+      <span class="tm-label">${trendsAsOf ? `As of <b>Game ${cur}</b>` : '<b>Now</b> &middot; drag to rewind the season'}</span>
+      <input type="range" min="1" max="${max}" value="${cur}" oninput="setTrendsAsOf(this.value)">
+      ${trendsAsOf ? '<button class="btn btn-sm btn-secondary" onclick="setTrendsAsOf(0)">Back to now</button>' : ''}
+    </div>`;
+  }
+  if (trendsAsOf) {
+    const real = State.data.games;
+    State.data.games = real.filter(g => g.gameNumber <= trendsAsOf);
+    try { renderTrendsInner(); } finally { State.data.games = real; }
+  } else {
+    renderTrendsInner();
+  }
+}
+function renderTrendsInner() {
   const empty = document.getElementById('trendsEmpty');
   if (!empty) return;
   const games = [...State.data.games].sort((a, b) => a.gameNumber - b.gameNumber);
@@ -8795,8 +9044,42 @@ function nsGetCurrentDrafter() {
   }
 }
 
+// Career lines from this league's earlier seasons, so a draft isn't done from memory.
+let nsDraftSort = 'rank';
+function nsCareerLines() {
+  const out = {};
+  if (!nsWizard.leagueId) return out;
+  loadAllSeasons().filter(x => x.meta.leagueId === nsWizard.leagueId).forEach(({ meta, data }) => {
+    (data.games || []).forEach(g => {
+      if (!g.playerStats) return;
+      Object.entries(g.playerStats).forEach(([key, ps]) => {
+        const name = key.slice(key.indexOf('_') + 1);
+        const c = out[name] = out[name] || { g: 0, ab: 0, h: 0, hr: 0, rbi: 0, ip: 0, ra: 0, k: 0, mvp: 0 };
+        c.g++; c.ab += ps.ab || 0; c.h += ps.hits || 0; c.hr += ps.hr || 0; c.rbi += ps.rbi || 0;
+        if (ps.pitched) { c.ip += ps.ip || 0; c.ra += ps.runsAllowed || 0; c.k += ps.strikeouts || 0; }
+      });
+      if (g.mvp && out[g.mvp]) out[g.mvp].mvp++;
+    });
+  });
+  return out;
+}
+function nsDraftValue(p, c) {
+  let v = p.bat * 1.3 + p.pitch * 1.0 + p.field * 0.8 + p.run * 0.7;
+  if (c && c.ab >= 20) v += ((c.h / c.ab) - 0.25) * 20 + Math.min(c.hr, 20) * 0.15;
+  if (c && c.ip >= 9) v += Math.max(-2, Math.min(3, (5 - c.ra / c.ip * 9) * 0.5));
+  if (c && c.mvp) v += Math.min(c.mvp, 8) * 0.3;
+  if (p.captain) v += 0.5;
+  return v;
+}
 function nsRenderDraft() {
-  const allPlayers = Object.keys(PLAYER_PROFILES);
+  const careers = nsCareerLines();
+  const hasHistory = Object.keys(careers).length > 0;
+  const ranked = Object.keys(PLAYER_PROFILES).map(name => ({ name, v: nsDraftValue(getPatchedPlayer(name, PLAYER_PROFILES[name]), careers[name]) })).sort((x, y) => y.v - x.v);
+  const rankOf = {}; ranked.forEach((r, i) => rankOf[r.name] = i + 1);
+  const allPlayers = nsDraftSort === 'rank' ? ranked.map(r => r.name) : Object.keys(PLAYER_PROFILES).slice().sort((a, b) => nsDraftSort === 'type' ? PLAYER_PROFILES[a].type.localeCompare(PLAYER_PROFILES[b].type) || a.localeCompare(b) : a.localeCompare(b));
+  const sortBar = document.getElementById('nsDraftSortBar');
+  if (sortBar) sortBar.innerHTML = `<span class="seg">${[['rank', 'Value rank'], ['name', 'Name'], ['type', 'Type']].map(([v, l]) => `<button type="button" class="${nsDraftSort === v ? 'on' : ''}" onclick="nsDraftSort='${v}';nsRenderDraft()">${l}</button>`).join('')}</span>
+    <span class="card-sub" style="margin:0 0 0 12px;">${hasHistory ? 'Career lines are from this league\'s earlier seasons.' : 'Value rank is ratings only — no earlier seasons in this league yet.'}</span>`;
   const drafted = new Set(nsWizard.draftOrder.map(d => d.player));
   const currentDrafter = nsWizard.currentPick < allPlayers.length ? nsGetCurrentDrafter() : null;
   const drafterIdx = currentDrafter ? nsWizard.ownerKeys.indexOf(currentDrafter) : -1;
@@ -8841,9 +9124,13 @@ function nsRenderDraft() {
     if (p.patched && p.patchNotes && p.patchNotes.length > 0) {
       patchHtml = `<div class="patch-notes">${p.patchNotes.map(n => `<div class="patch-note">&#9650; ${n}</div>`).join('')}</div>`;
     }
+    const c = careers[name];
+    const careerLine = c ? `<div class="ns-career">${c.g} G &middot; ${c.ab ? (c.h / c.ab).toFixed(3).replace(/^0/, '') : '—'} &middot; ${c.hr} HR${c.ip >= 3 ? ` &middot; ${(c.ra / c.ip * 9).toFixed(2)} ERA` : ''}${c.mvp ? ` &middot; ${c.mvp} MVP` : ''}</div>` : '';
     return `<div class="ns-draft-card${isDrafted ? ' drafted' : ''}" onclick="nsDraftPick('${name.replace(/'/g, "\\'")}')">
+      <span class="ns-rank">#${rankOf[name]}</span>
       ${pImg(name, 'player-img-sm')}
       <div class="player-name">${name}${patchIcon}</div>
+      ${careerLine}
       <div class="player-type" style="background:${typeColor};color:#000;">${TYPE_ICONS[p.type] || ''} ${p.type}</div>
       ${statBars}
       ${p.captain ? '<div style="font-size:0.6rem;color:#f7b731;">&#9733; Captain</div>' : ''}
@@ -8962,6 +9249,7 @@ document.addEventListener('DOMContentLoaded', () => {
   SeasonManager.migrateS2();
   SeasonManager.migrateS1();
   LeagueManager.migrate();
+  if (READONLY) document.body.classList.add('readonly');
 
   // Cloud sync: pull/push in the background (skip re-pull right after applying one)
   if (sessionStorage.getItem('msb_pulled')) {
@@ -9130,6 +9418,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Modal close handlers
   document.getElementById('modalCloseX').addEventListener('click', closeGameDetail);
+  // Stats grid: Enter / arrows walk the column, so a box score is one-handed.
+  const grid = document.getElementById('statsEntryArea');
+  if (grid) {
+    grid.addEventListener('keydown', e => {
+      const inp = e.target;
+      if (!(inp instanceof HTMLInputElement) || !['Enter', 'ArrowDown', 'ArrowUp'].includes(e.key)) return;
+      const row = inp.closest('tr'); if (!row) return;
+      const cols = [...row.querySelectorAll('input')]; const ci = cols.indexOf(inp);
+      const rows = [...grid.querySelectorAll('tr[data-key]')]; const ri = rows.indexOf(row);
+      const target = rows[e.key === 'ArrowUp' ? ri - 1 : ri + 1];
+      if (!target) return;
+      const next = target.querySelectorAll('input')[ci];
+      if (next) { e.preventDefault(); next.focus(); next.select(); }
+    });
+    grid.addEventListener('focusin', e => { if (e.target instanceof HTMLInputElement && e.target.type === 'number') e.target.select(); });
+  }
   // Any mugshot opens the player page — except inside pickers, buttons and the
   // wizard, where a tap means "select". Capture phase so the row's own click
   // (game detail) doesn't also fire.

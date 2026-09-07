@@ -206,6 +206,21 @@ check('merge: injuries dedupe by key, rolls union', mergeRes.inj === 2 && mergeR
 const undoRes = T(`(() => { localStorage.removeItem(undoKey()); const n = State.data.games.length; pushUndo('test'); State.data.games.push({ gameNumber: 999, home: 'jason', away: 'dan', scores: { jason: 1, dan: 0 }, winner: 'jason', mvp: 'Mario' }); const st = undoStack(); const last = st.pop(); State.data = JSON.parse(last.data); localStorage.setItem(undoKey(), JSON.stringify(st)); return { before: n, after: State.data.games.length, label: last.label }; })()`);
 check('undo snapshot restores the season exactly', undoRes.before === undoRes.after && undoRes.label === 'test', undoRes);
 
+section('Story, predictions, audit, time machine');
+T(`selectSeason('S2')`);
+const story = T(`seasonStory()`).replace(/<[^>]+>/g, ' ');
+check('season story names both owners, the record and the pace', /Jason/.test(story) && /Dan/.test(story) && /16–4/.test(story) && /remain/.test(story), story.slice(0, 160));
+const pred = T(`(() => { State.data.predictions = {}; setPrediction(99, 'dan', 'jason'); setPredictionScore(99, 'dan', 'jason', 5); setPredictionScore(99, 'dan', 'dan', 2);
+  const m = gradePredictions({ gameNumber: 99, winner: 'jason', scores: { jason: 5, dan: 2 } }); const r = predictionRecord('dan'); delete State.data.predictions[99]; return { m: m.map(x => x.kind), r }; })()`);
+check('a correct exact-score call grades as exact and records 1/1', pred.m.join() === 'award' && pred.r.n === 1 && pred.r.c === 1 && pred.r.e === 1, pred);
+const audit = T(`dataAudit()`);
+check('data audit runs and only reports info/warn on the pinned snapshot (no errors)', Array.isArray(audit) && !audit.some(i => i.level === 'error'), audit.filter(i => i.level === 'error'));
+T(`trendsAsOf = 10; renderTrends(); trendsAsOf = null;`);
+const asOf = T(`document.getElementById('trendPace').innerHTML`).replace(/<[^>]+>/g, ' ').replace(/&ndash;/g, '-').replace(/\s+/g, ' ');
+check('time machine renders the season as of game 10 (10 of 162 played)', /10 of 162/.test(asOf), asOf.slice(0, 120));
+T(`renderTrends()`);
+check('READONLY is off without ?view=readonly', T(`READONLY`) === false);
+
 section('Leagues');
 T(`LeagueManager.migrate()`);
 const lgs = T(`LeagueManager.list()`);
