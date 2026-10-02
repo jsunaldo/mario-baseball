@@ -7506,7 +7506,7 @@ function renderScanReview(res, nStat, nFiles) {
       <tbody>${r.slots.map((s, k) => `<tr data-owner="${o}" data-slot="${k}">
         <td>${k + 1}</td>
         <td><select class="scan-name">${names.map(n => `<option${n === s.name ? ' selected' : ''}>${escapeHtml(n)}</option>`).join('')}</select></td>
-        ${[0, 1, 2, 3, 4, 5].map(ci => `<td><input class="scan-val" data-k="bat${ci}" value="${s.bat ? escapeHtml(ci === 5 ? (scanDec(s.bat[5], 3) ?? '').toString().replace(/^0(?=\.)/, '') : String(scanNum(s.bat[ci]) ?? '')) : ''}"></td>`).join('')}
+        ${[0, 1, 2, 3, 4, 5].map(ci => `<td><input class="scan-val" data-k="bat${ci}" value="${s.bat ? escapeHtml(ci === 5 ? (scanDec(s.bat[5], 3) === null ? '' : scanDec(s.bat[5], 3).toFixed(3).replace(/^0(?=\.)/, '')) : String(scanNum(s.bat[ci]) ?? '')) : ''}"></td>`).join('')}
         ${[0, 1, 2, 3, 4, 5].map(ci => `<td><input class="scan-val" data-k="pit${ci}" value="${s.pit ? escapeHtml(ci === 5 ? (/\d/.test(s.pit[5]) ? (scanDec(s.pit[5], 2) ?? '').toFixed?.(2) ?? '' : '') : (ci > 0 && !/\d/.test(s.pit[ci]) ? '' : String(scanNum(s.pit[ci]) ?? ''))) : ''}"></td>`).join('')}
       </tr>`).join('')}</tbody></table></div>
     </div>`;
