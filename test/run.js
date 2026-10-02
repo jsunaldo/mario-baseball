@@ -134,6 +134,9 @@ const durs = T(`Array.from({length:3000}, () => rollInjuryDuration(1, 30))`);
 check('injury duration always within configured 1-30', durs.every(d => d >= 1 && d <= 30) && Math.min(...durs) === 1);
 check('duration is weighted short (median under 12)', durs.sort((a, b) => a - b)[1500] < 12, durs[1500]);
 check('Luigi (out until 31) is injured for game 21, Yoshi (back at 15) is not', T(`isInjured('Luigi','jason',21) && !isInjured('Yoshi','dan',21)`));
+check('injury rule: hurt in 6, out 25 -> misses 7..31, back for 32 (existing data migrated)', T(`(() => { const l = State.data.injuries.find(i => i.player === 'Luigi'); return l.returnGame === 32 && isInjured('Luigi','jason',31) && !isInjured('Luigi','jason',32) && State.data.injuryRuleV2 === true; })()`));
+check('injury rule: a 1-game injury after game 10 sits out game 11 only', T(`(() => { const r = injuryReturnGame(10, 1); State.data.injuries.push({ player: 'Mario', owner: 'jason', injuredGame: 10, gamesOut: 1, returnGame: r }); const ok = r === 12 && isInjured('Mario','jason',11) && !isInjured('Mario','jason',12); State.data.injuries.pop(); return ok; })()`));
+check('injury migration is idempotent (a second load does not shift again)', T(`(() => { State.save(); State.load(); return State.data.injuries.find(i => i.player === 'Luigi').returnGame === 32; })()`));
 check('game-20 starters (Petey, Waluigi) cannot pitch game 21; a rested arm can', T(`!canPitch('Petey','jason',21) && !canPitch('Waluigi','dan',21) && canPitch('Boo','jason',21)`));
 
 section('Season pace');

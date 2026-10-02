@@ -4138,9 +4138,9 @@ const SEED_GAMES = [
 ];
 
 const SEED_INJURIES = [
-  { player:'Luigi', owner:'jason', injuredGame:6, gamesOut:25, returnGame:31 },
-  { player:'Bowser', owner:'dan', injuredGame:9, gamesOut:20, returnGame:29 },
-  { player:'Yoshi', owner:'dan', injuredGame:11, gamesOut:4, returnGame:15 },
+  { player:'Luigi', owner:'jason', injuredGame:6, gamesOut:25, returnGame:32 },
+  { player:'Bowser', owner:'dan', injuredGame:9, gamesOut:20, returnGame:30 },
+  { player:'Yoshi', owner:'dan', injuredGame:11, gamesOut:4, returnGame:16 },
 ];
 
 // ========================================================================
@@ -4266,7 +4266,7 @@ function getDefaultState() {
   if (CONFIG.SEASON_ID === 'S2') {
     return {
       games: JSON.parse(JSON.stringify(SEED_GAMES)),
-      injuries: JSON.parse(JSON.stringify(SEED_INJURIES)),
+      injuries: JSON.parse(JSON.stringify(SEED_INJURIES)), injuryRuleV2: true,
       pitchingLog: {},
       lineups: {},
       injuryRolls: {1:true,2:true,3:true,4:true,5:true,6:true,7:true,8:true,9:true,10:true,11:true,12:true,13:true,14:true,15:true},
@@ -4319,6 +4319,14 @@ const State = {
         if (!this.data.injuries) this.data.injuries = [];
         if (!this.data.pitchingLog) this.data.pitchingLog = {};
         if (!this.data.injurySettings) this.data.injurySettings = { chance:15, min:1, max:30 };
+        // One-time fix of the off-by-one injury rule (flag travels with the data,
+        // so every device and the cloud converge on the same return games).
+        if (!this.data.injuryRuleV2) {
+          (this.data.injuries || []).forEach(i => {
+            if (i.returnGame === i.injuredGame + i.gamesOut) i.returnGame = injuryReturnGame(i.injuredGame, i.gamesOut);
+          });
+          this.data.injuryRuleV2 = true;
+        }
         // Migrate: add injuryRolls tracking (games 1-15 already rolled)
         if (!this.data.injuryRolls) {
           this.data.injuryRolls = {1:true,2:true,3:true,4:true,5:true,6:true,7:true,8:true,9:true,10:true,11:true,12:true,13:true,14:true,15:true};
@@ -4481,6 +4489,11 @@ function getTotalRuns(owner, filterStadium, filterHomeAway) {
   });
   return { f, a };
 }
+
+// Hurt in game N and out K games: misses N+1 .. N+K, back for N+K+1.
+// (Before 2026-10-02 the return game was N+K, so every injury was one game
+// short and a 1-game injury missed nothing — migrated in State.load.)
+function injuryReturnGame(injuredGame, gamesOut) { return injuredGame + gamesOut + 1; }
 
 function isInjured(player, owner, gameNum) {
   return State.data.injuries.some(inj =>
@@ -5385,7 +5398,7 @@ function renderInjuryHistory() {
   inj.forEach(i => {
     if (!cost[i.owner]) return;
     cost[i.owner].count++;
-    cost[i.owner].games += Math.max(0, Math.min(i.returnGame, lastPlayed + 1) - i.injuredGame);
+    cost[i.owner].games += Math.max(0, Math.min(i.returnGame, lastPlayed + 1) - i.injuredGame - 1);
   });
 
   area.innerHTML = `
@@ -6182,7 +6195,7 @@ function dataAudit() {
     Object.entries(g.playerStats).forEach(([key, ps]) => { if ((ps.hits || 0) > (ps.ab || 0)) issues.push({ level: 'error', game: g.gameNumber, text: `${tag}: ${key.slice(key.indexOf('_') + 1)} has more hits than at-bats` }); });
     if (!State.data.injuryRolls[g.gameNumber] && g.gameNumber <= CONFIG.TOTAL_GAMES) issues.push({ level: 'info', game: g.gameNumber, text: `${tag}: injury roll never happened` });
   });
-  (State.data.injuries || []).forEach(i => { if (!(i.returnGame > i.injuredGame)) issues.push({ level: 'error', game: i.injuredGame, text: `Injury for ${i.player}: return game ${i.returnGame} is not after game ${i.injuredGame}` }); });
+  (State.data.injuries || []).forEach(i => { if (!(i.returnGame > i.injuredGame + 1)) issues.push({ level: 'error', game: i.injuredGame, text: `Injury for ${i.player}: return game ${i.returnGame} is not after game ${i.injuredGame}` }); });
   const order = { error: 0, warn: 1, info: 2 };
   return issues.sort((x, y) => order[x.level] - order[y.level] || x.game - y.game);
 }
@@ -6825,7 +6838,7 @@ function performInjuryRoll(gameNum) {
     owner: victim.owner,
     injuredGame: gameNum,
     gamesOut: gamesOut,
-    returnGame: gameNum + gamesOut
+    returnGame: injuryReturnGame(gameNum, gamesOut)
   };
   pushUndo(`injury: ${injury.player}`);
   State.data.injuryRolls[gameNum] = true;
@@ -7668,7 +7681,7 @@ function renderInjuries() {
   } else {
     noInj.style.display = 'none';
     activeDiv.innerHTML = active.map(inj => {
-      const gamesMissed = nextGame - inj.injuredGame;
+      const gamesMissed = Math.max(0, nextGame - inj.injuredGame - 1);
       const pct = Math.min(100, (gamesMissed / inj.gamesOut) * 100);
       const remaining = inj.returnGame - nextGame;
       return `<div class="injury-card">
@@ -7766,7 +7779,7 @@ function confirmInjury() {
     owner: pendingInjury.owner,
     injuredGame: nextGame > 1 ? nextGame - 1 : 1,
     gamesOut: pendingInjury.gamesOut,
-    returnGame: (nextGame > 1 ? nextGame - 1 : 1) + pendingInjury.gamesOut
+    returnGame: injuryReturnGame(nextGame > 1 ? nextGame - 1 : 1, pendingInjury.gamesOut)
   });
   State.save();
   pendingInjury = null;
@@ -7787,7 +7800,7 @@ function addManualInjury() {
     player, owner,
     injuredGame: nextGame > 1 ? nextGame - 1 : 1,
     gamesOut,
-    returnGame: (nextGame > 1 ? nextGame - 1 : 1) + gamesOut
+    returnGame: injuryReturnGame(nextGame > 1 ? nextGame - 1 : 1, gamesOut)
   });
   State.save();
   renderInjuries();
