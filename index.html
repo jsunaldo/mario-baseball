@@ -7206,7 +7206,11 @@ function scanFindBar(d, W, H) {
   const [y0, y1] = best, need = (y1 - y0 + 1) * 0.5;
   let x0 = -1, x1 = -1;
   for (let x = 0; x < W; x++) { let c = 0; for (let y = y0; y <= y1; y++) if (teal((y * W + x) * 4)) c++; if (c > need) { if (x0 < 0) x0 = x; x1 = x; } }
-  return x0 < 0 ? null : { x0, x1, y0, y1 };
+  if (x0 < 0) return null;
+  // A real Team Total bar is 14-20x wider than tall. The linescore screen has a
+  // thin teal stripe (~130x) that must not be taken for a stat table.
+  const ratio = (x1 - x0) / Math.max(1, y1 - y0);
+  return ratio < 8 || ratio > 30 ? null : { x0, x1, y0, y1 };
 }
 function scanGrid(b) {
   const w = b.x1 - b.x0, h = b.y1 - b.y0, cy = (b.y0 + b.y1) / 2;
@@ -7484,13 +7488,19 @@ function renderScanReview(res, nStat, nFiles) {
       const T = r.totals[kind]; if (!T) return;
       const cols = kind === 'bat' ? [0, 1, 2, 3, 4] : [0, 1, 2, 3, 4];
       const labels = kind === 'bat' ? ['H', 'RBI', 'HR', 'SB', 'Spec'] : ['Big plays', 'HA', 'K', 'RA', 'Spec'];
-      cols.forEach(ci => { const t = scanNum(T[ci]); const s = sum(r.slots, kind, ci); if (t !== null && t !== s) checks.push(`${labels[ci]}: rows add to ${s}, screen total says ${t}`); });
+      const short = [];
+      cols.forEach(ci => { const t = scanNum(T[ci]); const s = sum(r.slots, kind, ci); if (t !== null && t !== s) short.push(`${labels[ci]} rows add to ${s}, total says ${t}`); });
+      if (!short.length) return;
+      const missingRows = r.slots.filter(s => !s[kind]).length;
+      checks.push(`${kind === 'bat' ? 'Batter' : 'Pitcher'} Stats: ${short.join('; ')}.` + (missingRows || r.slots.length < names.length
+        ? ` A page of this screen looks missing. Add the other ${kind === 'bat' ? 'Batter' : 'Pitcher'} Stats page and scan again, or type the missing rows.`
+        : ' Check those cells against the screenshot.'));
     });
     flags += checks.length;
     const missing = names.filter(n => !r.slots.some(s => s.name === n));
     return `<div class="scan-team">
       <div class="scan-team-head" style="color:${getOwnerColor(o)}">${escapeHtml(CONFIG.OWNERS[o]?.name || o)} <span>${r.slots.length} of ${names.length} players found</span></div>
-      ${checks.length ? `<div class="scan-warn">Check these against the screen: ${checks.map(escapeHtml).join('; ')}</div>` : `<div class="scan-ok">Rows add up to the screen's Team Total.</div>`}
+      ${checks.length ? checks.map(c => `<div class="scan-warn">${escapeHtml(c)}</div>`).join('') : `<div class="scan-ok">Rows add up to the screen's Team Total.</div>`}
       ${missing.length ? `<div class="scan-warn">Not on any screenshot: ${missing.map(escapeHtml).join(', ')}. Enter them by hand.</div>` : ''}
       <div class="table-wrap"><table class="stats-table scan-table"><thead><tr><th>#</th><th>Player</th><th>H</th><th>RBI</th><th>HR</th><th>SB</th><th>Spec</th><th>AVG</th><th>BIG</th><th>HA</th><th>K</th><th>RA</th><th>PS</th><th>ERA</th></tr></thead>
       <tbody>${r.slots.map((s, k) => `<tr data-owner="${o}" data-slot="${k}">
