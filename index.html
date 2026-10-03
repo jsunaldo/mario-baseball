@@ -7348,7 +7348,7 @@ function renderStatsEntry(gameNum) {
 const SCAN = { glyphs: null, refs: null, refsPx: null };
 const SCAN_ROW_OFF = [-5.67, -4.52, -3.38, -2.24, -1.10];
 const SCAN_COL_X = [0.077, 0.218, 0.358, 0.500, 0.639, 0.780, 0.919];
-const SCAN_PS = 32, SCAN_B = 3, SCAN_MUG_K = 0.55;
+const SCAN_PS = 32, SCAN_B = 3, SCAN_MUG_K = 0.75;   // calibrated 2026-10-03: mugshot-only players now rank where a poor in-game match would
 
 async function scanAssets() {
   if (SCAN.glyphs) return;
