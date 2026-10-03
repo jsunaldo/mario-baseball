@@ -1442,6 +1442,18 @@ body.readonly #worldSeriesArea button, body.readonly #worldSeriesArea select, bo
 .scan-result-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; font-size: 0.95rem; }
 .scan-table input.scan-val { width: 52px; padding: 4px 6px; font-size: 0.9rem; text-align: center; }
 .scan-table input.scan-val:disabled { opacity: 0.3; }
+/* Resume bar (wizard step 1), "no stats" tag, fix-lineup editor */
+.resume-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px 16px; margin-bottom: 14px; border-radius: 12px;
+  background: rgba(41,151,255,0.10); border: 1px solid rgba(41,151,255,0.4); }
+.resume-bar > div { flex: 1; min-width: 180px; display: flex; flex-direction: column; }
+.resume-bar span { font-size: 0.88rem; color: #a1a1a6; }
+.sg-nostats { display: inline-block; margin-right: 8px; font-size: 0.74rem; font-weight: 800; letter-spacing: 0.04em; color: #ff9f0a;
+  border: 1px solid rgba(255,159,10,0.5); border-radius: 980px; padding: 1px 8px; cursor: pointer; }
+.fix-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px; }
+.fix-team-head { font-weight: 800; font-size: 1rem; margin-bottom: 6px; }
+.fix-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; }
+.fix-row select { flex: 1; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: #f5f5f7; border-radius: 8px; padding: 6px 8px; font-size: 0.95rem; }
+.fix-sp { font-size: 0.85rem; color: #a1a1a6; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
 /* Series banner in the game log */
 .series-tag { display: inline-block; font-size: 0.74rem; font-weight: 700; letter-spacing: 0.05em;
   text-transform: uppercase; color: #6e6e73; margin-right: 10px; }
@@ -5620,6 +5632,7 @@ function renderSeriesCards() {
   const keys = getOwnerKeys();
   const [a, b] = keys;
   const games = [...State.data.games].sort((x, y) => x.gameNumber - y.gameNumber);
+  const tracksStats = games.some(g => g.playerStats);   // S1 never had box scores — don't tag all 105
   if (!games.length) {
     box.innerHTML = `<div class="card" style="text-align:center;color:#86868b;padding:28px;">No games played yet — click <strong style="color:#e94560">+ Add Game Result</strong> above to record your first game.</div>`;
     return;
@@ -5647,7 +5660,7 @@ function renderSeriesCards() {
       </div>
       <div class="sg-mvp"><span class="sg-lbl">MVP</span>${pImg(g.mvp, 'player-img-sm')}${escapeHtml(g.mvp || '')}</div>
       <div class="sg-sp"><span class="sg-lbl">SP</span>${sp(a)}<span class="sg-vs">vs</span>${sp(b)}</div>
-      <div class="sg-notes">${g.notes ? `<span class="note-text" title="${escapeHtml(g.notes)}">${escapeHtml(g.notes)}</span>` : ''}</div>
+      <div class="sg-notes">${!g.playerStats && tracksStats ? `<span class="sg-nostats" onclick="event.stopPropagation();goToStatsEntry(${g.gameNumber})" title="Enter this game's box score">no stats</span>` : ''}${g.notes ? `<span class="note-text" title="${escapeHtml(g.notes)}">${escapeHtml(g.notes)}</span>` : ''}</div>
     </div>`;
   };
   const reg = games.filter(g => g.gameNumber <= CONFIG.TOTAL_GAMES);
@@ -5818,6 +5831,7 @@ function showGameDetail(gameNum) {
   const hasStats = !!game.playerStats;
   const actions = [];
   actions.push(`<button class="btn btn-secondary edit-only" style="font-size:0.8rem;" onclick="closeGameDetail();editGameResult(${game.gameNumber})">Edit Result</button>`);
+  actions.push(`<button class="btn btn-secondary edit-only" style="font-size:0.8rem;" onclick="openFixLineup(${game.gameNumber})">Fix lineup / starter</button>`);
   actions.push(`<button class="btn btn-secondary" style="font-size:0.8rem;" onclick="shareGameCard(${game.gameNumber})">Share card</button>`);
   if (hasStats) {
     actions.push(`<button class="btn btn-secondary edit-only" style="font-size:0.8rem;" onclick="goToStatsEntry(${game.gameNumber})">Edit Player Stats</button>`);
@@ -5926,6 +5940,95 @@ async function shareGameCard(gameNum) {
 }
 function roundRect(ctx, x, y, w, h, r) {
   ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+}
+
+// ---- Fix a played game's lineup or starter without deleting the game -------
+function fixLineupPlayers(game, o) {
+  const fromStats = Object.keys(game.playerStats || {}).filter(k => k.startsWith(o + '_')).map(k => k.slice(o.length + 1));
+  if (fromStats.length) {
+    const order = (game.battingOrder || {})[o] || [];
+    return [...order.filter(n => fromStats.includes(n)), ...fromStats.filter(n => !order.includes(n))];
+  }
+  const lu = State.data.lineups[game.gameNumber];
+  return lu ? getLineupPlayers(lu, o).slice() : [];
+}
+function openFixLineup(gameNum) {
+  const game = State.data.games.find(g => g.gameNumber === gameNum); if (!game) return;
+  const keys = game.away ? [game.home, game.away] : getOwnerKeys();
+  document.getElementById('modalTitle').innerHTML = `Fix lineup &middot; Game ${gameNum}`;
+  document.getElementById('modalBody').innerHTML = `
+    <div class="card-sub" style="margin:0 0 12px;">Swap a player who was entered wrongly, or change who started on the mound. Their stats move with the swap; nothing else in the game changes.</div>
+    <div class="fix-grid">${keys.map(o => {
+      const players = fixLineupPlayers(game, o), sp = getGameSP(game, o);
+      const roster = [...new Set([...(CONFIG.OWNERS[o]?.roster || []), ...players])];
+      return `<div class="fix-team" data-owner="${o}">
+        <div class="fix-team-head" style="color:${getOwnerColor(o)}">${escapeHtml(CONFIG.OWNERS[o]?.name || o)}</div>
+        ${players.length ? players.map(p => `<div class="fix-row" data-old="${escapeHtml(p)}">
+          ${pImg(p, 'player-img-sm')}
+          <select class="fix-name">${roster.map(n => `<option${n === p ? ' selected' : ''}>${escapeHtml(n)}</option>`).join('')}</select>
+          <label class="fix-sp"><input type="radio" name="fixsp_${o}"${p === sp ? ' checked' : ''}> SP</label>
+        </div>`).join('') : '<div class="pp-empty">No lineup recorded for this team.</div>'}
+      </div>`;
+    }).join('')}</div>
+    <div class="btn-group" style="margin-top:14px;">
+      <button class="btn btn-primary" onclick="applyFixLineup(${gameNum})">Save changes</button>
+      <button class="btn btn-secondary" onclick="showGameDetail(${gameNum})">Cancel</button>
+    </div>`;
+}
+function applyFixLineup(gameNum) {
+  const game = State.data.games.find(g => g.gameNumber === gameNum); if (!game) return;
+  const plan = [...document.querySelectorAll('.fix-team')].map(t => ({
+    o: t.dataset.owner,
+    rows: [...t.querySelectorAll('.fix-row')].map(r => ({ old: r.dataset.old, now: r.querySelector('.fix-name').value, sp: r.querySelector('input[type=radio]').checked }))
+  }));
+  const err = fixLineupCore(gameNum, plan);
+  if (err) { showToast(err, true); return; }
+  State.save();
+  renderAll();
+  showGameDetail(gameNum);
+  showToast(`Game ${gameNum} lineup updated`);
+}
+// plan: [{ o, rows: [{ old, now, sp }] }] -> null on success, or an error message (nothing changed)
+function fixLineupCore(gameNum, plan) {
+  const game = State.data.games.find(g => g.gameNumber === gameNum);
+  if (!game) return `Game ${gameNum} isn't in this season. Nothing was changed.`;
+  for (const t of plan) {
+    const names = t.rows.map(r => r.now);
+    if (new Set(names).size !== names.length) return `${CONFIG.OWNERS[t.o]?.name || t.o}'s lineup lists the same player twice. Nothing was changed. Do this: pick a different player for one of the duplicate rows, then save again.`;
+  }
+  pushUndo(`fix lineup Game ${gameNum}`);
+  const lu = State.data.lineups[gameNum];
+  plan.forEach(({ o, rows }) => {
+    const ren = Object.fromEntries(rows.filter(r => r.old !== r.now).map(r => [r.old, r.now]));
+    if (Object.keys(ren).length) {
+      if (game.playerStats) {
+        const next = {};
+        Object.entries(game.playerStats).forEach(([k, v]) => {
+          const i = k.indexOf('_'), ow = k.slice(0, i), n = k.slice(i + 1);
+          next[ow === o && ren[n] ? `${o}_${ren[n]}` : k] = v;
+        });
+        game.playerStats = next;
+      }
+      if (game.battingOrder && game.battingOrder[o]) game.battingOrder[o] = game.battingOrder[o].map(n => ren[n] || n);
+      if (lu && lu.players && lu.players[o]) lu.players[o] = lu.players[o].map(n => ren[n] || n);
+      else if (lu && Array.isArray(lu[o])) lu[o] = lu[o].map(n => ren[n] || n);
+      if (ren[game.mvp] && (CONFIG.OWNERS[o]?.roster || []).includes(ren[game.mvp])) game.mvp = ren[game.mvp];
+      (State.data.injuries || []).forEach(inj => { if (inj.owner === o && inj.injuredGame === gameNum && ren[inj.player]) { inj.player = ren[inj.player]; inj.at = new Date().toISOString(); } });
+    }
+    const sp = (rows.find(r => r.sp) || {}).now;
+    if (sp) {
+      game.sps = Object.assign({}, game.sps || {}, { [o]: sp });
+      if (game[o + 'SP'] !== undefined) game[o + 'SP'] = sp;
+      if (lu) { if (lu.sps) lu.sps[o] = sp; else if (lu[o + 'SP'] !== undefined) lu[o + 'SP'] = sp; }
+      Object.entries(game.playerStats || {}).forEach(([k, v]) => {
+        if (!k.startsWith(o + '_') || !v.pitched) return;
+        v.sp = k === `${o}_${sp}` ? 1 : 0; v.relief = v.sp ? 0 : 1;
+      });
+    }
+  });
+  if (lu) lu.savedAt = new Date().toISOString();
+  game.savedAt = new Date().toISOString();
+  return null;
 }
 
 function goToStatsEntry(gameNum) {
@@ -6517,7 +6620,7 @@ function openAddGameWizard(gameNum) {
   resetWizardOwnerState();
 
   const gameLabel = next > CONFIG.TOTAL_GAMES ? `\u{1F3C6} World Series Game ${next - CONFIG.TOTAL_GAMES}` : `Game ${next}`;
-  document.getElementById('wizGameInfo').innerHTML = nextGameHero(gameLabel, sched) + matchupCard(sched);
+  document.getElementById('wizGameInfo').innerHTML = resumeBar(next, 'addGame') + nextGameHero(gameLabel, sched) + matchupCard(sched);
 
   const preview = document.getElementById('savedLineupPreview');
   const saved = State.data.lineups[next];
@@ -6548,7 +6651,7 @@ function openSetLineup(gameNum) {
   wizardState.mode = 'setLineup';
   resetWizardOwnerState();
 
-  document.getElementById('wizGameInfo').innerHTML = nextGameHero(`Game ${gameNum}`, sched);
+  document.getElementById('wizGameInfo').innerHTML = resumeBar(gameNum, 'setLineup') + nextGameHero(`Game ${gameNum}`, sched);
 
   const preview = document.getElementById('savedLineupPreview');
   const saved = State.data.lineups[gameNum];
@@ -6572,6 +6675,7 @@ function openWizardShell() {
 }
 
 function closeWizard() {
+  clearWizDraft();   // a deliberate cancel or a finished game — a reload never gets here
   document.body.classList.remove('picking');
   document.getElementById('wizardOverlay').classList.remove('show');
   renderAll();
@@ -6806,6 +6910,14 @@ function clearInjuryTimers() {
   _injuryTimers = [];
 }
 
+// After the roll the next job is the box score — go straight there (scanner
+// open), or leave it for later; the game shows "no stats" in the log until then.
+function injuryNextButtons(gameNum) {
+  return `<div class="btn-group" style="justify-content:center;margin-top:20px;">
+    <button class="btn btn-primary" onclick="closeInjuryModal();goToStatsEntry(${gameNum});const sc=document.getElementById('scanCard');if(sc)sc.open=true;">Enter player stats &rarr;</button>
+    <button class="btn btn-secondary" onclick="closeInjuryModal()">Later</button>
+  </div>`;
+}
 function closeInjuryModal() {
   clearInjuryTimers();
   document.getElementById('injuryOverlay').classList.remove('show');
@@ -6875,7 +6987,7 @@ function performInjuryRoll(gameNum) {
           <div style="font-size:1.2rem;font-weight:700;color:#30d158;margin-bottom:8px;">No Injury!</div>
           <div style="font-size:0.9rem;color:#86868b;">All players stay healthy after Game ${gameNum}.</div>
           <div style="font-size:0.75rem;color:#6e6e73;margin-top:10px;">${settings.chance}% chance per game</div>
-          <button class="btn btn-primary" style="margin-top:18px;" onclick="closeInjuryModal()">Done</button>
+          ${injuryNextButtons(gameNum)}
         </div>`;
     });
     return;
@@ -6911,7 +7023,7 @@ function performInjuryRoll(gameNum) {
             <div style="font-size:0.85rem;color:#e94560;">Out ${gamesOut} games — returns Game ${injury.returnGame}</div>
           </div>
         </div>
-        <button class="btn btn-primary" style="margin-top:20px;" onclick="closeInjuryModal()">Done</button>
+        ${injuryNextButtons(gameNum)}
       </div>`;
     showToast(`${victim.name} injured for ${gamesOut} games!`, true);
   });
@@ -7993,6 +8105,48 @@ let wizardState = {
   mode: 'addGame' // 'addGame' or 'setLineup'
 };
 
+// ---- Lineup draft: picks / random 3 / starters survive an iPad reload. ----
+function wizDraftKey() { return 'msb_wizDraft_' + CONFIG.SEASON_ID; }
+function saveWizDraft() {
+  const w = wizardState;
+  if (!w.gameInfo || !(w.mode === 'addGame' || w.mode === 'setLineup') || ![2, 4].includes(w.step)) return;
+  const randomized = Object.values(w.random || {}).some(r => r && r.length);
+  try { localStorage.setItem(wizDraftKey(), JSON.stringify({ step: w.step, picks: w.picks, random: w.random, sps: w.sps, gameInfo: w.gameInfo, mode: w.mode, randomized, at: Date.now() })); } catch {}
+}
+function clearWizDraft() { try { localStorage.removeItem(wizDraftKey()); } catch {} }
+function loadWizDraft(gameNum, mode) {
+  try {
+    const d = JSON.parse(localStorage.getItem(wizDraftKey()));
+    if (!d || d.gameInfo?.num !== gameNum || d.mode !== mode) return null;
+    if (State.data.games.some(g => g.gameNumber === gameNum) && mode === 'addGame') return null;  // already played
+    return d;
+  } catch { return null; }
+}
+function resumeBar(gameNum, mode) {
+  const d = loadWizDraft(gameNum, mode);
+  if (!d) return '';
+  const picked = Object.values(d.picks || {}).reduce((t, p) => t + (p || []).length, 0);
+  const what = d.step === 4 ? (d.randomized ? 'lineups randomized' + (Object.values(d.sps || {}).some(Boolean) ? ', starters picked' : '') : 'picks done') : `${picked} of ${Object.keys(d.picks || {}).length * 6} picks made`;
+  return `<div class="resume-bar"><div><b>Pick up where you left off</b><span>${what}</span></div>
+    <button class="btn btn-primary" onclick="resumeWizDraft()">Resume</button>
+    <button class="btn btn-secondary" onclick="clearWizDraft();this.closest('.resume-bar').remove()">Start over</button></div>`;
+}
+function resumeWizDraft() {
+  const d = loadWizDraft(wizardState.gameInfo?.num, wizardState.mode);
+  if (!d) return;
+  wizardState.picks = d.picks || {}; wizardState.random = d.random || {}; wizardState.gameInfo = d.gameInfo;
+  if (d.step === 2) { setWizardStep(2); return; }
+  setWizardStep(4);                                  // step 4 resets starters, so restore them after
+  wizardState.random = d.random || {}; wizardState.sps = d.sps || {};
+  if (d.randomized) {
+    renderFinalLineups(true);
+    document.getElementById('btnRandomize').textContent = 'Re-Randomize';
+    document.getElementById('spInstruction').style.display = '';
+    document.getElementById('wizStep4Buttons').style.display = '';
+  }
+  saveWizDraft();
+}
+
 function resetWizardOwnerState() {
   const keys = getGameOwnerKeys();
   wizardState.picks = {};
@@ -8272,6 +8426,7 @@ function setWizardStep(step) {
   if (step === 5) {
     populateResultsStep();
   }
+  saveWizDraft();
 }
 
 // Both owners pick their 6 starters side by side — Jason and Dan are usually
@@ -8408,6 +8563,7 @@ function togglePlayerPick(el) {
   }
   wizardState.picks[owner] = picks;
   updatePickCount(owner);
+  saveWizDraft();
 }
 
 function updatePickCount(owner) {
@@ -8428,11 +8584,13 @@ function randomizeFinalSpots() {
       !picks.includes(p) && !isInjured(p, owner, nextGame)
     );
     if (bench.length < 3) showToast(CONFIG.OWNERS[owner].name + ' has only ' + bench.length + ' healthy bench players \u2014 lineup will be short', true);
-    const shuffled = bench.sort(() => Math.random() - 0.5);
+    const shuffled = bench.slice();
+    for (let i = shuffled.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]; }
     wizardState.random[owner] = shuffled.slice(0, 3);
   });
 
   renderFinalLineups(true);
+  saveWizDraft();
 }
 
 function renderFinalLineups(showRandom) {
@@ -8487,6 +8645,7 @@ function selectSP(owner, player) {
   }
   wizardState.sps[owner] = wizardState.sps[owner] === player ? null : player;
   renderFinalLineups(true);
+  saveWizDraft();
 }
 
 function confirmLineup() {

@@ -260,6 +260,30 @@ const predMerge = T(`(() => {
 check('predictions merge per owner: both calls survive', predMerge && predMerge.jason && predMerge.dan, predMerge);
 check('view-only never pushes', T(`Sync.push.toString().includes('if (READONLY) return')`));
 
+section('Game night: draft, stats handoff, lineup fix');
+T(`selectSeason('S2')`);
+const draft = T(`(() => {
+  wizardState.gameInfo = { num: 21, stadium: 'Mario Stadium', home: 'jason', away: 'dan' }; wizardState.mode = 'addGame'; wizardState.step = 2;
+  wizardState.picks = { jason: ['Mario', 'DK'], dan: ['Yoshi'] }; wizardState.random = {}; wizardState.sps = {};
+  saveWizDraft(); const d = loadWizDraft(21, 'addGame');
+  const out = { saved: !!d, picks: d && d.picks.jason.join(','), bar: /Pick up where you left off/.test(resumeBar(21, 'addGame')) };
+  clearWizDraft(); out.cleared = loadWizDraft(21, 'addGame') === null; wizardState.gameInfo = null; return out;
+})()`);
+check('lineup draft saves picks, offers a Resume bar, and clears', draft.saved && draft.picks === 'Mario,DK' && draft.bar && draft.cleared, draft);
+check('injury result offers "Enter player stats" as the next step', /Enter player stats/.test(T(`injuryNextButtons(5)`)) && /Later/.test(T(`injuryNextButtons(5)`)));
+const fix = T(`(() => {
+  const g = State.data.games.find(x => x.gameNumber === 16); const before = JSON.stringify(g);
+  const dk = g.playerStats['jason_DK'];
+  const err = fixLineupCore(16, [{ o: 'jason', rows: [{ old: 'DK', now: 'Luigi', sp: true }] }]);
+  const out = { err, moved: !!g.playerStats['jason_Luigi'] && !g.playerStats['jason_DK'], sameLine: JSON.stringify(g.playerStats['jason_Luigi']) === JSON.stringify(dk), sp: g.sps && g.sps.jason, stamped: !!g.savedAt };
+  const dup = fixLineupCore(16, [{ o: 'jason', rows: [{ old: 'Mario', now: 'Luigi', sp: false }, { old: 'Luigi', now: 'Luigi', sp: false }] }]);
+  out.dupRejected = /twice/.test(dup || '');
+  Object.assign(g, JSON.parse(before)); Object.keys(g).forEach(k => { if (!(k in JSON.parse(before))) delete g[k]; });
+  return out;
+})()`);
+check('fixing a lineup moves that player\'s stat line to the right name and sets the starter', !fix.err && fix.moved && fix.sameLine && fix.sp === 'Luigi' && fix.stamped, fix);
+check('a lineup fix that names a player twice is rejected with steps, nothing changed', fix.dupRejected, fix);
+
 section('Leagues');
 T(`LeagueManager.migrate()`);
 const lgs = T(`LeagueManager.list()`);
