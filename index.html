@@ -7443,7 +7443,8 @@ async function scanSolveGame(screens, teamPlayers) {
   }
   return out;
 }
-// Innings from ERA and runs allowed (the game never shows IP). Zero runs: unknown.
+// Innings from ERA and runs allowed (the game never shows IP). Only an estimate:
+// ERA uses earned runs, the screen shows all runs. Zero runs: unknown.
 function scanIP(ra, eraStr) {
   const era = scanDec(eraStr, 2);
   if (!ra || !era) return null;
@@ -7519,7 +7520,7 @@ function renderScanReview(res, nStat, nFiles) {
   scanStatus(flags ? `${flags} total${flags === 1 ? '' : 's'} didn't add up — those rows are flagged above.` : 'Every team total matched.');
 }
 function applyScan() {
-  let filled = 0; const noIP = [];
+  let filled = 0; const noIP = [], estIP = [];
   document.querySelectorAll('#scanResults tr[data-slot]').forEach(tr => {
     const o = tr.dataset.owner, name = tr.querySelector('.scan-name').value;
     const g = document.querySelector(`#statsEntryArea tr[data-owner="${o}"][data-player="${CSS.escape(name)}"]`); if (!g) return;
@@ -7533,11 +7534,16 @@ function applyScan() {
     if (v('pit1') !== '') {
       set('.s-hitsAllowed', v('pit1')); set('.s-strikeouts', v('pit2')); set('.s-runsAllowed', v('pit3')); set('.s-pitchSpecials', v('pit4'));
       const ip = scanIP(parseFloat(v('pit3')) || 0, v('pit5'));
-      if (ip) set('.s-ip', formatIP(ip)); else noIP.push(name);
+      if (ip) { set('.s-ip', formatIP(ip)); estIP.push(`${name} ${formatIP(ip)}`); } else noIP.push(name);
     }
   });
   showToast(filled ? `Filled ${filled} values. Review the grid, then Save Player Stats.` : 'Nothing to fill. Your stats are safe. Do this: check the player names in the review table, then try again.', !filled);
-  if (noIP.length) scanStatus(`Innings pitched for ${noIP.map(escapeHtml).join(', ')} can't be worked out (no runs allowed, so ERA gives nothing). Type those in the IP column.`, true);
+  // The game's ERA counts earned runs only and the screen shows total runs, so
+  // innings worked out from them are off whenever an unearned run scored.
+  const msgs = [];
+  if (estIP.length) msgs.push(`Innings estimated from ERA: ${estIP.map(escapeHtml).join(', ')}. ERA ignores unearned runs, so check these against the game (a pitcher who went the distance threw 9, or 8 if the home team didn't bat in the 9th).`);
+  if (noIP.length) msgs.push(`Innings for ${noIP.map(escapeHtml).join(', ')} can't be worked out (no runs allowed, so ERA gives nothing). Type those in the IP column.`);
+  if (msgs.length) scanStatus(msgs.join('<br>'), true);
   document.getElementById('statsEntryArea').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
