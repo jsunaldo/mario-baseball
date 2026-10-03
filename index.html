@@ -1394,6 +1394,7 @@ body.readonly .edit-only, body.readonly #btnAddGame, body.readonly .next-strip .
 body.readonly .sub-tab[data-subtab="enterStats"], body.readonly #subtab-enterStats, body.readonly .season-card-delete, body.readonly .league-actions,
 body.readonly .league-new, body.readonly .sr-action, body.readonly .stats-table.tight button, body.readonly .sr-status.set, body.readonly .pred-block { display: none !important; }
 body.readonly .sync-status { pointer-events: none; }
+body.readonly #worldSeriesArea button, body.readonly #worldSeriesArea select, body.readonly .season-card-new { display: none !important; }
 /* Predictions */
 .pred-block { margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.08); }
 .pred-title { font-size: 0.78rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #a1a1a6; margin-bottom: 8px; }
@@ -2440,8 +2441,9 @@ const SeasonManager = {
     const seasons = this.list().filter(s => s.id !== id);
     this.save(seasons);
     localStorage.removeItem('marioBaseball_' + id);
-    // Tombstone so the seed-season migrations don't resurrect a deleted season on next load
-    if (id === 'S1' || id === 'S2') localStorage.setItem('marioBaseball_' + id + '_deleted', '1');
+    // Tombstone so neither the seed migrations nor a merge with another device
+    // brings a deleted season back.
+    localStorage.setItem('marioBaseball_' + id + '_deleted', '1');
     Sync.markDirty();
   },
   get(id) {
@@ -2594,6 +2596,7 @@ const LeagueManager = {
     // Only an empty league can go — seasons are deleted one at a time on purpose.
     if (SeasonManager.list().some(s => s.leagueId === id)) return false;
     this.save(this.list().filter(l => l.id !== id));
+    localStorage.setItem('marioBaseball_league_' + id + '_deleted', '1');
     Sync.markDirty();
     return true;
   },
@@ -2664,10 +2667,11 @@ const Sync = {
       updatedAt: new Date().toISOString(),
       seasons,
       leagues: LeagueManager.list(),
-      tombstones: {
+      tombstones: Object.assign({
         S1: !!localStorage.getItem('marioBaseball_S1_deleted'),
         S2: !!localStorage.getItem('marioBaseball_S2_deleted')
-      },
+      }, Object.fromEntries(storageKeys(localStorage)
+        .map(k => (k.match(/^marioBaseball_(.+)_deleted$/) || [])[1]).filter(Boolean).map(id => [id, true]))),
       data
     };
   },
@@ -2699,7 +2703,9 @@ const Sync = {
   },
 
   async push() {
+    if (READONLY) return;                     // a viewer never writes
     const snap = this.snapshot();
+    const sentRev = localStorage.getItem('msb_localRev') || '';  // edits after this point are NOT in snap
     this.setStatus('syncing');
     try {
       const res = await fetch(SYNC_URL, {
@@ -2710,7 +2716,8 @@ const Sync = {
       if (res.status === 401) { this.setStatus('locked'); return; }
       if (!res.ok) throw new Error('HTTP ' + res.status);
       localStorage.setItem('msb_lastSyncAt', snap.updatedAt);
-      localStorage.setItem('msb_lastSyncRev', localStorage.getItem('msb_localRev') || '');
+      localStorage.setItem('msb_lastSyncRev', sentRev);
+      if ((localStorage.getItem('msb_localRev') || '') !== sentRev) this.markDirty();  // something changed mid-push: send it too
       this.setStatus('synced', 'just now');
     } catch (e) {
       console.warn('Sync push failed:', e);
@@ -2733,12 +2740,15 @@ const Sync = {
       localStorage.setItem('marioBaseball_' + id, JSON.stringify(cloud.data[id]));
     });
     oldIds.filter(id => !(cloud.data && cloud.data[id])).forEach(id => localStorage.removeItem('marioBaseball_' + id));
-    ['S1', 'S2'].forEach(id => {
+    const tombIds = new Set(['S1', 'S2', ...Object.keys(cloud.tombstones || {}),
+      ...storageKeys(localStorage).map(k => (k.match(/^marioBaseball_(.+)_deleted$/) || [])[1]).filter(Boolean)]);
+    tombIds.forEach(id => {
       if (cloud.tombstones && cloud.tombstones[id]) localStorage.setItem('marioBaseball_' + id + '_deleted', '1');
       else localStorage.removeItem('marioBaseball_' + id + '_deleted');
     });
     localStorage.setItem('msb_lastSyncAt', cloud.updatedAt);
     localStorage.setItem('msb_lastSyncRev', localStorage.getItem('msb_localRev') || '');
+    clearAllUndo();   // undo snapshots predate this data — restoring one would erase what just arrived
   },
 
   async init() {
@@ -2833,10 +2843,21 @@ function mergeSeasonData(L, C) {
   const itomb = Object.assign({}, C.deletedInjuries || {}, L.deletedInjuries || {});
   const inj = {};
   [...(C.injuries || []), ...(L.injuries || [])].forEach(i => { inj[injuryKey(i)] = i; });
-  Object.keys(itomb).forEach(k => delete inj[k]);
+  Object.keys(itomb).forEach(k => { if (inj[k] && !(inj[k].at && inj[k].at > itomb[k])) delete inj[k]; });
   m.injuries = Object.values(inj).sort((a, b) => a.injuredGame - b.injuredGame);
   m.deletedInjuries = itomb;
   m.injuryRolls = Object.assign({}, C.injuryRolls || {}, L.injuryRolls || {});
+  Object.keys(tomb).forEach(num => { if (!g[num]) delete m.injuryRolls[num]; });
+  // predictions: per game, per owner — newest call wins, nobody's call is dropped
+  const pr = {};
+  [C.predictions || {}, L.predictions || {}].forEach(src => Object.entries(src).forEach(([gn, byOwner]) => {
+    pr[gn] = pr[gn] || {};
+    Object.entries(byOwner || {}).forEach(([o, call]) => {
+      const cur = pr[gn][o];
+      if (!cur || (call && (call.at || '') >= (cur.at || ''))) pr[gn][o] = call;
+    });
+  }));
+  m.predictions = pr;
   m.pitchingLog = Object.assign({}, C.pitchingLog || {}, L.pitchingLog || {});
   return m;
 }
@@ -2852,7 +2873,7 @@ function mergeSnapshots(local, cloud) {
   const out = {
     updatedAt: new Date().toISOString(),
     seasons: seasonIds.map(id => ls[id] || cs[id]),
-    leagues: [...new Set([...Object.keys(cl), ...Object.keys(ll)])].map(id => ll[id] || cl[id]),
+    leagues: [...new Set([...Object.keys(cl), ...Object.keys(ll)])].filter(id => !tomb['league_' + id]).map(id => ll[id] || cl[id]),
     tombstones: tomb,
     data: {}
   };
@@ -4379,27 +4400,63 @@ const State = {
 };
 
 // ========================================================================
-// UNDO — a snapshot of the season before every mutation, five deep.
+// UNDO — a snapshot of the season before every mutation, three deep.
+// Kept in sessionStorage: a full season copy per step would otherwise eat the
+// same ~5 MB localStorage quota the season data itself needs. Cleared whenever
+// cloud data is applied, so an undo can never roll back another device's games.
 // ========================================================================
-const UNDO_MAX = 5;
+const UNDO_MAX = 3;
 function undoKey() { return 'msb_undo_' + CONFIG.SEASON_ID; }
-function undoStack() { try { return JSON.parse(localStorage.getItem(undoKey())) || []; } catch { return []; } }
+function undoStack() { try { return JSON.parse(sessionStorage.getItem(undoKey())) || []; } catch { return []; } }
+function undoWrite(st) {
+  while (st.length) {
+    try { sessionStorage.setItem(undoKey(), JSON.stringify(st)); return; }
+    catch (e) { st.shift(); }               // over quota: drop the oldest step and retry
+  }
+  try { sessionStorage.removeItem(undoKey()); } catch {}
+}
+// Storage keys via the standard key()/length API (works everywhere, unlike Object.keys on Storage)
+function storageKeys(st) { const out = []; try { for (let i = 0; i < st.length; i++) out.push(st.key(i)); } catch {} return out; }
+function clearAllUndo() {
+  storageKeys(sessionStorage).filter(k => k.startsWith('msb_undo_')).forEach(k => sessionStorage.removeItem(k));
+  storageKeys(localStorage).filter(k => k.startsWith('msb_undo_')).forEach(k => localStorage.removeItem(k));  // pre-v45 copies
+}
 function pushUndo(label) {
   try {
     const st = undoStack();
     st.push({ label, at: new Date().toISOString(), data: JSON.stringify(State.data) });
     while (st.length > UNDO_MAX) st.shift();
-    localStorage.setItem(undoKey(), JSON.stringify(st));
+    undoWrite(st);
   } catch (e) { console.warn('undo snapshot skipped', e); }
   renderUndoButton();
+}
+// Stamp what an undo brings back or takes away, so the entity merge treats the
+// undo as the newest change instead of letting the pushed copy win it back.
+function stampUndo(cur, restored) {
+  const now = new Date().toISOString();
+  const curG = Object.fromEntries((cur.games || []).map(g => [g.gameNumber, g]));
+  const resG = Object.fromEntries((restored.games || []).map(g => [g.gameNumber, g]));
+  restored.deletedGames = Object.assign({}, cur.deletedGames || {}, restored.deletedGames || {});
+  Object.values(resG).forEach(g => {
+    const c = curG[g.gameNumber];
+    if (!c || JSON.stringify(c) !== JSON.stringify(g)) g.savedAt = now;
+    if (!c) delete restored.deletedGames[g.gameNumber];
+  });
+  Object.keys(curG).forEach(num => { if (!resG[num]) restored.deletedGames[num] = now; });
+  const curI = Object.fromEntries((cur.injuries || []).map(i => [injuryKey(i), i]));
+  const resI = Object.fromEntries((restored.injuries || []).map(i => [injuryKey(i), i]));
+  restored.deletedInjuries = Object.assign({}, cur.deletedInjuries || {}, restored.deletedInjuries || {});
+  Object.entries(resI).forEach(([k, i]) => { if (!curI[k]) { i.at = now; delete restored.deletedInjuries[k]; } });
+  Object.keys(curI).forEach(k => { if (!resI[k]) restored.deletedInjuries[k] = now; });
+  return restored;
 }
 function undoLast() {
   const st = undoStack();
   const last = st.pop();
   if (!last) return;
   if (!confirm(`Undo "${last.label}"?\nThe season goes back to how it was just before that.`)) return;
-  State.data = JSON.parse(last.data);
-  localStorage.setItem(undoKey(), JSON.stringify(st));
+  State.data = stampUndo(State.data, JSON.parse(last.data));
+  undoWrite(st);
   State.save();
   renderAll();
   showToast('Undone: ' + last.label);
@@ -5930,7 +5987,10 @@ function deleteGame(gameNum) {
   State.data.deletedGames[gameNum] = new Date().toISOString();
   State.data.games = State.data.games.filter(g => g.gameNumber !== gameNum);
   delete State.data.lineups[gameNum];
-  // Clean up injuries that occurred in the deleted game
+  // Clean up injuries that occurred in the deleted game — tombstoned, or a merge
+  // with another device would bring them back
+  State.data.deletedInjuries = State.data.deletedInjuries || {};
+  State.data.injuries.filter(inj => inj.injuredGame === gameNum).forEach(inj => { State.data.deletedInjuries[injuryKey(inj)] = new Date().toISOString(); });
   State.data.injuries = State.data.injuries.filter(inj => inj.injuredGame !== gameNum);
   // Clean up injury roll tracking for the deleted game
   delete State.data.injuryRolls[gameNum];
@@ -6834,6 +6894,7 @@ function performInjuryRoll(gameNum) {
   };
   pushUndo(`injury: ${injury.player}`);
   State.data.injuryRolls[gameNum] = true;
+  injury.at = new Date().toISOString();
   State.data.injuries.push(injury);
   State.save();
   renderInjuries();
@@ -7800,6 +7861,7 @@ function confirmInjury() {
   const nextGame = getNextGameNumber();
   pushUndo(`injury: ${pendingInjury.player}`);
   State.data.injuries.push({
+    at: new Date().toISOString(),
     player: pendingInjury.player,
     owner: pendingInjury.owner,
     injuredGame: nextGame > 1 ? nextGame - 1 : 1,
@@ -7822,6 +7884,7 @@ function addManualInjury() {
   const nextGame = getNextGameNumber();
   pushUndo(`injury: ${player}`);
   State.data.injuries.push({
+    at: new Date().toISOString(),
     player, owner,
     injuredGame: nextGame > 1 ? nextGame - 1 : 1,
     gamesOut,
@@ -9680,6 +9743,7 @@ document.addEventListener('DOMContentLoaded', () => {
   SeasonManager.migrateS1();
   LeagueManager.migrate();
   if (READONLY) document.body.classList.add('readonly');
+  try { storageKeys(localStorage).filter(k => k.startsWith('msb_undo_')).forEach(k => localStorage.removeItem(k)); } catch {}  // undo moved to sessionStorage
 
   // Cloud sync: pull/push in the background (skip re-pull right after applying one)
   if (sessionStorage.getItem('msb_pulled')) {

@@ -206,7 +206,7 @@ const mergeRes = T(`(() => {
 check('merge keeps games from both devices and drops the deleted one', mergeRes.nums.join() === '1,2,3', mergeRes);
 check('merge: newer save of the same game wins', mergeRes.g2 === 'local edit', mergeRes);
 check('merge: injuries dedupe by key, rolls union', mergeRes.inj === 2 && mergeRes.rolls === 2, mergeRes);
-const undoRes = T(`(() => { localStorage.removeItem(undoKey()); const n = State.data.games.length; pushUndo('test'); State.data.games.push({ gameNumber: 999, home: 'jason', away: 'dan', scores: { jason: 1, dan: 0 }, winner: 'jason', mvp: 'Mario' }); const st = undoStack(); const last = st.pop(); State.data = JSON.parse(last.data); localStorage.setItem(undoKey(), JSON.stringify(st)); return { before: n, after: State.data.games.length, label: last.label }; })()`);
+const undoRes = T(`(() => { sessionStorage.removeItem(undoKey()); const n = State.data.games.length; pushUndo('test'); State.data.games.push({ gameNumber: 999, home: 'jason', away: 'dan', scores: { jason: 1, dan: 0 }, winner: 'jason', mvp: 'Mario' }); const st = undoStack(); const last = st.pop(); State.data = JSON.parse(last.data); undoWrite(st); return { before: n, after: State.data.games.length, label: last.label }; })()`);
 check('undo snapshot restores the season exactly', undoRes.before === undoRes.after && undoRes.label === 'test', undoRes);
 
 section('Story, predictions, audit, time machine');
@@ -224,6 +224,42 @@ check('time machine renders the season as of game 10 (10 of 162 played)', /10 of
 T(`renderTrends()`);
 check('READONLY is off without ?view=readonly', T(`READONLY`) === false);
 
+section('Data safety (2026-10-03)');
+T(`selectSeason('S2')`);
+check('undo lives in sessionStorage, not the localStorage the season needs', T(`(() => { sessionStorage.removeItem(undoKey()); pushUndo('x'); const ok = !!sessionStorage.getItem(undoKey()) && !localStorage.getItem(undoKey()); sessionStorage.removeItem(undoKey()); return ok; })()`));
+check('undo keeps at most 3 steps', T(`(() => { sessionStorage.removeItem(undoKey()); for (let i = 0; i < 6; i++) pushUndo('s' + i); const n = undoStack().length; sessionStorage.removeItem(undoKey()); return n; })()`) === 3);
+check('applying cloud data clears every undo stack (an undo can never erase the other device\'s games)', T(`(() => { pushUndo('before pull'); const snap = Sync.snapshot(); Sync.apply(snap); return undoStack().length === 0; })()`));
+const und = T(`(() => {
+  const cur = JSON.parse(JSON.stringify(State.data));
+  const restored = JSON.parse(JSON.stringify(State.data));
+  const g5 = restored.games.find(g => g.gameNumber === 5);
+  cur.games = cur.games.filter(g => g.gameNumber !== 5); cur.deletedGames = { 5: '2026-01-01T00:00:00.000Z' };   // game 5 was deleted, then undone
+  const out = stampUndo(cur, restored);
+  const cloud = { games: cur.games, deletedGames: { 5: '2026-01-01T00:00:00.000Z' } };   // the other device already has the delete
+  const m = mergeSeasonData(out, cloud);
+  return { stamped: !!out.games.find(g => g.gameNumber === 5).savedAt, survives: m.games.some(g => g.gameNumber === 5) };
+})()`);
+check('undoing a delete survives a merge with a device that saw the delete', und.stamped && und.survives, und);
+const delInj = T(`(() => {
+  const L = { games: [], deletedGames: { 7: '2026-02-01T00:00:00Z' }, deletedInjuries: { 'jason|Mario|7': '2026-02-01T00:00:00Z' }, injuries: [], injuryRolls: {} };
+  const C = { games: [{ gameNumber: 7, home: 'jason', away: 'dan', savedAt: '2026-01-01T00:00:00Z' }], injuries: [{ owner: 'jason', player: 'Mario', injuredGame: 7, gamesOut: 3, returnGame: 11 }], injuryRolls: { 7: true } };
+  const m = mergeSeasonData(L, C); return { games: m.games.length, inj: m.injuries.length, rolled: !!m.injuryRolls[7] };
+})()`);
+check('a deleted game\'s injury and injury roll stay deleted after a merge', delInj.games === 0 && delInj.inj === 0 && !delInj.rolled, delInj);
+const delSeason = T(`(() => {
+  const local = { updatedAt: 'a', seasons: [], leagues: [], tombstones: { S9: true, league_L9: true }, data: {} };
+  const cloud = { updatedAt: 'b', seasons: [{ id: 'S9', leagueId: 'L9', owners: {} }], leagues: [{ id: 'L9' }], tombstones: {}, data: { S9: { games: [] } } };
+  const m = mergeSnapshots(local, cloud); return { seasons: m.seasons.length, leagues: m.leagues.length };
+})()`);
+check('a deleted custom season and league stay deleted after a merge', delSeason.seasons === 0 && delSeason.leagues === 0, delSeason);
+const predMerge = T(`(() => {
+  const L = { games: [], predictions: { 30: { jason: { winner: 'jason', at: '2026-03-01T00:00:00Z' } } } };
+  const C = { games: [], predictions: { 30: { dan: { winner: 'dan', at: '2026-03-01T00:00:05Z' } } } };
+  return mergeSeasonData(L, C).predictions[30];
+})()`);
+check('predictions merge per owner: both calls survive', predMerge && predMerge.jason && predMerge.dan, predMerge);
+check('view-only never pushes', T(`Sync.push.toString().includes('if (READONLY) return')`));
+
 section('Leagues');
 T(`LeagueManager.migrate()`);
 const lgs = T(`LeagueManager.list()`);
@@ -237,6 +273,17 @@ T(`renderSeasonGrid()`);
 const landing = T(`document.getElementById('leaguesArea').innerHTML`);
 check('landing renders the league block with both seasons', /Jason &amp; Dan/.test(landing) && (landing.match(/class="season-card"/g) || []).length === 2);
 
-// =============================================================================
-console.log(`\n${pass} passed, ${fail} failed`);
-if (fail) { console.log('failed: ' + failures.join(' | ')); process.exit(1); }
+// ---- async: a push must record the revision it sent, not one made mid-flight
+(async () => {
+  section('Sync push revision');
+  const r = await T(`(async () => {
+    localStorage.setItem('msb_localRev', 'A');
+    const realFetch = fetch;
+    fetch = async () => { localStorage.setItem('msb_localRev', 'B'); return { ok: true, status: 200, json: async () => ({}) }; };
+    try { await Sync.push(); } finally { fetch = realFetch; }
+    return { sent: localStorage.getItem('msb_lastSyncRev'), now: localStorage.getItem('msb_localRev') };
+  })()`);
+  check('an edit made while a push is in flight is not marked as synced (device stays dirty)', r.sent === 'A' && r.now !== r.sent, r);
+  console.log(`\n${pass} passed, ${fail} failed`);
+  if (fail) { console.log('failed: ' + failures.join(' | ')); process.exit(1); }
+})();
